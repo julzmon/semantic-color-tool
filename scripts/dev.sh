@@ -14,7 +14,7 @@ if ! command -v node >/dev/null 2>&1 || ! node --version >/dev/null 2>&1; then
   exit 1
 fi
 if [ ! -f node_modules/vite/bin/vite.js ]; then
-  echo 'Dependencies are missing. Run npm install, then bash scripts/dev.sh.' >&2
+  echo 'Dependencies are missing. Run pnpm install --frozen-lockfile, then bash scripts/dev.sh.' >&2
   exit 1
 fi
 

@@ -108,3 +108,20 @@ describe('configuration lifecycle', () => {
     expect(loadStoredConfiguration(storage, defaults(), 'test-config')).toMatchObject({ restored: true, config: { surfaces: { light: { l: 0.97 } } } });
   });
 });
+
+it('defaults older imported muted chroma to 100% in both modes', () => {
+  expect(parseConfigurationJson(JSON.stringify(defaults()), defaults()).muted).toMatchObject({ chromaScale: { light: 1, dark: 1 } });
+});
+
+it('round-trips independent muted chroma through configuration storage', () => {
+  const input = defaults();
+  input.muted = { ...input.muted, chromaScale: { light: 0.5, dark: 1.75 } };
+  const storage = new MemoryStorage();
+  expect(saveStoredConfiguration(storage, input)).toBe(true);
+  expect(loadStoredConfiguration(storage, defaults()).config.muted).toMatchObject({ chromaScale: { light: 0.5, dark: 1.75 } });
+});
+
+it.each([null, 1, {}, { light: 1 }, { light: -1, dark: 1 }, { light: 1, dark: 3 }, { light: '1', dark: 1 }])('rejects malformed imported muted chroma %j', (chromaScale) => {
+  const input = { ...defaults(), muted: { ...defaults().muted, chromaScale } };
+  expect(() => parseConfigurationJson(JSON.stringify(input), defaults())).toThrow(/chroma/i);
+});

@@ -64,7 +64,10 @@ function normalizeMuted(value: unknown): RecordValue {
       const split = record(legacyDistance, 'Configuration muted.distance');
       return { light: split.light, dark: split.dark };
     })();
-  return { distance, separation: muted.separation };
+  const scale = muted.chromaScale === undefined
+    ? { light: 1, dark: 1 }
+    : record(muted.chromaScale, 'Configuration muted.chromaScale');
+  return { distance, separation: muted.separation, chromaScale: { light: scale.light, dark: scale.dark } };
 }
 
 function sourceConfig(value: unknown): RecordValue {

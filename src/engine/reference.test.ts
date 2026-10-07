@@ -100,7 +100,7 @@ describe('configuration from KDS reference', () => {
       expect(family.hue).toBeCloseTo(expected.h ?? 0, 8);
       expect(family.chroma).toBeCloseTo(expected.c, 8);
     }
-    expect(config.muted).toEqual({ distance: { light: 0.055, dark: 0.16 }, separation: 0.025 });
+    expect(config.muted).toEqual({ distance: { light: 0.055, dark: 0.16 }, separation: 0.025, chromaScale: { light: 1, dark: 1 } });
     expect(config.emphasis).toEqual({ separation: 0.045, selected: false, strategy: 'shared' });
     expect(config.targets).toEqual({ normalText: 4.5, largeText: 3, ui: 3 });
     expect(config.anchors).toEqual([]);

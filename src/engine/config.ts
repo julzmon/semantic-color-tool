@@ -31,7 +31,7 @@ export function configFromReference(reference: KdsReference): BuilderConfig {
       const color = requiredColor('light', family.referenceToken);
       return { id: family.id, key: family.key, label: family.label, hue: color.h, chroma: color.c };
     }),
-    muted: { distance: { light: 0.055, dark: 0.16 }, separation: 0.025 },
+    muted: { distance: { light: 0.055, dark: 0.16 }, separation: 0.025, chromaScale: { light: 1, dark: 1 } },
     emphasis: { separation: 0.045, selected: false, strategy: 'shared' },
     targets: { normalText: 4.5, largeText: 3, ui: 3 },
     anchors: [],
@@ -47,4 +47,10 @@ export function surfaceStep(config: BuilderConfig, mode: Mode): number {
 export function mutedDistance(config: BuilderConfig, mode: Mode): number {
   const distance = config.muted?.distance;
   return typeof distance === 'number' ? distance : (distance as Partial<Record<Mode, number>> | undefined)?.[mode] ?? NaN;
+}
+
+/** Existing configurations without muted chroma controls retain family chroma. */
+export function mutedChromaScale(config: BuilderConfig, mode: Mode): number {
+  const scale = config.muted?.chromaScale;
+  return scale === undefined ? 1 : scale?.[mode] ?? NaN;
 }

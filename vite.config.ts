@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { parseKdsTokens } from './src/engine/reference';
 
 const referencePath = fileURLToPath(new URL('./src/reference/kds-tokens.css', import.meta.url));
@@ -10,7 +11,7 @@ const referencePath = fileURLToPath(new URL('./src/reference/kds-tokens.css', im
 export default defineConfig({
   // Relative production paths support the repository's GitHub Pages project URL.
   base: './',
-  plugins: [{
+  plugins: [svelte(), {
     name: 'kds-reference',
     resolveId(id) { if (id === 'virtual:kds-reference') return '\0virtual:kds-reference'; },
     load(id) {

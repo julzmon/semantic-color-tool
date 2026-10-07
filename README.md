@@ -1,6 +1,6 @@
 # Semantic Color System Generator
 
-An interactive, semantic-first OKLCH color-system builder. It generates validated light and dark tokens for **Neutral, Brand, Info, Positive, Negative, and Warning**.
+An interactive, semantic-first OKLCH color-system builder built with Svelte 5 and TypeScript. It generates validated light and dark tokens for **Neutral, Brand, Info, Positive, Negative, and Warning**.
 
 ## Run
 
@@ -16,8 +16,9 @@ For a fresh installation, use Node 26 (see `.nvmrc`):
 
 ```sh
 nvm install
-npm install
-npm run dev
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 
 Open the localhost URL printed by Vite, normally http://127.0.0.1:5173.
@@ -25,8 +26,9 @@ Open the localhost URL printed by Vite, normally http://127.0.0.1:5173.
 ## Validate
 
 ```sh
-npm test
-npm run build
+pnpm test
+pnpm run check
+pnpm run build
 ```
 
 ## Builder scope
@@ -74,7 +76,7 @@ An exact lock constrains the same semantic lightness position across families. I
 
 Every valid change is saved locally in the browser. Reloading restores that configuration; **Reset** clears it and restores the KDS defaults.
 
-Use **Export → Configuration** to download the current configuration and validation results. The same tab imports a local JSON configuration after normalizing and validating it before it replaces the current workspace. Version-1 configurations are migrated to the version-2 shape: missing family defaults are added and an old numeric surface step becomes matching light and dark steps. Existing version-2 configurations with one numeric muted distance retain it for both modes; new defaults use `0.055` for light and `0.160` for dark.
+Use **Export → Configuration** to download the current configuration and validation results. The same tab imports a local JSON configuration after normalizing and validating it before it replaces the current workspace. Version-1 configurations are migrated to the version-2 shape: missing family defaults are added and an old numeric surface step becomes matching light and dark steps. Existing version-2 configurations with one numeric muted distance retain it for both modes; new defaults use `0.055` for light and `0.160` for dark. Muted chroma defaults to 100% in both modes when older configurations omit it.
 
 ## Architecture
 
@@ -88,9 +90,9 @@ Use **Export → Configuration** to download the current configuration and valid
 | `src/engine/generate.ts` | Surface/state generation, joint constraint solving, shared primitives, and semantic mapping |
 | `src/engine/reuse.ts` | Bounded gray reuse that preserves contextual contrast, state spacing, and locks |
 | `src/engine/export.ts` and `src/engine/tokens.ts` | CSS, configuration, and DTCG serialization |
-| `src/ui/BrandAnchors.tsx` | OKLCH-only Brand anchor editor |
+| `src/ui/BrandAnchors.svelte` | OKLCH-only Brand anchor editor |
 | `src/ui/configuration.ts` | Configuration migration, validation, import, and local persistence |
-| `src/ui/` and `src/App.tsx` | Controls, inspection, previews, and export workflow |
+| `src/ui/` and `src/App.svelte` | Controls, inspection, previews, and export workflow |
 
 See [the completed builder plan](docs/superpowers/plans/2026-10-06-complete-core-builder.md) for implementation details. The earlier [prototype model plan](docs/superpowers/plans/2026-10-04-color-model.md) is retained as historical context.
 
@@ -100,7 +102,9 @@ Generated colors are opaque sRGB. Requested chroma is reduced to retain the requ
 
 The solver searches lightness in 0.001 increments. A failed search is not a proof that no mathematical solution exists; narrow feasible intervals can be missed. Every emitted color is checked and failed relationships remain visible. Contrast status uses unrounded serialized-color values, never a rounded label or HEX approximation.
 
-Muted fills and emphasis fills do not have a UI-boundary target by themselves; content placed on those fills is checked. Emphasis borders retain the `3:1` UI-boundary requirement. Muted distance from the surface is independently adjustable by mode. Raising the dark value gives dark semantic fills more lightness and therefore more available sRGB chroma. Surface positions are fixed during reuse, and reuse stays within its current mode so a dark adjustment cannot alter light generated colors. Nearby Neutral positions may be reused only when the change reduces gray count, retains every contrast result, stays in sRGB, and preserves the relevant state spacing. This is a bounded deterministic optimization, not a proof of the smallest possible palette.
+Muted fills and emphasis fills do not have a UI-boundary target by themselves; content placed on those fills is checked. Emphasis borders retain the `3:1` UI-boundary requirement. Muted distance from the surface is independently adjustable by mode. Raising the dark value gives dark semantic fills more lightness and therefore more available sRGB chroma. Surface positions are fixed during reuse, and reuse stays within its current mode so a dark adjustment cannot alter light generated colors. The **Light muted chroma** and **Dark muted chroma** sliders scale each family’s requested muted chroma from 0–200%. At 100%, the family chroma is retained; 0% removes chroma from muted fills and their derived borders. Each state is independently gamut-mapped to sRGB. Surfaces retain their family chroma, while foregrounds are still solved against the adjusted muted fills. Configuration exports store these percentages as `muted.chromaScale` factors from 0 to 2.
+
+Nearby Neutral positions may be reused only when the change reduces gray count, retains every contrast result, stays in sRGB, and preserves the relevant state spacing. This is a bounded deterministic optimization, not a proof of the smallest possible palette.
 
 CSS and DTCG exports shorten components from 4 decimal places for lightness, 5 for chroma, and 2 for hue. Extra digits remain when shortening would change an sRGB or contextual contrast result. Shared components are rounded together; exact-lock components remain unchanged.
 

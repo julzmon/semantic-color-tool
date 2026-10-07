@@ -1,5 +1,5 @@
 import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
-import { mutedDistance, surfaceStep } from './config';
+import { mutedChromaScale, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
 import { reuseGrayPositions } from './reuse';
 import type {
@@ -34,6 +34,9 @@ export function validateConfig(config: BuilderConfig): void {
   if (!Number.isInteger(config.surfaces.levels) || config.surfaces.levels < 1 || config.surfaces.levels > 32) throw new Error('Surface count must be an integer from 1 to 32.');
   for (const mode of modes) finite(surfaceStep(config, mode), `${mode} surface step`);
   for (const mode of modes) {
+    const scale = mutedChromaScale(config, mode);
+    finite(scale, `${mode} muted chroma scale`);
+    if (scale > 2) throw new Error(`${mode} muted chroma scale must be within 0–2.`);
     if (!Number.isFinite(mutedDistance(config, mode))) throw new Error(`${mode} muted distance must be finite.`);
   }
   finite(config.muted?.separation, 'Muted separation');
@@ -98,10 +101,11 @@ export function mutedGeneration(config: BuilderConfig, mode: Mode, family: Famil
   const span = config.muted.separation * (count - 1);
   const desired = config.surfaces[mode].l + direction(mode) * mutedDistance(config, mode);
   const bounded = mode === 'light' ? Math.max(span, desired) : Math.min(1 - span, desired);
-  const base = toColor({ l: clamp(bounded), c: family.chroma, h: family.hue });
+  const chroma = family.chroma * mutedChromaScale(config, mode);
+  const base = toColor({ l: clamp(bounded), c: chroma, h: family.hue });
   const result = generateStates(base, mode, config.muted.separation, count);
-  // Gamut-map each position from the family chroma, not the clipped base chroma.
-  result.colors = result.colors.map((color) => toColor({ l: color.l, c: family.chroma, h: family.hue }));
+  // Gamut-map each position from the scaled family chroma, not the clipped base.
+  result.colors = result.colors.map((color) => toColor({ l: color.l, c: chroma, h: family.hue }));
   if (Math.abs(desired - bounded) > 1e-9 || desired < 0 || desired > 1) {
     result.diagnostics.unshift(`${mode} ${family.id}: muted distance and full state separation are infeasible together; the group shifts toward the available range.`);
   }
@@ -386,6 +390,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
   const config = structuredClone(input);
   config.surfaces.step = { light: surfaceStep(input, 'light'), dark: surfaceStep(input, 'dark') };
   config.muted.distance = { light: mutedDistance(input, 'light'), dark: mutedDistance(input, 'dark') };
+  config.muted.chromaScale = { light: mutedChromaScale(input, 'light'), dark: mutedChromaScale(input, 'dark') };
   config.emphasis.strategy = emphasisStrategy(input);
   // Older version-1 configurations may contain independent surface C/H; discard them.
   for (const mode of modes) config.surfaces[mode] = { l: config.surfaces[mode].l };
