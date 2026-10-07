@@ -369,6 +369,19 @@ summary { cursor: pointer; }
 .preview-nested[data-mode="dark"] { color-scheme: dark; }
 .preview-nested[data-mode] { color: var(--kds-fg-base); background: var(--kds-bg-surface-base); }
 .preview-nested p { font-size: 12px; margin: 6px 0 0; }
+.surface-demo { margin-block-start: 22px; padding-block-start: 19px; border-block-start: 1px solid var(--kds-border-neutral-muted-base); }
+.surface-demo-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-block-end: 10px; }
+.surface-demo-heading h4 { margin-block-start: 3px; font-size: 12px; font-weight: 550; }
+.surface-demo-heading > span { margin-block-start: 2px; color: var(--kds-fg-muted); font-size: 9px; line-height: 1.5; text-align: end; }
+.surface-level-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(106px, 1fr)); gap: 8px; }
+.surface-level-card, .surface-nested-card { border: 1px solid var(--kds-border-neutral-muted-base); border-radius: 6px; color: var(--kds-fg-base); }
+.surface-level-card { min-inline-size: 0; min-block-size: 108px; padding: 12px; }
+.surface-level-card > span, .surface-nested-card > span { display: block; color: var(--kds-fg-muted); font: 9px/1.5 var(--mono); }
+.surface-level-card strong, .surface-nested-card strong { display: block; margin-block-start: 14px; font-size: 10px; font-weight: 550; line-height: 1.4; }
+.surface-level-card p, .surface-nested-card p { margin: 5px 0 0; color: var(--kds-fg-muted); font-size: 9px; line-height: 1.5; }
+.surface-nesting-demo { margin-block-start: 17px; }
+.surface-nested-card { min-inline-size: 0; padding: 12px; }
+.surface-nested-card > .surface-nested-card { margin-block-start: 10px; }
 .export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .code-output { display: block; inline-size: 100%; min-block-size: 500px; max-block-size: 80dvh; padding: 23px; resize: vertical; border: 1px solid #cbd6c8; border-radius: 5px; background: #fcfdfb; color: #3b5140; font: 11px/1.8 var(--mono); tab-size: 2; white-space: pre; }
 .export-status { min-block-size: 30px; padding-block-start: 10px; color: #66765e; font-size: 11px; line-height: 1.5; }

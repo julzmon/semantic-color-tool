@@ -17,3 +17,13 @@ it('renders family hooks for the primary action and status cards', () => {
     expect(markup).toContain(`data-family="${family}"`);
   }
 });
+
+it('renders generated surface levels as individual and nested card backgrounds', () => {
+  const markup = renderToStaticMarkup(<ThemePreview system={defaultSystem} mode="light" />);
+
+  expect(markup).toContain('aria-label="Light surface-level cards"');
+  expect(markup).toContain('aria-label="Light nested surface cards"');
+  for (const surface of defaultSystem.modes.light.surfaces) {
+    expect(markup).toContain(`data-surface="${surface.semantic}"`);
+  }
+});

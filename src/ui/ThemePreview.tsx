@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { FamilyId, GeneratedSystem, Mode } from '../engine/types';
+import type { JSX } from 'react';
+import type { FamilyId, GeneratedRole, GeneratedSystem, Mode } from '../engine/types';
 import { previewStyle } from './presentation';
 
 type PreviewStatus = Readonly<{
@@ -15,6 +16,19 @@ export const PREVIEW_STATUSES: readonly PreviewStatus[] = [
   { family: 'warning', icon: '!', title: 'Review before publishing', description: 'A few choices need your attention.' },
   { family: 'negative', icon: '×', title: 'Needs attention', description: 'Resolve blockers before continuing.' },
 ];
+
+function surfaceLabel(index: number): string {
+  return index === 0 ? 'Base' : `Level ${index}`;
+}
+
+function NestedSurfaceCard({ surfaces, index = 0 }: { surfaces: GeneratedRole[]; index?: number }): JSX.Element {
+  const surface = surfaces[index]!;
+  return <article className="surface-nested-card" data-surface={surface.semantic} style={{ background: surface.color.css }}>
+    <span>{surfaceLabel(index)}</span>
+    <strong>{index === 0 ? 'Workspace card' : `Nested card ${index}`}</strong>
+    {index + 1 < surfaces.length ? <NestedSurfaceCard surfaces={surfaces} index={index + 1} /> : <p>Content sits on the deepest generated surface.</p>}
+  </article>;
+}
 
 export function ThemePreview({ system, mode }: { system: GeneratedSystem; mode: Mode }) {
   const [name, setName] = useState('Design foundations');
@@ -45,6 +59,14 @@ export function ThemePreview({ system, mode }: { system: GeneratedSystem; mode: 
         <section className="preview-nested" data-mode={mode === 'light' ? 'dark' : 'light'} aria-label={`Nested ${mode === 'light' ? 'dark' : 'light'} region`}>
           <strong>{mode === 'light' ? 'Dark' : 'Light'} within {mode}</strong>
           <p>The same semantic tokens follow this region’s color scheme.</p>
+        </section>
+        <section className="surface-demo" aria-label={`${mode === 'light' ? 'Light' : 'Dark'} surface-level cards`}>
+          <div className="surface-demo-heading"><div><span className="preview-overline">SURFACE LEVELS</span><h4>Cards at each level</h4></div><span>Generated backgrounds</span></div>
+          <div className="surface-level-cards">{theme.surfaces.map((surface, index) => <article key={surface.semantic} className="surface-level-card" data-surface={surface.semantic} style={{ background: surface.color.css }}><span>{surfaceLabel(index)}</span><strong>{index === 0 ? 'Project summary' : `Card on ${surfaceLabel(index).toLowerCase()}`}</strong><p>Use this level for grouped content.</p></article>)}</div>
+        </section>
+        <section className="surface-demo surface-nesting-demo" aria-label={`${mode === 'light' ? 'Light' : 'Dark'} nested surface cards`}>
+          <div className="surface-demo-heading"><div><span className="preview-overline">NESTED SURFACES</span><h4>Cards within cards</h4></div><span>Every level in context</span></div>
+          <NestedSurfaceCard surfaces={theme.surfaces} />
         </section>
       </div>
       <div className="surface-strip" aria-label={`${mode} generated surfaces`}>{theme.surfaces.map((surface, index) => <div key={surface.semantic} style={{ background: surface.color.css }}><span>{index === 0 ? 'Base' : `Level ${index}`}</span><code>{surface.color.hex}</code></div>)}</div>
