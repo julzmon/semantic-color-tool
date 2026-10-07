@@ -77,7 +77,7 @@ describe('configuration from KDS reference', () => {
     expect(config.surfaces.light.l).toBeCloseTo(1, 7);
     expect(config.surfaces.dark.l).toBeCloseTo(converter('oklch')('#151617')!.l, 7);
     expect(Object.keys(config.surfaces.dark)).toEqual(['l']);
-    expect(config.surfaces).toMatchObject({ levels: 3, step: { light: 0.035, dark: 0.035 } });
+    expect(config.surfaces).toMatchObject({ levels: 3, step: { light: 0.035, dark: 0.1 } });
     expect(config.families.map(({ id, key }) => ({ id, key }))).toEqual([
       { id: 'neutral', key: 'gray' },
       { id: 'brand', key: 'brand' },

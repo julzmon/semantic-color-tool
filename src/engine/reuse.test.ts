@@ -12,6 +12,7 @@ const config = () => configFromReference(parseKdsTokens(readFileSync(new URL('..
 describe('constrained gray reuse', () => {
   it('reuses a nearby surface for a whole muted group without losing spacing or shared family lightness', () => {
     const input = config();
+    input.surfaces.step = { light: 0.035, dark: 0.035 };
     input.muted.distance = { light: 0.055, dark: 0.055 };
     const result = generateSystem(input);
     for (const mode of ['light', 'dark'] as const) {

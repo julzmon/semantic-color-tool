@@ -22,7 +22,7 @@ export function configFromReference(reference: KdsReference): BuilderConfig {
       light: { l: requiredColor('light', '--kds-bg-surface-base').l },
       dark: { l: requiredColor('dark', '--kds-bg-surface-base').l },
       levels: 3,
-      step: { light: 0.035, dark: 0.035 },
+      step: { light: 0.035, dark: 0.1 },
     },
     families: FAMILY_DEFINITIONS.map((family) => {
       const color = requiredColor('light', family.referenceToken);
