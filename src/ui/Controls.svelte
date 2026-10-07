@@ -96,9 +96,9 @@
     />
     {#each ['light', 'dark'] as const as mode}<Slider
         label={mode === 'light' ? 'Light tonal step' : 'Dark tonal step'}
-        min={0.01}
+        min={0.001}
         max={0.2}
-        step={0.005}
+        step={0.001}
         value={surfaceStep(config, mode)}
         onChange={(value) =>
           onChange({
