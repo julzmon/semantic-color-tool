@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-mode="light">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KDS exported CSS · nested schemes</title>
+<link rel="stylesheet" href="kds.css">
+<style>
+  body { font: 16px/1.5 system-ui; margin: 32px; }
+  section { padding: 24px; border-radius: 12px; margin-block: 16px; }
+  .token-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .intent { margin: 0; padding: 12px; border-radius: 8px; }
+  .brand { color: var(--kds-fg-on-emphasis); background: var(--kds-bg-brand-emphasis-base); }
+  .info { color: var(--kds-fg-info-base); background: var(--kds-bg-info-muted-base); }
+  .positive { color: var(--kds-fg-positive-base); background: var(--kds-bg-positive-muted-base); }
+  .negative { color: var(--kds-fg-negative-base); background: var(--kds-bg-negative-muted-base); }
+  .warning { color: var(--kds-fg-warning-base); background: var(--kds-bg-warning-muted-base); }
+  .neutral { color: var(--kds-fg-neutral-base); background: var(--kds-bg-neutral-muted-base); }
+</style>
+<h1>Exported KDS CSS</h1>
+<p>Light page. Each region reuses the same six semantic token families.</p>
+<section data-mode="dark" id="dark-region">
+  <h2>Dark region</h2>
+  <p>Foreground and background switch together at this boundary.</p>
+  <div class="token-grid">
+    <p class="intent brand">Brand emphasis base</p>
+    <p class="intent info">Info foreground on muted Info</p>
+    <p class="intent positive">Positive foreground on muted Positive</p>
+    <p class="intent negative">Negative foreground on muted Negative</p>
+    <p class="intent warning">Warning foreground on muted Warning</p>
+    <p class="intent neutral">Neutral foreground on muted Neutral</p>
+  </div>
+  <section data-mode="light" id="light-region">
+    <h2>Light within dark</h2>
+    <p>The inner scheme overrides its parent while retaining the same token names.</p>
+    <div class="token-grid">
+      <p class="intent brand">Brand emphasis base</p>
+      <p class="intent info">Info foreground on muted Info</p>
+      <p class="intent positive">Positive foreground on muted Positive</p>
+      <p class="intent negative">Negative foreground on muted Negative</p>
+      <p class="intent warning">Warning foreground on muted Warning</p>
+      <p class="intent neutral">Neutral foreground on muted Neutral</p>
+    </div>
+    <section data-mode="auto" id="auto-region">
+      <h3>System preference</h3>
+      <p>Auto opts back into the system light/dark preference.</p>
+    </section>
+  </section>
+</section>
+</html>

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
+  "name": "KDS Neutral + Brand + Info + Positive + Negative + Warning",
+  "version": "2025.10",
+  "description": "Shared OKLCH foundation for Neutral + Brand + Info + Positive + Negative + Warning with light/dark semantic contexts.",
+  "sets": {
+    "foundation": {
+      "sources": [
+        {
+          "$ref": "foundation/colors.tokens.json"
+        }
+      ]
+    }
+  },
+  "modifiers": {
+    "mode": {
+      "description": "Color mode",
+      "contexts": {
+        "light": [
+          {
+            "$ref": "semantic/light.tokens.json"
+          }
+        ],
+        "dark": [
+          {
+            "$ref": "semantic/dark.tokens.json"
+          }
+        ]
+      },
+      "default": "light"
+    }
+  },
+  "resolutionOrder": [
+    {
+      "$ref": "#/sets/foundation"
+    },
+    {
+      "$ref": "#/modifiers/mode"
+    }
+  ]
+}
