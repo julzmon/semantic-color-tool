@@ -6,7 +6,7 @@
     brand,
     anchors,
     onChange,
-  }: { brand: FamilyConfig; anchors: ColorAnchor[]; onChange: (anchors: ColorAnchor[]) => void } = $props();
+  }: { brand: FamilyConfig; anchors: ColorAnchor[]; onChange: (anchors: ColorAnchor[]) => Promise<boolean | undefined> } = $props();
   let brandAnchors = $derived(anchors.filter((anchor) => anchor.family === 'brand'));
   const updateAnchor = (anchor: ColorAnchor, next: ColorAnchor) =>
     onChange(anchors.map((item) => (item === anchor ? next : item)));

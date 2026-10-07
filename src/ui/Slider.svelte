@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   let {
     label,
     value,
@@ -14,7 +15,7 @@
     max: number;
     step?: number;
     unit?: string;
-    onChange: (value: number) => void;
+    onChange: (value: number) => void | Promise<unknown>;
   } = $props();
   const id = $props.id();
 </script>
@@ -30,6 +31,11 @@
     {max}
     {step}
     {value}
-    oninput={(event) => onChange(event.currentTarget.valueAsNumber)}
+    oninput={async (event) => {
+      const input = event.currentTarget;
+      await onChange(input.valueAsNumber);
+      await tick();
+      input.value = String(value);
+    }}
   />
 </div>

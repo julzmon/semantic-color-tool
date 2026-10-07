@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { PreviewMode, Selection } from './ui/types';
   import ModelNotes from './ui/ModelNotes.svelte';
   import ContrastTable from './ui/ContrastTable.svelte';
@@ -6,7 +7,8 @@
   import Matrix from './ui/Matrix.svelte';
   import StateOverview from './ui/StateOverview.svelte';
   import ModeSwitch from './ui/ModeSwitch.svelte';
-  import { generateSystem } from './engine/generate';
+  import { balanceConfiguration } from './engine/balance';
+  import { createBalanceClient } from './engine/balance-client';
   import { configFromReference } from './engine/config';
   import ExportPanel from './ui/ExportPanel.svelte';
   import {
@@ -26,28 +28,32 @@
     typeof window === 'undefined' ? null : window.localStorage,
     initialConfig,
   );
-  let config = $state.raw<BuilderConfig>(stored.config);
+  const restored = (() => {
+    try {
+      return balanceConfiguration(initialConfig, stored.config);
+    } catch (error) {
+      return {
+        ...balanceConfiguration(initialConfig, initialConfig),
+        message: `Saved configuration could not meet contrast requirements; restored defaults. ${error instanceof Error ? error.message : ''}`,
+      };
+    }
+  })();
+  let config = $state.raw<BuilderConfig>(restored.config);
+  let draft = $state.raw<BuilderConfig>(restored.config);
+  let system = $state.raw<GeneratedSystem>(restored.system);
+  let balancer: ReturnType<typeof createBalanceClient> | undefined;
+  let editVersion = 0;
+  onMount(() => {
+    balancer = createBalanceClient(new Worker(new URL('./engine/balance.worker.ts', import.meta.url), { type: 'module' }));
+    return () => balancer?.dispose();
+  });
   let configurationStatus = $state(
-    stored.error || (stored.restored ? 'Restored the saved configuration.' : ''),
+    restored.message || stored.error || (stored.restored ? 'Restored the saved configuration.' : ''),
   );
   let mode = $state<PreviewMode>('split');
   let tab = $state<Tab>('Overview');
   let selected = $state<Selection>({ mode: 'light', family: 'brand', role: 'emphasis.base' });
-  let lastValid = $state.raw<GeneratedSystem | null>(null);
   let skipPersistence = false;
-  let generated = $derived.by(() => {
-    try {
-      return { system: generateSystem(config), error: '' };
-    } catch (error) {
-      return {
-        system: null,
-        error: error instanceof Error ? error.message : 'Unable to generate this configuration.',
-      };
-    }
-  });
-  $effect(() => {
-    if (generated.system) lastValid = generated.system;
-  });
   $effect(() => {
     const currentConfig = config;
     if (skipPersistence) {
@@ -57,26 +63,49 @@
     if (!saveStoredConfiguration(typeof window === 'undefined' ? null : window.localStorage, currentConfig))
       configurationStatus = 'Changes could not be saved in this browser.';
   });
-  let system = $derived(generated.system ?? lastValid);
   let modes: Mode[] = $derived(mode === 'split' ? ['light', 'dark'] : [mode]);
   const select = (selection: Selection) => {
     selected = selection;
     tab = 'Semantic matrix';
   };
   const reset = () => {
+    editVersion++;
     skipPersistence = true;
     try {
       window.localStorage.removeItem(CONFIGURATION_STORAGE_KEY);
     } catch {
       /* Browser storage is optional. */
     }
-    config = structuredClone(initialConfig);
+    const balanced = balanceConfiguration(initialConfig, initialConfig);
+    config = draft = balanced.config;
+    system = balanced.system;
     configurationStatus = 'Restored defaults and cleared the saved configuration.';
   };
-  const importConfiguration = (json: string) => {
+  const importConfiguration = async (json: string) => {
     const next = parseConfigurationJson(json, initialConfig);
-    config = next;
-    configurationStatus = 'Imported configuration saved for this browser.';
+    const accepted = await updateConfiguration(next);
+    if (accepted === undefined) throw new Error('Import was superseded by a newer edit.');
+    if (!accepted) throw new Error('Import was not accepted. Previous configuration retained.');
+    configurationStatus ||= 'Imported configuration saved for this browser.';
+  };
+  const updateConfiguration = async (next: BuilderConfig) => {
+    const version = ++editVersion;
+    draft = next;
+    configurationStatus = 'Checking contrast… Preview and exports retain the last verified result.';
+    try {
+      if (!balancer) throw new Error('Contrast checker is not ready. Previous settings retained.');
+      const balanced = await balancer.balance(config, next);
+      if (!balanced || version !== editVersion) return undefined;
+      config = draft = balanced.config;
+      system = balanced.system;
+      configurationStatus = balanced.message;
+      return true;
+    } catch (error) {
+      if (version !== editVersion) return undefined;
+      draft = config;
+      configurationStatus = error instanceof Error ? error.message : 'Unable to keep all checked contrast relationships passing. Previous settings retained.';
+      return false;
+    }
   };
   let failed = $derived(system?.checks.filter((check) => !check.pass).length ?? 0);
   let shared = $derived(
@@ -107,10 +136,8 @@
 </header>
 <div class="app-layout">
   <Controls
-    {config}
-    onChange={(next) => {
-      config = next;
-    }}
+    config={draft}
+    onChange={updateConfiguration}
     onReset={reset}
   />
   <main id="workspace" class="workspace">
@@ -126,11 +153,7 @@
     </div>
     {#if configurationStatus}<p class="configuration-status" role="status">
         {configurationStatus}
-      </p>{/if}{#if generated.error}<div role="alert" class="error-banner">
-        <strong>Configuration could not be generated.</strong>
-        {generated.error}
-        {system && 'Showing the last valid result; adjust the controls or reset.'}
-      </div>{/if}{#if system}<div class="metrics-strip">
+      </p>{/if}{#if system}<div class="metrics-strip">
         <div><strong>{system.primitives.length}</strong><span>shared primitives</span></div>
         <div><strong>{system.semantics.length}</strong><span>semantic tokens</span></div>
         <div><strong>{shared}</strong><span>foreground / fill reuses</span></div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { parseLockedColor } from '../engine/color';
   import type { ColorAnchor, Mode, OklchColor } from '../engine/types';
   import { serializeOklch } from './brandAnchor';
@@ -24,7 +24,7 @@
     anchor: ColorAnchor;
     index: number;
     allAnchors: ColorAnchor[];
-    onChange: (next: ColorAnchor) => void;
+    onChange: (next: ColorAnchor) => Promise<boolean | undefined>;
     onRemove: () => void;
   } = $props();
   const id = $props.id();
@@ -40,19 +40,22 @@
       (other, otherIndex) =>
         otherIndex !== index && other.role === next.role && overlaps(other.mode, next.mode),
     );
-  const update = (patch: Partial<ColorAnchor>) => {
+  const update = async (patch: Partial<ColorAnchor>) => {
     const next = { ...anchor, ...patch };
     if (collides(next)) {
       error = 'That semantic role and mode already have a Brand anchor.';
       return;
     }
     error = '';
-    onChange(next);
+    if (await onChange(next) === false) {
+      draft = formatDraft(source);
+      error = 'This anchor cannot meet the checked contrast requirements. Previous anchor retained.';
+    }
   };
-  const commit = () => {
+  const commit = async () => {
     try {
       const next = serializeOklch({ l: Number(draft.l), c: Number(draft.c), h: Number(draft.h) });
-      update({ color: next });
+      await update({ color: next });
     } catch (reason) {
       error = reason instanceof Error ? reason.message : 'Enter valid OKLCH coordinates.';
     }
@@ -102,7 +105,12 @@
       <label for={`${id}-role`}>Semantic token</label><select
         id={`${id}-role`}
         value={anchor.role}
-        onchange={(event) => update({ role: event.currentTarget.value as ColorAnchor['role'] })}
+        onchange={async (event) => {
+          const input = event.currentTarget;
+          await update({ role: input.value as ColorAnchor['role'] });
+          await tick();
+          input.value = anchor.role;
+        }}
         >{#each anchorRoles as role}<option value={role} disabled={collides({ role, mode: anchor.mode })}
             >{role === 'emphasis.base' ? 'Background emphasis · base' : 'Foreground · base'}</option
           >{/each}</select
@@ -112,7 +120,12 @@
       <label for={`${id}-mode`}>Mode</label><select
         id={`${id}-mode`}
         value={anchor.mode}
-        onchange={(event) => update({ mode: event.currentTarget.value as ColorAnchor['mode'] })}
+        onchange={async (event) => {
+          const input = event.currentTarget;
+          await update({ mode: input.value as ColorAnchor['mode'] });
+          await tick();
+          input.value = anchor.mode;
+        }}
         >{#each anchorModes as mode}<option value={mode} disabled={collides({ role: anchor.role, mode })}
             >{mode === 'both' ? 'Light + dark' : mode[0].toUpperCase() + mode.slice(1)}</option
           >{/each}</select
@@ -122,7 +135,12 @@
       ><input
         type="checkbox"
         checked={anchor.locked}
-        oninput={(event) => update({ locked: event.currentTarget.checked })}
+        oninput={async (event) => {
+          const input = event.currentTarget;
+          await update({ locked: input.checked });
+          await tick();
+          input.checked = anchor.locked;
+        }}
       />Lock exact color</label
     >
   </div>

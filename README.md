@@ -70,7 +70,11 @@ Open **Families → Brand** and choose **Add anchor**. The default target is the
 
 Enter L, C, and H directly in OKLCH. The anchor starts unlocked, so the solver may adjust it to satisfy the system. Select **Lock exact color** to preserve that literal `oklch(L C H)` source. The editor also supports a foreground-base target and light, dark, or both modes for advanced use.
 
-An exact lock constrains the same semantic lightness position across families. If locks conflict or an exact source cannot meet a required contrast relationship, the source stays exact and the diagnostic remains visible.
+An exact lock constrains the same semantic lightness position across families. The builder rejects a lock when it cannot find a passing configuration without changing that source. The engine API retains raw failed checks and diagnostics for consumers that need to inspect infeasible configurations.
+
+Contrast protection is always on in the builder. Controls, imports and restored configurations are accepted only when every checked relationship passes, with targets of at least 4.5:1 for normal text and 3:1 for large text and UI boundaries. The builder first reduces unedited state and surface spacing and, when moving a surface, tries preserving its previous muted lightness. If necessary, a bounded search limits numeric changes to a verified passing configuration. Targets and anchors are never weakened to make a request pass. Adjustment messages identify the changed controls; impossible hard constraints are rejected. This protects the modeled color relationships, not the accessibility of an entire interface.
+
+Dark muted distance ranges up to 0.5, allowing brighter fills above a black base. The passing limit depends on surface levels, state spacing, family colors, and locks.
 
 ## Saved and imported configurations
 

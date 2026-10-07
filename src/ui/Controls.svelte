@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import Slider from './Slider.svelte';
   import { mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
   import type { BuilderConfig, FamilyId, Mode } from '../engine/types';
@@ -7,7 +8,7 @@
     config,
     onChange,
     onReset,
-  }: { config: BuilderConfig; onChange: (config: BuilderConfig) => void; onReset: () => void } = $props();
+  }: { config: BuilderConfig; onChange: (config: BuilderConfig) => Promise<boolean | undefined>; onReset: () => void } = $props();
   let familyId = $state<FamilyId>('neutral');
   let family = $derived(config.families.find((item) => item.id === familyId)!);
   const updateFamily = (patch: Partial<typeof family>) =>
@@ -46,13 +47,16 @@
       >Token prefix<input
         id="token-prefix"
         value={config.prefix}
-        oninput={(event) => {
-          const prefix = event.currentTarget.value.trim().toLowerCase();
+        oninput={async (event) => {
+          const input = event.currentTarget;
+          const prefix = input.value.trim().toLowerCase();
           if (/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(prefix)) {
-            event.currentTarget.value = prefix;
-            onChange({ ...config, prefix });
+            input.value = prefix;
+            await onChange({ ...config, prefix });
+            await tick();
+            input.value = config.prefix;
           } else {
-            event.currentTarget.value = config.prefix;
+            input.value = config.prefix;
           }
         }}
         aria-describedby="token-prefix-help"
@@ -159,7 +163,7 @@
     {#each ['light', 'dark'] as const as mode}<Slider
         label={mode === 'light' ? 'Light muted distance' : 'Dark muted distance'}
         min={-0.08}
-        max={mode === 'dark' ? 0.25 : 0.16}
+        max={mode === 'dark' ? 0.5 : 0.16}
         step={0.005}
         value={mutedDistance(config, mode)}
         onChange={(distance) => updateMutedDistance(mode, distance)}
@@ -237,8 +241,12 @@
       ><input
         type="checkbox"
         checked={config.emphasis.selected}
-        oninput={(event) =>
-          onChange({ ...config, emphasis: { ...config.emphasis, selected: event.currentTarget.checked } })}
+        oninput={async (event) => {
+          const input = event.currentTarget;
+          await onChange({ ...config, emphasis: { ...config.emphasis, selected: input.checked } });
+          await tick();
+          input.checked = config.emphasis.selected;
+        }}
       />Include selected state</label
     >
     <p class="help">
@@ -260,7 +268,8 @@
           <dd>{config.targets[key]}:1</dd>
         </div>{/each}
     </dl>
-    <p class="help">Fixed minimum ratios used for generation and validation.</p>
+    <p class="help">Contrast protection is always on. Other spacing settings may adjust automatically;
+      changes that cannot pass are limited or rejected. Contrast targets and exact locks stay fixed.</p>
   </section>
   <div class="scope-note">
     <span class="status-dot"></span>

@@ -2,7 +2,7 @@
   import { exportCss, exportDtcg, exportDtcgFiles, exportJson } from '../engine/export';
   import type { GeneratedSystem } from '../engine/types';
   type Format = 'css' | 'dtcg' | 'json';
-  let { system, onImport }: { system: GeneratedSystem; onImport: (json: string) => void } = $props();
+  let { system, onImport }: { system: GeneratedSystem; onImport: (json: string) => void | Promise<void> } = $props();
   let format = $state<Format>('css');
   let selectedFile = $state('');
   let message = $state('');
@@ -50,7 +50,7 @@
     event.currentTarget.value = '';
     if (!source) return;
     try {
-      onImport(await source.text());
+      await onImport(await source.text());
       message = `${source.name} imported.`;
     } catch (error) {
       message = error instanceof Error ? error.message : 'Configuration could not be imported.';
