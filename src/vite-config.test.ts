@@ -12,5 +12,6 @@ describe('production hosting configuration', () => {
     expect(workflow).toContain('cache: pnpm');
     expect(workflow).toContain('corepack enable');
     expect(workflow).toContain('pnpm install --frozen-lockfile');
+    expect(workflow).toContain('enablement: true');
   });
 });
