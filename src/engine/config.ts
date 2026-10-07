@@ -2,6 +2,8 @@ import { converter } from 'culori';
 import { FAMILY_DEFINITIONS } from './families';
 import type { BuilderConfig, KdsReference, Mode, OklchColor } from './types';
 
+export const DEFAULT_TOKEN_PREFIX = 'kds';
+
 const toOklch = converter('oklch');
 
 /** Seed designer controls from the real source colors, never from silent fallbacks. */
@@ -18,6 +20,7 @@ export function configFromReference(reference: KdsReference): BuilderConfig {
 
   return {
     version: 2,
+    prefix: DEFAULT_TOKEN_PREFIX,
     surfaces: {
       light: { l: requiredColor('light', '--kds-bg-surface-base').l },
       dark: { l: requiredColor('dark', '--kds-bg-surface-base').l },

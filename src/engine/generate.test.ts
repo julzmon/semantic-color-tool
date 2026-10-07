@@ -48,6 +48,12 @@ describe('color mathematics', () => {
 });
 
 describe('semantic generation', () => {
+  it('uses the configured prefix for generated primitives and semantic tokens', () => {
+    const result = generateSystem({ ...config(), prefix: 'acme-ui' });
+    expect(result.primitives.every((primitive) => primitive.name.startsWith('--acme-ui-key-'))).toBe(true);
+    expect(result.semantics.every((token) => token.name.startsWith('--acme-ui-'))).toBe(true);
+    expect(result.modes.light.surfaces[0]!.semantic).toBe('--acme-ui-bg-surface-base');
+  });
   it('generates all KDS family semantics and preserves a locked Brand emphasis base', () => {
     const input = config();
     const locked = 'oklch(0.530761849 0.217799663 29.23388028)';

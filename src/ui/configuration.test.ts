@@ -5,6 +5,7 @@ import type { BuilderConfig } from '../engine/types';
 function defaults(): BuilderConfig {
   return {
     version: 2,
+    prefix: 'kds',
     surfaces: {
       light: { l: 1 },
       dark: { l: 0.2 },
@@ -43,6 +44,11 @@ class MemoryStorage {
 }
 
 describe('configuration lifecycle', () => {
+  it('uses kds when a legacy configuration has no prefix', () => {
+    const input = defaults();
+    delete (input as Partial<BuilderConfig>).prefix;
+    expect(parseConfigurationJson(JSON.stringify(input), defaults()).prefix).toBe('kds');
+  });
   it('migrates direct version-1 JSON to the version supplied by defaults', () => {
     const input = legacyV1();
 

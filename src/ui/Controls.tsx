@@ -25,9 +25,14 @@ export function Controls({ config, onChange, onReset }: { config: BuilderConfig;
     },
   });
   return <aside className="controls" aria-label="Color system configuration">
-    <div className="controls-heading"><div><span className="eyebrow">INPUTS</span><h2>Define the system</h2></div><button className="text-button" onClick={onReset} title="Restore the imported KDS defaults">Reset</button></div>
+    <div className="controls-heading"><div><span className="eyebrow">INPUTS</span><h2>Define the system</h2></div><button className="text-button" onClick={onReset} title="Restore the default configuration">Reset</button></div>
     <section className="control-section">
-      <div className="section-heading"><span className="section-number">01</span><h3>Surfaces</h3><span className="mini-tag">Neutral</span></div>
+      <div className="section-heading"><span className="section-number">01</span><h3>Token namespace</h3></div>
+      <label className="text-input" htmlFor="token-prefix">Token prefix<input id="token-prefix" value={config.prefix} onChange={(event) => { const prefix = event.currentTarget.value.trim().toLowerCase(); if (/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(prefix)) onChange({ ...config, prefix }); }} aria-describedby="token-prefix-help" /></label>
+      <p id="token-prefix-help" className="help">Letters, numbers, and hyphens. Exported as <code>--{config.prefix}-*</code>.</p>
+    </section>
+    <section className="control-section">
+      <div className="section-heading"><span className="section-number">02</span><h3>Surfaces</h3><span className="mini-tag">Neutral</span></div>
       <p className="help">Surfaces use the gray palette. Adjust their lightness here; Neutral hue and chroma below affect every gray role.</p>
       <Slider label="Light base lightness" min={0} max={1} value={config.surfaces.light.l} onChange={(l) => onChange({ ...config, surfaces: { ...config.surfaces, light: { l } } })} />
       <Slider label="Dark base lightness" min={0} max={1} value={config.surfaces.dark.l} onChange={(l) => onChange({ ...config, surfaces: { ...config.surfaces, dark: { l } } })} />
@@ -36,9 +41,9 @@ export function Controls({ config, onChange, onReset }: { config: BuilderConfig;
       <p className="help">Light levels get darker; dark levels get lighter. Set each mode’s spacing independently.</p>
     </section>
     <section className="control-section">
-      <div className="section-heading"><span className="section-number">02</span><h3>Families</h3><span className="mini-tag">{config.families.length} active</span></div>
+      <div className="section-heading"><span className="section-number">03</span><h3>Families</h3><span className="mini-tag">{config.families.length} active</span></div>
       <div className="segmented family-switch" aria-label="Edit color family">{config.families.map((item) => <button key={item.id} aria-pressed={item.id === familyId} onClick={() => setFamilyId(item.id)}>{item.label}</button>)}</div>
-      <div className="family-origin"><span className={`family-dot ${family.id}`} />{family.label}<span>← KDS {family.key}</span></div>
+      <div className="family-origin"><span className={`family-dot ${family.id}`} />{family.label}<span>← {family.key}</span></div>
       <Slider label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} onChange={(hue) => updateFamily({ hue })} />
       <Slider label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} onChange={(chroma) => updateFamily({ chroma })} />
       <p className="help">Lightness is solved from semantic roles. Chroma is reduced where sRGB requires it.</p>

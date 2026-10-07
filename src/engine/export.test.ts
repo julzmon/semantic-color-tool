@@ -53,7 +53,7 @@ describe('exports', () => {
   });
 
   it('labels the configured scope and keeps validation failures visible in the export', () => {
-    expect(exportCss(sample)).toContain('KDS Color System Builder · Info tokens.');
+    expect(exportCss(sample)).toContain('Semantic Color System Generator · Info tokens.');
     expect(exportCss(sample)).toContain('1 failed contrast relationship');
     const parsed = JSON.parse(exportJson(sample));
     expect(parsed.config).toEqual(sample.config);

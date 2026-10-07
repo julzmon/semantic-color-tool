@@ -1,4 +1,5 @@
 import { validateConfig } from '../engine/generate';
+import { DEFAULT_TOKEN_PREFIX } from '../engine/config';
 import type { BuilderConfig } from '../engine/types';
 
 type RecordValue = Record<string, unknown>;
@@ -86,6 +87,7 @@ export function normalizeConfiguration(value: unknown, defaults: BuilderConfig):
 
   const normalized = structuredClone(defaults) as unknown as RecordValue;
   normalized.version = defaultVersion;
+  normalized.prefix = typeof source.prefix === 'string' ? source.prefix.trim().toLowerCase() : DEFAULT_TOKEN_PREFIX;
   normalized.surfaces = normalizeSurfaces(source.surfaces);
   normalized.muted = normalizeMuted(source.muted);
   const emphasis = record(source.emphasis, 'Configuration emphasis');

@@ -202,6 +202,9 @@ summary { cursor: pointer; }
 .status-label::before { content: ""; inline-size: 5px; block-size: 5px; background: currentColor; border-radius: 50%; }
 .status-label.fail { color: #aa3f32; }
 .theme-preview { background: var(--kds-bg-surface-base); color: var(--kds-fg-base); border-end-start-radius: 6px; border-end-end-radius: 6px; }
+.text-input { display: grid; gap: 7px; font-size: 12px; font-weight: 600; }
+.text-input input { inline-size: 100%; box-sizing: border-box; min-block-size: 38px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: 12px/1 var(--mono); padding: 0 10px; }
+.text-input input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .theme-preview[data-mode="light"] { color-scheme: light; background: var(--kds-bg-surface-base); color: var(--kds-fg-base); }
 .theme-preview[data-mode="dark"] { color-scheme: dark; background: var(--kds-bg-surface-base); color: var(--kds-fg-base); }
 .theme-preview :focus-visible { outline-color: var(--kds-fg-base); }

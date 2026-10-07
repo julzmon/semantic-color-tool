@@ -57,7 +57,7 @@ export function BrandAnchors({ brand, anchors, onChange }: { brand: FamilyConfig
   const brandAnchors = anchors.filter((anchor) => anchor.family === 'brand');
   const updateAnchor = (anchor: ColorAnchor, next: ColorAnchor) => onChange(anchors.map((item) => item === anchor ? next : item));
   const removeAnchor = (anchor: ColorAnchor) => onChange(anchors.filter((item) => item !== anchor));
-  return <div className="brand-anchor-controls"><div className="brand-anchor-heading"><div><strong>Brand color lock</strong><p>By default, this anchors <code>--kds-bg-brand-emphasis-base</code>. Use OKLCH only.</p></div><button type="button" className="text-button" onClick={() => onChange([...anchors, createBrandAnchor(brand)])}>Add anchor</button></div>
+  return <div className="brand-anchor-controls"><div className="brand-anchor-heading"><div><strong>Brand color lock</strong><p>By default, this anchors the Brand emphasis-base token. Use OKLCH only.</p></div><button type="button" className="text-button" onClick={() => onChange([...anchors, createBrandAnchor(brand)])}>Add anchor</button></div>
     {brandAnchors.length ? brandAnchors.map((anchor, index) => <AnchorCard key={`${anchor.role}-${anchor.mode}-${index}`} anchor={anchor} index={index} allAnchors={brandAnchors} onChange={(next) => updateAnchor(anchor, next)} onRemove={() => removeAnchor(anchor)} />) : <p className="help">No Brand color is anchored. Add one to set a preferred or exact emphasis-base color.</p>}
   </div>;
 }

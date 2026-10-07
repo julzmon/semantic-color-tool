@@ -20,12 +20,13 @@ export function configuredFamilyScope(system: GeneratedSystem): { ids: string[];
 
 /** One component model feeds CSS and DTCG without recalculating colors. */
 export function tokenFoundation(system: GeneratedSystem) {
+  const prefix = system.config.prefix ?? 'kds';
   const lightness: Record<string, number> = {};
   const hue: Record<string, number> = {};
   const chroma: Record<string, number> = {};
   for (const family of system.config.families) hue[family.key] = Number((((family.hue % 360) + 360) % 360).toFixed(10));
   const palette: FoundationColor[] = system.primitives.map((primitive) => {
-    const step = primitive.name.replace(`--kds-key-${primitive.family}-`, '');
+    const step = primitive.name.replace(`--${prefix}-key-${primitive.family}-`, '');
     const tone = step.split('-')[0];
     // Locks may carry more precision than generated values; preserve that precision.
     if (!(tone in lightness) || primitive.color.source) lightness[tone] = primitive.color.l;
@@ -76,8 +77,8 @@ type JsonObject = { [key: string]: Json };
 const number = (value: number): JsonObject => ({ $type: 'number', $value: value });
 const reference = (path: string): JsonObject => ({ $ref: `#/${path}/$value` });
 
-export function tokenPath(cssName: string): string[] {
-  const name = cssName.replace('--kds-', '');
+export function tokenPath(cssName: string, prefix = 'kds'): string[] {
+  const name = cssName.replace(`--${prefix}-`, '');
   const primitive = name.match(/^key-([a-z][a-z0-9-]*)-(.+)$/);
   if (primitive) return ['color', 'palette', primitive[1], primitive[2]];
   const [group, ...parts] = name.split('-');
@@ -108,10 +109,11 @@ function materializeComponents(value: Json, source: JsonObject): Json {
 }
 
 export function dtcgDocuments(system: GeneratedSystem) {
+  const prefix = system.config.prefix ?? 'kds';
   const foundation = tokenFoundation(system);
   const scope = configuredFamilyScope(system);
   const colors: JsonObject = {
-    $description: `KDS ${scope.label} foundation. Shared lightness; family hue and gamut-mapped chroma. Generated ordinals may change when constraints change.`,
+    $description: `Semantic Color System Generator ${scope.label} foundation. Shared lightness; family hue and gamut-mapped chroma. Generated ordinals may change when constraints change.`,
     color: {
       lightness: Object.fromEntries(Object.entries(foundation.lightness).map(([key, value]) => [key, number(value)])),
       hue: Object.fromEntries(Object.entries(foundation.hue).map(([key, value]) => [key, number(value)])),
@@ -121,22 +123,22 @@ export function dtcgDocuments(system: GeneratedSystem) {
   for (const item of foundation.palette) {
     const { primitive, step } = item;
     setToken(colors, ['color', 'chroma', primitive.family, step], number(foundation.chroma[item.chroma]));
-    setToken(colors, tokenPath(primitive.name), {
+    setToken(colors, tokenPath(primitive.name, prefix), {
       $type: 'color',
       $value: { colorSpace: 'oklch', components: [reference(`color/lightness/${item.lightness}`), reference(`color/chroma/${primitive.family}/${step}`), reference(`color/hue/${item.hue}`)], alpha: 1 },
       ...(primitive.color.source ? { $description: `Exact source anchor: ${primitive.color.source}` } : {}),
     });
   }
   const semantic = (mode: Mode): JsonObject => {
-    const document: JsonObject = { $description: `KDS ${mode} semantic context. Merge with the shared foundation through kds.resolver.json.` };
-    for (const token of system.semantics) setToken(document, tokenPath(token.name), { $type: 'color', $value: `{${tokenPath(token[mode]).join('.')}}` });
+    const document: JsonObject = { $description: `${mode} semantic context. Merge with the shared foundation through ${prefix}.resolver.json.` };
+    for (const token of system.semantics) setToken(document, tokenPath(token.name, prefix), { $type: 'color', $value: `{${tokenPath(token[mode], prefix).join('.')}}` });
     return document;
   };
   const light = semantic('light');
   const dark = semantic('dark');
   const resolver = (inline: boolean): JsonObject => ({
     $schema: 'https://www.designtokens.org/schemas/2025.10/resolver.json',
-    name: `KDS ${scope.label}`, version: '2025.10',
+    name: `Semantic Color System Generator ${scope.label}`, version: '2025.10',
     description: `Shared OKLCH foundation for ${scope.label} with light/dark semantic contexts.`,
     sets: { foundation: { sources: [inline ? materializeComponents(colors, colors) : { $ref: 'foundation/colors.tokens.json' }] } },
     modifiers: { mode: { description: 'Color mode', contexts: {

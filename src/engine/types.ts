@@ -25,6 +25,7 @@ export interface ColorAnchor {
 export interface BuilderConfig {
   /** Version 1 configurations remain readable while the generator migrates them. */
   version: 1 | 2;
+  prefix: string;
   surfaces: { light: { l: number }; dark: { l: number }; levels: number; step: number | Record<Mode, number> };
   families: FamilyConfig[];
   muted: { distance: number | Record<Mode, number>; separation: number };

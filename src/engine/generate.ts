@@ -26,6 +26,7 @@ function finite(value: number, name: string, minimum = 0): void {
 /** Runtime validation also protects imported JSON and direct API consumers. */
 export function validateConfig(config: BuilderConfig): void {
   if (!config || config.version !== 2) throw new Error('Unsupported builder configuration version. Import version 1 configurations through the configuration importer first.');
+  if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(config.prefix ?? '')) throw new Error('Token prefix must use lowercase letters, numbers, and hyphens.');
   for (const mode of modes) {
     finite(config.surfaces?.[mode]?.l, `${mode} surface lightness`);
     if (config.surfaces[mode].l > 1 + 1e-8) throw new Error('Surface lightness must be within 0–1.');
@@ -258,9 +259,11 @@ function role(color: ColorValue, semantic: string): GeneratedRole {
   return { color, semantic, primitive: '', sharedWith: [] };
 }
 
-function semanticName(family: FamilyId, path: FamilyRole): string {
+export const tokenName = (prefix: string, suffix: string) => `--${prefix}-${suffix}`;
+
+function semanticName(prefix: string, family: FamilyId, path: FamilyRole): string {
   const [group, ...parts] = path.split('.');
-  return group === 'foreground' ? `--kds-fg-${family}-${parts.join('-')}` : group === 'border' ? `--kds-border-${family}-${parts.join('-')}` : `--kds-bg-${family}-${path.replaceAll('.', '-')}`;
+  return group === 'foreground' ? tokenName(prefix, `fg-${family}-${parts.join('-')}`) : group === 'border' ? tokenName(prefix, `border-${family}-${parts.join('-')}`) : tokenName(prefix, `bg-${family}-${path.replaceAll('.', '-')}`);
 }
 
 function allRoles(theme: ModeTheme): { key: Primitive['family']; role: GeneratedRole }[] {
@@ -275,7 +278,7 @@ function allRoles(theme: ModeTheme): { key: Primitive['family']; role: Generated
 }
 
 /** Union both modes by actual color within each palette, then assign descending-L names. */
-export function deduplication(input: Record<Mode, ModeTheme>): { modes: Record<Mode, ModeTheme>; primitives: Primitive[] } {
+export function deduplication(input: Record<Mode, ModeTheme>, prefix = 'kds'): { modes: Record<Mode, ModeTheme>; primitives: Primitive[] } {
   const themes = structuredClone(input);
   const primitives: Primitive[] = [];
   const lightnesses = [...new Set(modes.flatMap((mode) => allRoles(themes[mode]).map((entry) => entry.role.color.l.toFixed(10))))].sort((a, b) => Number(b) - Number(a));
@@ -312,10 +315,10 @@ export function deduplication(input: Record<Mode, ModeTheme>): { modes: Record<M
       const tone = toneNames.get(group.color.l.toFixed(10))!;
       const variant = (variants.get(tone) ?? 0) + 1;
       variants.set(tone, variant);
-      const name = `--kds-key-${key}-${tone}${variant > 1 ? `-${variant}` : ''}`;
+      const name = tokenName(prefix, `key-${key}-${tone}${variant > 1 ? `-${variant}` : ''}`);
       const names = (mode: Mode) => [...new Set(group.entries.filter((entry) => entry.mode === mode).flatMap((entry) => {
-        const state = entry.role.semantic.match(/^--kds-fg-info-(base|hover)$/)?.[1];
-        return state ? [entry.role.semantic, `--kds-fg-link-${state}`] : [entry.role.semantic];
+        const state = entry.role.semantic.match(new RegExp(`^--${prefix}-fg-info-(base|hover)$`))?.[1];
+        return state ? [entry.role.semantic, tokenName(prefix, `fg-link-${state}`)] : [entry.role.semantic];
       }))].sort();
       const usages = modes.flatMap((mode) => names(mode).map((semantic) => `${mode}:${semantic}`)).sort();
       for (const entry of group.entries) {
@@ -328,7 +331,7 @@ export function deduplication(input: Record<Mode, ModeTheme>): { modes: Record<M
   return { modes: themes, primitives };
 }
 
-export function semanticMapping(themes: Record<Mode, ModeTheme>): SemanticToken[] {
+export function semanticMapping(themes: Record<Mode, ModeTheme>, prefix = 'kds'): SemanticToken[] {
   const tokens = new Map<string, SemanticToken>();
   for (const mode of modes) for (const { role: item } of allRoles(themes[mode])) {
     const token = tokens.get(item.semantic) ?? { name: item.semantic, light: '', dark: '' };
@@ -336,8 +339,8 @@ export function semanticMapping(themes: Record<Mode, ModeTheme>): SemanticToken[
     tokens.set(item.semantic, token);
   }
   for (const state of ['base', 'hover']) {
-    const name = `--kds-fg-link-${state}`;
-    tokens.set(name, { name, light: `--kds-fg-info-${state}`, dark: `--kds-fg-info-${state}` });
+    const name = tokenName(prefix, `fg-link-${state}`);
+    tokens.set(name, { name, light: tokenName(prefix, `fg-info-${state}`), dark: tokenName(prefix, `fg-info-${state}`) });
   }
   return [...tokens.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -367,7 +370,7 @@ function contextualChecks(config: BuilderConfig, themes: Record<Mode, ModeTheme>
       const emphasis = Object.entries(family.roles).filter(([name]) => name.startsWith('emphasis.')).map(([, value]) => value!);
       for (const state of ['base', 'hover'] as const) {
         text(mode, family.roles[`foreground.${state}`]!, [...theme.surfaces, ...muted], id);
-        if (id === 'info') text(mode, { ...family.roles[`foreground.${state}`]!, semantic: `--kds-fg-link-${state}` }, [...theme.surfaces, ...muted], id);
+        if (id === 'info') text(mode, { ...family.roles[`foreground.${state}`]!, semantic: tokenName(config.prefix, `fg-link-${state}`) }, [...theme.surfaces, ...muted], id);
       }
       text(mode, theme.foreground.onEmphasis, emphasis, id);
       for (const foreground of [family.roles['border.emphasis.base']!, family.roles['border.emphasis.hover']!]) {
@@ -432,7 +435,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
       diagnostics.push(...solution.diagnostics.map((message) => `${family.id}: ${message}`));
       if (!solution.shared) diagnostics.push(`${mode} ${family.id}: emphasis and foreground use separate colors because their combined constraints cannot be satisfied by one state group.`);
       const roles: GeneratedFamily['roles'] = {};
-      const put = (path: FamilyRole, color: ColorValue) => { roles[path] = role(color, semanticName(family.id, path)); };
+      const put = (path: FamilyRole, color: ColorValue) => { roles[path] = role(color, semanticName(config.prefix, family.id, path)); };
       muted[family.id].forEach((color, state) => put(`muted.${allStates[state]}`, color));
       solution.colors.forEach((color, state) => put(`emphasis.${allStates[state]}`, color));
       put('foreground.base', solution.foreground[0]);
@@ -449,8 +452,8 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
     const desiredBase = factories.neutral(mode === 'light' ? Math.min(0.2, mutedForeground.l) : Math.max(0.94, mutedForeground.l));
     const baseForeground = contrastScore(desiredBase, globalConstraints) >= 1 ? desiredBase : mutedForeground;
     themes[mode] = {
-      surfaces: surfaces.colors.map((color, index) => role(color, index === 0 ? '--kds-bg-surface-base' : `--kds-bg-surface-level-${index}`)),
-      foreground: { base: role(baseForeground, '--kds-fg-base'), muted: role(mutedForeground, '--kds-fg-muted'), onEmphasis: role(onEmphasis, '--kds-fg-on-emphasis') },
+      surfaces: surfaces.colors.map((color, index) => role(color, tokenName(config.prefix, index === 0 ? 'bg-surface-base' : `bg-surface-level-${index}`))),
+      foreground: { base: role(baseForeground, tokenName(config.prefix, 'fg-base')), muted: role(mutedForeground, tokenName(config.prefix, 'fg-muted')), onEmphasis: role(onEmphasis, tokenName(config.prefix, 'fg-on-emphasis')) },
       families: generatedFamilies,
     };
   }
@@ -469,11 +472,11 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
       const states = locked ? generateStates(locked, 'light', config.emphasis.separation, count).colors : allStates.slice(0, count).map((state) => lightFamily.roles[`emphasis.${state}` as FamilyRole]!.color);
       allStates.slice(0, count).forEach((state, index) => {
         const path = `emphasis.${state}` as FamilyRole;
-        lightFamily.roles[path] = role(states[index], semanticName(family.id, path));
-        darkFamily.roles[path] = role(states[index], semanticName(family.id, path));
+        lightFamily.roles[path] = role(states[index], semanticName(config.prefix, family.id, path));
+        darkFamily.roles[path] = role(states[index], semanticName(config.prefix, family.id, path));
       });
     }
-    themes.dark.foreground.onEmphasis = role(themes.light.foreground.onEmphasis.color, '--kds-fg-on-emphasis');
+    themes.dark.foreground.onEmphasis = role(themes.light.foreground.onEmphasis.color, tokenName(config.prefix, 'fg-on-emphasis'));
   }
   for (const anchor of config.anchors.filter((anchor) => anchor.locked)) {
     if (!isSrgb(anchor.color)) diagnostics.push(`${anchor.mode} ${anchor.family} ${anchor.role}: locked color is outside the sRGB gamut and is preserved exactly. Ratios use a clipped-sRGB estimate; these checks cannot be certified and remain failed.`);
@@ -481,11 +484,11 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
   const originalChecks = contextualChecks(config, themes);
   const reused = reuseGrayPositions(config, themes, (candidate) => contextualChecks(config, candidate)
     .every((check, index) => check.pass === originalChecks[index].pass));
-  const deduplicated = deduplication(reused);
+  const deduplicated = deduplication(reused, config.prefix);
   const checks = contextualChecks(config, deduplicated.modes);
   for (const mode of modes) {
     const failed = checks.filter((check) => check.mode === mode && !check.pass);
     if (failed.length) diagnostics.push(`${mode}: ${failed.length} contextual contrast checks fail. No complete solution was found for these surfaces, targets, and brand locks in the bounded 0.001-lightness search; failed checks retain their measured ratios.`);
   }
-  return { config, ...deduplicated, semantics: semanticMapping(deduplicated.modes), checks, diagnostics: [...new Set(diagnostics)] };
+  return { config, ...deduplicated, semantics: semanticMapping(deduplicated.modes, config.prefix), checks, diagnostics: [...new Set(diagnostics)] };
 }

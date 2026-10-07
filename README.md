@@ -1,6 +1,6 @@
-# KDS Color System Builder
+# Semantic Color System Generator
 
-An interactive, semantic-first OKLCH color-system builder for KDS. It generates validated light and dark tokens for **Neutral, Brand, Info, Positive, Negative, and Warning** from the KDS reference in `src/reference/kds-tokens.css`.
+An interactive, semantic-first OKLCH color-system builder. It generates validated light and dark tokens for **Neutral, Brand, Info, Positive, Negative, and Warning**.
 
 ## Run
 
