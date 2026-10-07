@@ -37,7 +37,7 @@ export function Controls({ config, onChange, onReset }: { config: BuilderConfig;
       <Slider label="Light base lightness" min={0} max={1} value={config.surfaces.light.l} onChange={(l) => onChange({ ...config, surfaces: { ...config.surfaces, light: { l } } })} />
       <Slider label="Dark base lightness" min={0} max={1} value={config.surfaces.dark.l} onChange={(l) => onChange({ ...config, surfaces: { ...config.surfaces, dark: { l } } })} />
       <Slider label="Surface levels · includes base" min={1} max={6} step={1} value={config.surfaces.levels} onChange={(levels) => onChange({ ...config, surfaces: { ...config.surfaces, levels } })} />
-      {(['light', 'dark'] as const).map((mode) => <Slider key={mode} label={mode === 'light' ? 'Light tonal step' : 'Dark tonal step'} min={0.01} max={mode === 'dark' ? 0.2 : 0.08} step={0.005} value={surfaceStep(config, mode)} onChange={(value) => onChange({ ...config, surfaces: { ...config.surfaces, step: { light: surfaceStep(config, 'light'), dark: surfaceStep(config, 'dark'), [mode]: value } } })} />)}
+      {(['light', 'dark'] as const).map((mode) => <Slider key={mode} label={mode === 'light' ? 'Light tonal step' : 'Dark tonal step'} min={0.01} max={0.2} step={0.005} value={surfaceStep(config, mode)} onChange={(value) => onChange({ ...config, surfaces: { ...config.surfaces, step: { light: surfaceStep(config, 'light'), dark: surfaceStep(config, 'dark'), [mode]: value } } })} />)}
       <p className="help">Light levels get darker; dark levels get lighter. Set each mode’s spacing independently.</p>
     </section>
     <section className="control-section">
