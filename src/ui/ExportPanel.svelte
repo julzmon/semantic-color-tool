@@ -1,8 +1,26 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { exportCss, exportDtcg, exportDtcgFiles, exportJson } from '../engine/export';
   import type { GeneratedSystem } from '../engine/types';
   type Format = 'css' | 'dtcg' | 'json';
-  let { system, onImport }: { system: GeneratedSystem; onImport: (json: string) => void | Promise<void> } = $props();
+  let { system, prefix, onPrefixChange, onImport }: {
+    system: GeneratedSystem; prefix: string; onPrefixChange: (prefix: string) => Promise<boolean | undefined>;
+    onImport: (json: string) => void | Promise<void>;
+  } = $props();
+  let prefixDraft = $state('');
+  let editingPrefix = $state(false);
+  let prefixRevision = 0;
+  let prefixError = $state('');
+  $effect(() => { if (!editingPrefix) prefixDraft = prefix; });
+  const commitPrefix = async (input: HTMLInputElement) => {
+    const revision = prefixRevision;
+    const next = input.value.trim().toLowerCase();
+    editingPrefix = false;
+    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(next)) prefixError = 'Start with a letter; use letters, numbers and single hyphens.';
+    else { prefixError = ''; if (next !== prefix) await onPrefixChange(next); }
+    await tick();
+    if (!editingPrefix && revision === prefixRevision) prefixDraft = prefix;
+  };
   let format = $state<Format>('css');
   let selectedFile = $state('');
   let message = $state('');
@@ -59,6 +77,18 @@
 </script>
 
 <section class="export-panel">
+  <div class="export-settings">
+    <h2>Export settings</h2>
+    <label class="text-input" for="token-prefix">Token prefix
+      <input id="token-prefix" value={prefixDraft} aria-describedby="token-prefix-help"
+        aria-invalid={prefixError ? 'true' : undefined}
+        onfocus={() => { editingPrefix = true; prefixRevision++; }}
+        oninput={event => { prefixRevision++; prefixDraft = event.currentTarget.value; prefixError = ''; }}
+        onblur={event => commitPrefix(event.currentTarget)}
+        onkeydown={event => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } if (event.key === 'Escape') { prefixDraft = prefix; prefixError = ''; event.currentTarget.value = prefix; event.currentTarget.blur(); } }} />
+    </label>
+    <p class="help" id="token-prefix-help">{prefixError || `Letters, numbers and hyphens. Exported as --${system.config.prefix}-*. Applies to CSS, tokens and filenames.`}</p>
+  </div>
   <div class="export-note">
     <span aria-hidden="true">↗</span>
     <div>

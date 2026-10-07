@@ -9,6 +9,7 @@
   import ModeSwitch from './ui/ModeSwitch.svelte';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
+  import { adjustedControlKeys } from './ui/controlValues';
   import { configFromReference } from './engine/config';
   import ExportPanel from './ui/ExportPanel.svelte';
   import {
@@ -41,6 +42,9 @@
   let config = $state.raw<BuilderConfig>(restored.config);
   let draft = $state.raw<BuilderConfig>(restored.config);
   let system = $state.raw<GeneratedSystem>(restored.system);
+  let adjusted = $state<string[]>(adjustedControlKeys(stored.config, restored.config));
+  let checking = $state(false);
+  let undo = $state.raw<{ config: BuilderConfig; system: GeneratedSystem } | null>(null);
   let balancer: ReturnType<typeof createBalanceClient> | undefined;
   let editVersion = 0;
   onMount(() => {
@@ -70,6 +74,9 @@
   };
   const reset = () => {
     editVersion++;
+    checking = false;
+    adjusted = [];
+    undo = null;
     skipPersistence = true;
     try {
       window.localStorage.removeItem(CONFIGURATION_STORAGE_KEY);
@@ -90,22 +97,38 @@
   };
   const updateConfiguration = async (next: BuilderConfig) => {
     const version = ++editVersion;
+    const previous = { config, system };
+    checking = true;
     draft = next;
     configurationStatus = 'Checking contrast… Preview and exports retain the last verified result.';
     try {
       if (!balancer) throw new Error('Contrast checker is not ready. Previous settings retained.');
       const balanced = await balancer.balance(config, next);
       if (!balanced || version !== editVersion) return undefined;
+      adjusted = adjustedControlKeys(next, balanced.config);
+      undo = adjusted.length ? previous : null;
+      checking = false;
       config = draft = balanced.config;
       system = balanced.system;
       configurationStatus = balanced.message;
       return true;
     } catch (error) {
       if (version !== editVersion) return undefined;
+      checking = false;
       draft = config;
       configurationStatus = error instanceof Error ? error.message : 'Unable to keep all checked contrast relationships passing. Previous settings retained.';
       return false;
     }
+  };
+  const undoAdjustments = () => {
+    if (!undo) return;
+    editVersion++;
+    config = draft = undo.config;
+    system = undo.system;
+    undo = null;
+    adjusted = [];
+    checking = false;
+    configurationStatus = 'Undid the last change and its automatic adjustments. Restored the previous verified colors.';
   };
   let failed = $derived(system?.checks.filter((check) => !check.pass).length ?? 0);
   let shared = $derived(
@@ -137,6 +160,10 @@
 <div class="app-layout">
   <Controls
     config={draft}
+    {adjusted}
+    {checking}
+    canUndo={!!undo}
+    onUndo={undoAdjustments}
     onChange={updateConfiguration}
     onReset={reset}
   />
@@ -208,6 +235,8 @@
           }}
         />{/if}{#if tab === 'Primitive palette'}<Primitives {system} />{/if}{#if tab === 'Export'}<ExportPanel
           {system}
+          prefix={draft.prefix}
+          onPrefixChange={(prefix) => updateConfiguration({ ...draft, prefix })}
           onImport={importConfiguration}
         />{/if}{#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}<ModelNotes />{/if}
     <footer class="workspace-footer">

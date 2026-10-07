@@ -146,3 +146,9 @@ The source has 60 primitives, 96 color semantics, and partial dark overrides. Da
 For example, original light Info foreground `#006d8f` on muted active `#c7e5fa` is approximately **4.4688:1**, below 4.5. Original dark Info emphasis active `#00455d` on surface `#151617` is approximately **1.7336:1**, below 3. These are distinct from white text on that emphasis background, which passes.
 
 References: [the theming discussion](https://chatgpt.com/share/6ac306ac-7990-83ea-9e56-6c8f9b955475), [DTCG Format](https://www.designtokens.org/tr/2025.10/format/), [DTCG Resolver](https://www.designtokens.org/tr/2025.10/resolver/), [Terrazzo JS API](https://terrazzo.app/docs/reference/js-api/), [Culori](https://culorijs.org/api/), and [Vite](https://vite.dev/guide/).
+
+### Control workflow
+
+The builder starts with **System structure** (surface count and selected state), followed by **Surfaces & neutrals**, **Semantic colors**, **Muted fills**, and **Interaction states**. Light and dark settings are grouped within surfaces and muted fills. Brand anchors and emphasis strategy are expandable; token prefix is in **Export settings**. Contrast protection remains visible above the controls.
+
+Each slider has a numeric field: Enter or blur commits a value within its range and step; Escape cancels editing. Automatically adjusted controls are marked inline. **Undo last adjusted change** restores the entire previous verified configuration, including the initiating edit, rather than trying to keep an infeasible request.
