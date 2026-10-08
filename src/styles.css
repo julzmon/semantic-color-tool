@@ -312,6 +312,14 @@ summary { cursor: pointer; }
 .role-map-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .role-map-mode + .role-map-mode { margin-block-start: 24px; }
 .role-map-mode h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; }
+.role-map-mode[data-mode="dark"] { padding: 14px; border-radius: 6px; background: #121718; color: #f3f7f6; }
+.role-map-mode[data-mode="dark"] .role-map-group-label { color: #aebbb8; }
+.role-map-mode[data-mode="dark"] .role-map-annotation { border-color: rgb(255 255 255 / 14%); }
+.role-map-mode[data-mode="dark"] .role-map-annotation span { border-color: rgb(255 255 255 / 20%); background: #252d2d; color: #f3f7f6; }
+.role-map-mode[data-mode="dark"] .role-map-spacer { border-color: rgb(255 255 255 / 14%); background: rgb(255 255 255 / 10%); }
+.role-map-mode[data-mode="dark"] .role-map-stop { border-color: rgb(255 255 255 / 20%); background: #1b2222; color: #f3f7f6; }
+.role-map-mode[data-mode="dark"] .role-map-stop:hover, .role-map-mode[data-mode="dark"] .role-map-stop.selected { background: #304140; }
+.role-map-mode[data-mode="dark"] .role-map-stop small { color: #aebbb8; }
 .role-map-grid { display: grid; grid-template-columns: 78px repeat(var(--role-map-columns), minmax(112px, 1fr)); min-inline-size: calc(78px + var(--role-map-columns) * 112px); border-block: 1px solid var(--line); }
 .role-map-group-label { align-self: center; padding: 5px 8px 5px 0; color: var(--muted); font-size: 10px; font-weight: 600; }
 .role-map-annotation { min-block-size: calc(var(--role-map-slots) * 22px); padding: 3px; border-inline-start: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 3px; justify-content: center; }
