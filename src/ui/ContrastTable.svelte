@@ -1,10 +1,20 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { GeneratedSystem, Mode } from '../engine/types';
   import { shortToken } from './presentation';
   let { system, modes }: { system: GeneratedSystem; modes: Mode[] } = $props();
   let failOnly = $state(false);
   let kind = $state('all');
   let limit = $state(12);
+  let open = $state(false);
+  onMount(() => {
+    const openFromHash = () => {
+      if (window.location.hash === '#contrast') open = true;
+    };
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+    return () => window.removeEventListener('hashchange', openFromHash);
+  });
   let all = $derived(system.checks.filter((check) => modes.includes(check.mode)));
   let failures = $derived(all.filter((check) => !check.pass).length);
   let filtered = $derived(
@@ -18,7 +28,7 @@
   <div class="subsection-title">
     <div>
       <span class="eyebrow">WCAG CONTRAST</span>
-      <h3>Accessibility in context</h3>
+      <h3>Contrast checks</h3>
     </div>
     <span class={`summary-badge ${failures ? 'has-failures' : ''}`}
       >{failures ? `${failures} failing` : 'All checks pass'} · {all.length} relationships</span
@@ -28,6 +38,8 @@
     Text is checked on its intended surfaces and semantic fills. Emphasis borders are checked against every
     surface.
   </p>
+  <details class="contrast-details" bind:open>
+    <summary>View contrast checks</summary>
   <div class="table-toolbar">
     <label
       >Relationship <select
@@ -91,4 +103,5 @@
         onclick={() => (limit = ((value) => value + 24)(limit))}>Show more ↓</button
       >{/if}
   </div>
+  </details>
 </section>

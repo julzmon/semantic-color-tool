@@ -3,6 +3,7 @@
   import type { PreviewMode, Selection } from './ui/types';
   import ModelNotes from './ui/ModelNotes.svelte';
   import ContrastTable from './ui/ContrastTable.svelte';
+  import NeutralRoleMap from './ui/NeutralRoleMap.svelte';
   import Primitives from './ui/Primitives.svelte';
   import Matrix from './ui/Matrix.svelte';
   import StateOverview from './ui/StateOverview.svelte';
@@ -241,7 +242,7 @@
           prefix={draft.prefix}
           onPrefixChange={(prefix) => updateConfiguration({ ...draft, prefix })}
           onImport={importConfiguration}
-        />{/if}{#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}<ModelNotes />{/if}
+        />{/if}{#if tab !== 'Export'}<NeutralRoleMap {system} {modes} /><ContrastTable {system} {modes} />{/if}<ModelNotes />{/if}
     <footer class="workspace-footer">
       <span>Semantic Color System Generator</span><span>Six semantic families</span>
     </footer>
