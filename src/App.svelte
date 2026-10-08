@@ -178,9 +178,9 @@
         ><span class="engine-icon" aria-hidden="true">◈</span>OKLCH engine<span>v0.2</span></span
       >
     </div>
-    {#if configurationStatus}<p class="configuration-status" role="status">
+    <p class="configuration-status" role="status" tabindex={configurationStatus ? 0 : undefined}>
         {configurationStatus}
-      </p>{/if}{#if system}<div class="metrics-strip">
+      </p>{#if system}<div class="metrics-strip">
         <div><strong>{system.primitives.length}</strong><span>shared primitives</span></div>
         <div><strong>{system.semantics.length}</strong><span>semantic tokens</span></div>
         <div><strong>{shared}</strong><span>foreground / fill reuses</span></div>
