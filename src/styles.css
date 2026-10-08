@@ -310,7 +310,7 @@ summary { cursor: pointer; }
 .role-map-note { margin: 8px 0 14px; color: var(--muted); font-size: 11px; }
 .role-map-scroll { overflow-x: auto; padding: 2px 2px 12px; outline: none; }
 .role-map-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.role-map-mode { padding: 14px; border-radius: 6px; background: var(--panel); }
+.role-map-mode { inline-size: max-content; min-inline-size: 100%; padding: 14px; border-radius: 6px; background: var(--panel); }
 .role-map-mode + .role-map-mode { margin-block-start: 24px; }
 .role-map-mode h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; }
 .role-map-mode[data-mode="dark"] { color: #f3f7f6; }
