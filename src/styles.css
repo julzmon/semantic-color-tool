@@ -4,7 +4,7 @@
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #242a28;
   background: #f6f7f5;
-  font-size: 14px;
+  font-size: 16px;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -12,7 +12,7 @@
   --canvas: #f6f7f5;
   --panel: #ffffff;
   --ink: #242a28;
-  --muted: #69726d;
+  --muted: #56635b;
   --line: #dce1dc;
   --line-soft: #e9ece8;
   --accent: #006d75;
@@ -40,6 +40,7 @@ h1, h2, h3, h4 { font-weight: 600; }
 a { color: var(--accent); }
 code, output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 code { font-size: 11px; }
+
 summary { cursor: pointer; }
 ::selection { background: #c9e7e4; color: #163b3b; }
 .sr-only {
@@ -624,3 +625,18 @@ summary { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Readable default scale for primary controls and supporting copy. */
+.controls { font-size: 15px; }
+.controls .eyebrow { font-size: 11px; }
+.controls-heading h2 { font-size: 20px; }
+.section-heading h3 { font-size: 15px; }
+.control-section > .help, .help { font-size: 13px; }
+.surface-control > label, .surface-count legend, .theme-controls legend { font-size: 14px; }
+.control-label { font-size: 13px; }
+.control-label output { font-size: 12px; }
+.advanced-controls summary, .protection-summary summary { font-size: 14px; }
+.strategy-options button, .checkbox-row, .target-row { font-size: 13px; }
+.adjustment-note, .field-error { font-size: 12px; }
+.workspace-title p { font-size: 15px; }
+.workspace .section-description { font-size: 14px; }
