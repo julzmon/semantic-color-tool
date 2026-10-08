@@ -128,7 +128,10 @@ function createFactory(family: FamilyConfig): ColorFactory {
 
 function contrastScore(color: ColorValue, constraints: Constraint[]): number {
   if (!isSrgb(color)) return 0;
-  return Math.min(...constraints.map(({ background, target }) => isSrgb(background) ? contrast(color, background) / target : 0), Infinity);
+  let score = Infinity;
+  for (const { background, target } of constraints)
+    score = Math.min(score, isSrgb(background) ? contrast(color, background) / target : 0);
+  return score;
 }
 
 function solveGroup(factory: ColorFactory, mode: Mode, separation: number, count: number, constraints: Constraint[], fixed?: ColorValue, preference?: ColorValue): SolvedGroup {

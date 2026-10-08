@@ -14,8 +14,19 @@ const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b
 export function balanceConfiguration(previous: BuilderConfig, requested: BuilderConfig): BalancedConfiguration {
   if (requested.targets.normalText < 4.5 || requested.targets.largeText < 3 || requested.targets.ui < 3)
     throw new Error('Contrast protection requires at least 4.5:1 normal text, 3:1 large text and 3:1 UI boundaries.');
-  const tryConfig = (config: BuilderConfig): GeneratedSystem | undefined => {
+  // Candidate rounding and unchanged settings can revisit the same request.
+  // Keep this cache local: failures are cached too, and no result outlives the edit.
+  const evaluated = new Map<string, GeneratedSystem>();
+  const evaluate = (config: BuilderConfig) => {
+    const key = JSON.stringify(config);
+    const cached = evaluated.get(key);
+    if (cached) return cached;
     const system = generateSystem(config);
+    evaluated.set(key, system);
+    return system;
+  };
+  const tryConfig = (config: BuilderConfig): GeneratedSystem | undefined => {
+    const system = evaluate(config);
     return system.checks.length && system.checks.every(check => check.pass) ? system : undefined;
   };
   const finish = (system: GeneratedSystem, limited = false): BalancedConfiguration => {
@@ -33,7 +44,7 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
     return { config: system.config, system, message: changes.length
       ? `${limited ? 'Limited the requested change and adjusted' : 'Adjusted'} ${changes.join(', ')} to keep all checked contrast relationships passing.` : '' };
   };
-  const direct = generateSystem(requested);
+  const direct = evaluate(requested);
   if (direct.checks.length && direct.checks.every(check => check.pass)) return finish(direct);
   const failingModes = new Set(direct.checks.filter(check => !check.pass).map(check => check.mode));
   const candidate = structuredClone(requested);
