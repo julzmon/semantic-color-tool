@@ -98,7 +98,7 @@
         >
       </div>
       <a class="preview-link" href="#contrast"
-        >View accessibility relationships <span aria-hidden="true">↗</span></a
+        >View contrast checks <span aria-hidden="true">↗</span></a
       >
       <section
         class="preview-nested"

@@ -56,7 +56,7 @@
               <p>{tokenLabel(check.foreground)} → {tokenLabel(check.background)}</p>
               <small>{check.kind} · target {check.target}:1</small>
             </div>{/each}{#if sorted.length > 8}<p class="help">
-              All {sorted.length} relationships are listed in the accessibility table.
+              All {sorted.length} relationships are listed in View contrast checks.
             </p>{/if}
         </div>{:else}<p class="help">Decorative role. No boundary contrast target applies.</p>{/if}
     </div>
