@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.worktrees/
 .pnpm-store/
 .superpowers/
 .DS_Store
