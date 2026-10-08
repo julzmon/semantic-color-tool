@@ -327,7 +327,7 @@ summary { cursor: pointer; }
 .role-map-annotation { min-block-size: calc(var(--role-map-slots) * 22px); padding: 3px; border-inline-start: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 3px; justify-content: center; }
 .role-map-annotation span { overflow: hidden; padding: 3px 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 9px; line-height: 1.25; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .role-map-spacer { block-size: 8px; border-inline-start: 1px solid var(--line-soft); background: var(--line-soft); }
-.role-map-stop { min-block-size: 86px; padding: 8px 6px; border: 1px solid var(--line); border-block-width: 0 1px; border-radius: 0; background: var(--panel); color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.role-map-stop { min-block-size: 86px; padding: 8px 6px; border: 1px solid var(--line); border-block-width: 0; border-radius: 0; background: var(--panel); color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .role-map-stop + .role-map-stop { border-inline-start: 0; }
 .role-map-stop:hover, .role-map-stop.selected { background: var(--accent-soft); }
 .role-map-stop:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--accent); outline-offset: -2px; }
