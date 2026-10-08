@@ -32,8 +32,8 @@
       </dl>
       <p class="help">Spacing may adjust automatically. Impossible changes are limited or rejected; targets and exact locks stay fixed.</p>
     </details>
-    {#if checking}<p class="help">Checking changes. Preview retains the verified colors.</p>{/if}
-    {#if canUndo}<button class="text-button" onclick={onUndo}>Undo last adjusted change</button>{/if}
+    <p class="help control-check-status" role="status">{checking ? 'Checking contrast…' : 'Contrast checks pass.'}</p>
+    <button class="text-button" disabled={!canUndo} onclick={onUndo}>Undo last adjusted change</button>
   </div>
   <section class="control-section" aria-labelledby="structure-heading">
     <div class="section-heading"><span class="section-number">01</span><h3 id="structure-heading">System structure</h3></div>
@@ -43,7 +43,7 @@
       </div>
     </fieldset>
     <p class="help">{config.surfaces.levels} {config.surfaces.levels === 1 ? 'surface: base only' : `surfaces: base + ${config.surfaces.levels - 1} ${config.surfaces.levels === 2 ? 'level' : 'levels'}`}.</p>
-    {#if adjusted.includes('surfaces.levels')}<span class="adjustment-note">Surface count automatically adjusted for contrast</span>{/if}
+    <span class="adjustment-note" class:reserved-feedback={!adjusted.includes('surfaces.levels')} aria-hidden={!adjusted.includes('surfaces.levels')}>Surface count automatically adjusted for contrast</span>
     <label class="checkbox-row"><input type="checkbox" checked={config.emphasis.selected} oninput={async event => { const input = event.currentTarget; await onChange({ ...config, emphasis: { ...config.emphasis, selected: input.checked } }); await tick(); input.checked = config.emphasis.selected; }} />Include selected state</label>
     <p class="help">Base, hover and active are always included. Selected adds a state to muted and emphasis fills.</p>
   </section>

@@ -54,6 +54,6 @@
       await tick();
       input.value = String(value);
     }} />
-  {#if adjusted}<span id={`${id}-adjusted`} class="adjustment-note">Automatically adjusted for contrast</span>{/if}
+  <span id={`${id}-adjusted`} class="adjustment-note" class:reserved-feedback={!adjusted} aria-hidden={!adjusted}>Automatically adjusted for contrast</span>
   {#if error}<span id={`${id}-error`} class="field-error" role="status">{error}</span>{/if}
 </div>
