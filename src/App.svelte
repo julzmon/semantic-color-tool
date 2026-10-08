@@ -178,9 +178,12 @@
         ><span class="engine-icon" aria-hidden="true">◈</span>OKLCH engine<span>v0.2</span></span
       >
     </div>
-    <p class="configuration-status" role="status" tabindex={configurationStatus ? 0 : undefined}>
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
+    <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
+      <p role="status">
         {configurationStatus}
-      </p>{#if system}<div class="metrics-strip">
+      </p>
+    </div>{#if system}<div class="metrics-strip">
         <div><strong>{system.primitives.length}</strong><span>shared primitives</span></div>
         <div><strong>{system.semantics.length}</strong><span>semantic tokens</span></div>
         <div><strong>{shared}</strong><span>foreground / fill reuses</span></div>
