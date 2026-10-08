@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { GeneratedSystem, Mode } from '../engine/types';
   import { buildNeutralRoleMap, type RoleGroup } from './neutralRoleMap';
-  import { shortToken } from './presentation';
+  import { inkFor, shortToken } from './presentation';
   let { system, modes }: { system: GeneratedSystem; modes: Mode[] } = $props();
   let model = $derived(buildNeutralRoleMap(system));
   let selected = $state<string>('');
@@ -15,6 +15,7 @@
     { id: 'fill', label: 'Fills', position: 'below' },
   ];
   const labelsFor = (stop: (typeof model.stops)[number], mode: Mode, group: RoleGroup) => stop.labels[mode][group].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+  const surfaceBase = (mode: Mode) => system.modes[mode].surfaces[0]?.color.css ?? (mode === 'light' ? '#ffffff' : '#121718');
   $effect(() => {
     if (!selected || !model.stops.some((stop) => stop.primitive === selected)) selected = model.stops[0]?.primitive ?? '';
   });
@@ -32,7 +33,7 @@
   <p class="role-map-note">Generated stops, ordered light to dark. Spacing does not represent equal lightness steps.</p>
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus lets users access the horizontal map scroll region.) -->
   <div class="role-map-scroll" role="region" tabindex="0" aria-label="Neutral role map. Scroll horizontally to view all generated stops.">
-    {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode}>
+    {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style:background={surfaceBase(mode)} style:color={mode === 'light' ? inkFor(surfaceBase(mode)) : '#f3f7f6'}>
         <h4>{modeNames[mode]} neutral roles</h4>
         <div class="role-map-grid" style={`--role-map-columns: ${model.stops.length}`}>
           {#each groups.filter((group) => group.position === 'above') as group (group.id)}<div class="role-map-group-label">{group.label}</div>
