@@ -26,17 +26,21 @@ export function reuseGrayPositions(config: BuilderConfig, input: Themes, valid: 
   });
 
   // Trial mutations stay inside this cloned graph and are rolled back before ranking.
-  const choose = (entries: Entry[], candidates: ColorValue[][]) => {
+  const choose = (entries: Entry[], candidates: ColorValue[][], textBaseReference?: ColorValue) => {
     const original = entries.map(({ role }) => role.color);
     if (original.some((color) => color.source)) return;
     let count = grayCount();
+    let distance = textBaseReference ? Math.abs(original[0].l - textBaseReference.l) : Infinity;
     let best: ColorValue[] | undefined;
     for (const colors of candidates) {
       if (colors.some((color) => !isSrgb(color))) continue;
       entries.forEach(({ role }, i) => { role.color = colors[i]; });
       const nextCount = grayCount();
-      if (nextCount < count && hierarchy() && valid(themes)) {
+      const nextDistance = textBaseReference ? Math.abs(colors[0].l - textBaseReference.l) : Infinity;
+      const closerBase = textBaseReference && nextCount === count && nextDistance < distance;
+      if ((nextCount < count || closerBase) && hierarchy() && valid(themes)) {
         count = nextCount;
+        distance = nextDistance;
         best = colors;
       }
       entries.forEach(({ role }, i) => { role.color = original[i]; });
@@ -67,14 +71,22 @@ export function reuseGrayPositions(config: BuilderConfig, input: Themes, valid: 
     }
   }
 
-  // Global text can reuse an existing gray without moving any family position.
-  for (const mode of modes) for (const name of ['muted', 'base'] as const) {
+  const reuseText = (mode: Mode, name: 'muted' | 'base', activeModes: readonly Mode[], reference: ColorValue) => {
     const role = themes[mode].foreground[name];
-    const colors = grayRoles(themes, [mode]).filter((other) => other !== role).map((other) => other.color)
-      .filter((color) => !color.source && Math.abs(color.l - role.color.l) <= radius(mode, Infinity) + 1e-9
-        && Math.abs(color.h - role.color.h) < 1e-9 && Math.abs(color.c - role.color.c) < 1e-9)
-      .sort((a, b) => Math.abs(a.l - role.color.l) - Math.abs(b.l - role.color.l) || a.l - b.l);
-    choose([{ role, chroma: role.color.c, hue: role.color.h }], colors.map((color) => [color]));
+    const colors = grayRoles(themes, activeModes).filter((other) => other !== role).map((other) => other.color)
+      .filter((color) => !color.source && Math.abs(color.l - reference.l) <= radius(mode, Infinity) + 1e-9
+        && Math.abs(color.h - reference.h) < 1e-9 && Math.abs(color.c - reference.c) < 1e-9)
+      .sort((a, b) => Math.abs(a.l - reference.l) - Math.abs(b.l - reference.l) || a.l - b.l);
+    choose([{ role, chroma: role.color.c, hue: role.color.h }], colors.map((color) => [color]), activeModes.length > 1 ? reference : undefined);
+  };
+  // Preserve the original local pass before cross-theme aliases affect gray counts.
+  for (const mode of modes) for (const name of ['muted', 'base'] as const) {
+    reuseText(mode, name, [mode], themes[mode].foreground[name].color);
+  }
+  // Text Base may then reuse either theme's gray without moving its source role.
+  // Measure distance from the original Base so two passes cannot widen the radius.
+  for (const mode of modes) {
+    reuseText(mode, 'base', modes, input[mode].foreground.base.color);
   }
   return themes;
 }

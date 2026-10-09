@@ -5,11 +5,90 @@ import { generateSystem } from './generate';
 import { contrast, toColor } from './color';
 import { reuseGrayPositions } from './reuse';
 import { configFromReference, parseKdsTokens } from './reference';
-import type { FamilyRole } from './types';
+import type { FamilyRole, ModeTheme } from './types';
 
 const config = () => configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
 
 describe('constrained gray reuse', () => {
+  it('prefers a closer opposite-theme Base stop over a local alias with the same gray count', () => {
+    const input = config();
+    input.families = input.families.filter(family => family.id === 'neutral');
+    const role = (l: number) => ({ color: toColor({ l, c: 0, h: 0 }), primitive: '', semantic: '', sharedWith: [] });
+    const theme = (surface: number, base: number, muted: number): ModeTheme => ({
+      surfaces: [role(surface)],
+      foreground: { base: role(base), muted: role(muted), onEmphasis: role(1) },
+      // This fixture intentionally contains only the configured neutral family.
+      families: { neutral: { id: 'neutral', key: 'gray', roles: {} } } as ModeTheme['families'],
+    });
+    const themes = { light: theme(0.209, 0.2, 0.5), dark: theme(0.201, 0.94, 0.7) };
+    const result = reuseGrayPositions(input, themes, () => true);
+    expect(result.light.foreground.base.color.l).toBe(0.201);
+  });
+
+  it('preserves local Muted reuse before creating cross-theme Text Base aliases', () => {
+    const input = config();
+    input.families = input.families.filter(family => family.id === 'neutral');
+    const role = (l: number) => ({ color: toColor({ l, c: 0, h: 0 }), primitive: '', semantic: '', sharedWith: [] });
+    const theme = (surface: number, base: number, muted: number, onEmphasis: number): ModeTheme => ({
+      surfaces: [role(surface)],
+      foreground: { base: role(base), muted: role(muted), onEmphasis: role(onEmphasis) },
+      // This fixture intentionally contains only the configured neutral family.
+      families: { neutral: { id: 'neutral', key: 'gray', roles: {} } } as ModeTheme['families'],
+    });
+    const themes = { light: theme(0.9, 0.2, 0.5, 0.8), dark: theme(0.195, 0.94, 0.198, 0.7) };
+    const result = reuseGrayPositions(input, themes, () => true);
+    expect(result.dark.foreground.muted.color.l).toBe(0.195);
+    expect(result.light.foreground.base.color.l).toBe(0.195);
+  });
+
+  it('reuses opposite-theme neutral stops for Text Base while keeping contrast and other roles intact', () => {
+    const input = config();
+    input.surfaces.light.l = 0.991;
+    input.surfaces.dark.l = 0.1995037954531629;
+    input.surfaces.levels = 3;
+    input.surfaces.step = { light: 0.035, dark: 0.1 };
+    input.muted.distance = { light: 0.055, dark: 0.16 };
+    input.muted.separation = 0.025;
+    const snapshot = structuredClone(input);
+    const result = generateSystem(input);
+    expect(result.modes.light.foreground.base.primitive).toBe(result.modes.dark.surfaces[0].primitive);
+    expect(result.modes.dark.foreground.base.primitive).toBe(result.modes.light.families.neutral.roles['muted.base']!.primitive);
+    expect(result.primitives.filter(p => p.family === 'gray')).toHaveLength(17);
+    expect(result.checks.every(check => check.pass)).toBe(true);
+    expect(input).toEqual(snapshot);
+    for (const mode of ['light', 'dark'] as const) {
+      const sign = mode === 'light' ? -1 : 1;
+      const theme = result.modes[mode];
+      expect((theme.foreground.base.color.l - theme.foreground.muted.color.l) * sign).toBeGreaterThan(0);
+      theme.surfaces.forEach((surface, i) => expect(surface.color.l).toBeCloseTo(input.surfaces[mode].l + sign * i * surfaceStep(input, mode), 9));
+    }
+  });
+
+  it('rejects an opposite-theme Text Base candidate that fails contrast', () => {
+    const input = config();
+    input.families.forEach(family => { family.chroma = 0; family.hue = 0; });
+    const themes = generateSystem(input).modes;
+    const safe = toColor({ l: 0.56808, c: 0, h: 0 });
+    const unsafe = toColor({ l: 0.5681, c: 0, h: 0 });
+    themes.light.foreground.base.color = safe;
+    themes.light.foreground.muted.color = toColor({ l: 0.6, c: 0, h: 0 });
+    themes.dark.surfaces[0].color = unsafe;
+    const result = reuseGrayPositions(input, themes, candidate => contrast(candidate.light.foreground.base.color, '#fff') >= 4.5);
+    expect(result.light.foreground.base.color).toEqual(safe);
+  });
+
+  it('rejects opposite-theme reuse that reverses Base and Muted text hierarchy', () => {
+    const input = config();
+    const themes = generateSystem(input).modes;
+    const neutral = input.families.find(family => family.id === 'neutral')!;
+    const original = toColor({ l: 0.2, c: neutral.chroma, h: neutral.hue });
+    themes.light.foreground.base.color = original;
+    themes.light.foreground.muted.color = toColor({ l: 0.202, c: neutral.chroma, h: neutral.hue });
+    themes.dark.surfaces[0].color = toColor({ l: 0.205, c: neutral.chroma, h: neutral.hue });
+    const result = reuseGrayPositions(input, themes, () => true);
+    expect(result.light.foreground.base.color).toEqual(original);
+  });
+
   it('reuses a nearby surface for a whole muted group without losing spacing or shared family lightness', () => {
     const input = config();
     input.surfaces.step = { light: 0.035, dark: 0.035 };
