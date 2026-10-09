@@ -1,6 +1,6 @@
 import { converter } from 'culori';
 import { FAMILY_DEFINITIONS } from './families';
-import type { BuilderConfig, KdsReference, Mode, OklchColor } from './types';
+import type { BuilderConfig, FamilyConfig, KdsReference, Mode, OklchColor } from './types';
 
 export const DEFAULT_TOKEN_PREFIX = 'kds';
 
@@ -53,4 +53,9 @@ export function mutedDistance(config: BuilderConfig, mode: Mode): number {
 export function mutedChromaScale(config: BuilderConfig, mode: Mode): number {
   const scale = config.muted?.chromaScale;
   return scale === undefined ? 1 : scale?.[mode] ?? NaN;
+}
+
+/** Neutral roles share one global chroma; muted scaling affects colored families. */
+export function mutedFamilyChroma(config: BuilderConfig, mode: Mode, family: FamilyConfig): number {
+  return family.chroma * (family.id === 'neutral' ? 1 : mutedChromaScale(config, mode));
 }

@@ -1,4 +1,4 @@
-import { mutedChromaScale, surfaceStep } from './config';
+import { mutedFamilyChroma, surfaceStep } from './config';
 import { colorIdentity, isSrgb, toColor } from './color';
 import type { BuilderConfig, ColorValue, GeneratedRole, Mode, ModeTheme } from './types';
 
@@ -55,7 +55,7 @@ export function reuseGrayPositions(config: BuilderConfig, input: Themes, valid: 
       if (group === 'emphasis' && config.anchors.some((anchor) => anchor.locked && (anchor.mode === mode || anchor.mode === 'both'))) continue;
       const entries = config.families.flatMap((family) => Object.entries(themes[mode].families[family.id].roles)
         .filter(([name]) => (name.startsWith('muted.') || name.startsWith('border.muted.')) === (group === 'muted'))
-        .map(([, role]) => ({ role: role!, chroma: family.chroma * (group === 'muted' ? mutedChromaScale(config, mode) : 1), hue: family.hue })));
+        .map(([, role]) => ({ role: role!, chroma: group === 'muted' ? mutedFamilyChroma(config, mode, family) : family.chroma, hue: family.hue })));
       const neutral = Object.entries(themes[mode].families.neutral.roles)
         .filter(([name]) => (name.startsWith('muted.') || name.startsWith('border.muted.')) === (group === 'muted'))
         .map(([, role]) => role!);

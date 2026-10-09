@@ -1,12 +1,27 @@
 <script lang="ts">
-  import type { GeneratedSystem, Mode } from '../engine/types';
+  import type { ColorValue, GeneratedSystem, Mode } from '../engine/types';
   import { buildNeutralRoleMap, type RoleGroup } from './neutralRoleMap';
   import { inkFor, shortToken } from './presentation';
+  import { toColor } from '../engine/color';
   let { system, modes }: { system: GeneratedSystem; modes: Mode[] } = $props();
   let model = $derived(buildNeutralRoleMap(system));
   let selected = $state<string>('');
   let selectedStop = $derived(model.stops.find((stop) => stop.primitive === selected) ?? model.stops[0]);
   let related = $derived(selectedStop ? [...new Map(modes.flatMap((mode) => selectedStop!.checks[mode]).map((check) => [check.id, check])).values()] : []);
+  let neutral = $derived(system.config.families.find(family => family.id === 'neutral')!);
+  let hasNeutralLocks = $derived(system.config.anchors.some(anchor => anchor.family === 'neutral' && anchor.locked));
+  const neutralNote = (color: ColorValue) => {
+    if (color.source) return 'Exact color lock: preserved independently of Neutral hue and chroma.';
+    if (color.l === 0 || color.l === 1) return 'Pure white/black: untinted.';
+    if (hasNeutralLocks) {
+      const global = toColor({ l: color.l, c: neutral.chroma, h: neutral.hue });
+      if (Math.abs(color.h - global.h) > 1e-8 || Math.abs(color.c - global.c) > 1e-8) {
+        return 'Uses an exact locked neutral state group; global neutral settings do not override it.';
+      }
+    }
+    if (color.gamutMapped) return `Chroma limited to fit sRGB: requested ${neutral.chroma.toFixed(4)}, rendered ${color.c.toFixed(4)}. Neutral hue is preserved.`;
+    return 'Uses global Neutral hue and chroma.';
+  };
   let modeNames: Record<Mode, string> = { light: 'Light', dark: 'Dark' };
   const groups: { id: RoleGroup; label: string; position: 'above' | 'below' }[] = [
     { id: 'text', label: 'Text', position: 'above' },
@@ -46,6 +61,7 @@
               class:selected={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-pressed={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-label={`${modeNames[mode]} ${shortToken(stop.primitive)} ${stop.color.hex}`}
+              title={neutralNote(stop.color)}
               onclick={() => (selected = stop.primitive)}
               ><span class="role-map-swatch" style:background={stop.color.css}></span><code>{stop.color.hex}</code><small>{shortToken(stop.primitive)}</small></button
             >{/each}
@@ -59,6 +75,7 @@
   {#if selectedStop}<div class="role-map-detail" aria-live="polite">
       <div class="role-map-detail-swatch" style:background={selectedStop.color.css}></div>
       <div><span class="eyebrow">SELECTED STOP</span><h4>{shortToken(selectedStop.primitive)}</h4><code>{selectedStop.color.hex} · {selectedStop.color.css}</code>
+        <p class="help">{neutralNote(selectedStop.color)}</p>
         {#each modes as mode (mode)}<p><strong>{modeNames[mode]}</strong>: {Object.values(selectedStop.labels[mode]).flat().map((label) => label.label).join(', ') || 'Unused in this mode.'}</p>{/each}
         {#if related.length}<ul class="role-map-checks">{#each related.slice(0, 6) as check (check.id)}<li><span class={check.pass ? 'check-pass' : 'check-fail'}>{check.pass ? 'Pass' : 'Fail'} · {check.ratio.toFixed(3)}:1</span> <span>{shortToken(check.foreground)} → {shortToken(check.background)}</span></li>{/each}</ul>{:else}<p class="help">No checked contrast relationship is attached to this stop.</p>{/if}
       </div>

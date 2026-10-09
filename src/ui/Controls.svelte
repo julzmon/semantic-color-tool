@@ -49,7 +49,7 @@
   </section>
   <section class="control-section" aria-labelledby="surfaces-heading">
     <div class="section-heading"><span class="section-number">02</span><h3 id="surfaces-heading">Surfaces &amp; neutrals</h3></div>
-    <p class="help">Neutral hue and chroma affect surfaces and gray roles in both themes.</p>
+    <p class="help">One hue and chroma for all generated gray surfaces, fills, borders, and text in both themes. Exact locks, their state groups, and pure white/black are exceptions. Chroma is reduced where sRGB requires it.</p>
     <Slider label="Neutral hue" min={0} max={360} step={1} unit="°" value={neutral.hue} adjusted={adjusted.includes('families.neutral.hue')} onChange={value => updateFamily('neutral', { hue: value })} />
     <Slider label="Neutral chroma" min={0} max={0.3} value={neutral.chroma} adjusted={adjusted.includes('families.neutral.chroma')} onChange={value => updateFamily('neutral', { chroma: value })} />
     {#each ['light', 'dark'] as const as theme}
@@ -79,7 +79,7 @@
         <Slider label={theme === 'light' ? 'Light muted chroma' : 'Dark muted chroma'} min={0} max={200} step={1} unit="%" value={mutedChromaScale(config, theme) * 100} adjusted={adjusted.includes(`muted.${theme}.chroma`)} onChange={value => updateChroma(theme, value)} />
       </fieldset>
     {/each}
-    <p class="help">100% uses family chroma; 0% removes it. Higher values request more color within sRGB. Muted borders are decorative; their text is checked.</p>
+    <p class="help">Applies to colored families only. Neutral fills and borders use Neutral chroma. 100% uses family chroma; 0% removes it. Higher values request more color within sRGB. Muted borders are decorative; their text is checked.</p>
   </section>
   <section class="control-section" aria-labelledby="states-heading">
     <div class="section-heading"><span class="section-number">05</span><h3 id="states-heading">Interaction states</h3></div>

@@ -1,5 +1,5 @@
 import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
-import { mutedChromaScale, mutedDistance, surfaceStep } from './config';
+import { mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
 import { reuseGrayPositions } from './reuse';
 import type {
@@ -101,7 +101,7 @@ export function mutedGeneration(config: BuilderConfig, mode: Mode, family: Famil
   const span = config.muted.separation * (count - 1);
   const desired = config.surfaces[mode].l + direction(mode) * mutedDistance(config, mode);
   const bounded = mode === 'light' ? Math.max(span, desired) : Math.min(1 - span, desired);
-  const chroma = family.chroma * mutedChromaScale(config, mode);
+  const chroma = mutedFamilyChroma(config, mode, family);
   const base = toColor({ l: clamp(bounded), c: chroma, h: family.hue });
   const result = generateStates(base, mode, config.muted.separation, count);
   // Gamut-map each position from the scaled family chroma, not the clipped base.
@@ -422,8 +422,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
         solutions = alternateSolutions;
       }
       if (solutions.some((solution) => !solution.feasible)) {
-        const gray = createFactory({ id: 'neutral', key: 'gray', label: 'On emphasis', hue: families[0].hue, chroma: 0 });
-        const common = solveGroup(gray, mode, 0, 1, solutions.flatMap((solution) => solution.colors.map((background) => ({ background, target: textTarget(config) }))));
+        const common = solveGroup(factories.neutral, mode, 0, 1, solutions.flatMap((solution) => solution.colors.map((background) => ({ background, target: textTarget(config) }))));
         if (common.feasible) {
           const intermediateSolutions = solveMode(common.colors[0]);
           if (ranking(intermediateSolutions) > ranking(solutions)) {

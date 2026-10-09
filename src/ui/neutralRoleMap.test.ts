@@ -42,3 +42,22 @@ it('does not leak labels or checks between modes', () => {
     expect(stop.checks.dark.every((check) => check.mode === 'dark')).toBe(true);
   }
 });
+
+it('identifies neutral states derived from an exact lock instead of claiming global tint', () => {
+  const input = structuredClone(system.config);
+  const neutral = input.families.find(family => family.id === 'neutral')!;
+  neutral.hue = 215;
+  neutral.chroma = 0.02;
+  input.anchors = [{ family: 'neutral', mode: 'both', role: 'emphasis.base', color: 'oklch(0.491 0.0074 120)', locked: true }];
+  const locked = generateSystem(input);
+  for (const mode of ['light', 'dark'] as const) {
+    expect(locked.modes[mode].families.neutral.roles['emphasis.base']!.color.source).toBe(input.anchors[0].color);
+    for (const state of ['hover', 'active'] as const) {
+      const color = locked.modes[mode].families.neutral.roles[`emphasis.${state}`]!.color;
+      expect(color.h).toBe(120);
+      expect(color.c).toBe(0.0074);
+    }
+  }
+  const markup = render(NeutralRoleMap, { props: { system: locked, modes: ['light', 'dark'] } }).body;
+  expect(markup).toContain('Uses an exact locked neutral state group');
+});

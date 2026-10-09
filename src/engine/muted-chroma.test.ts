@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { configFromReference, parseKdsTokens } from './reference';
 import { generateSystem, mutedGeneration } from './generate';
-import { isSrgb } from './color';
+import { isSrgb, toColor } from './color';
 import type { BuilderConfig, Mode } from './types';
 
 function config(scale?: { light: number; dark: number }): BuilderConfig {
@@ -18,6 +18,34 @@ function config(scale?: { light: number; dark: number }): BuilderConfig {
 }
 
 describe('muted chroma adjustment', () => {
+  it.each(['light', 'dark'] as const)('keeps neutral muted states on global chroma regardless of the %s muted percentage', mode => {
+    for (const factor of [0, 0.5, 1, 2]) {
+      const input = config({ light: factor, dark: factor });
+      const neutral = input.families.find(family => family.id === 'neutral')!;
+      for (const color of mutedGeneration(input, mode, neutral).colors) {
+        expect(color.c).toBeCloseTo(neutral.chroma, 8);
+        expect(color.h).toBeCloseTo(neutral.hue, 8);
+      }
+    }
+  });
+
+  it('uses global neutral hue and chroma for every unlocked interior gray after tone reuse', () => {
+    const input = config({ light: 0, dark: 2 });
+    const neutral = input.families.find(family => family.id === 'neutral')!;
+    neutral.hue = 215;
+    neutral.chroma = 0.02;
+    input.emphasis.selected = true;
+    const result = generateSystem(input);
+    for (const primitive of result.primitives.filter(p => p.family === 'gray')) {
+      const color = primitive.color;
+      if (color.source || color.l === 0 || color.l === 1) continue;
+      const expected = toColor({ l: color.l, c: neutral.chroma, h: neutral.hue });
+      expect(color.c).toBeCloseTo(expected.c, 8);
+      expect(color.h).toBeCloseTo(neutral.hue, 8);
+    }
+    expect(result.checks.every(check => check.pass)).toBe(true);
+  });
+
   it('preserves legacy output at 100% and emits normalized scale settings', () => {
     const legacy = generateSystem(config());
     const explicit = generateSystem(config({ light: 1, dark: 1 }));
@@ -37,13 +65,14 @@ describe('muted chroma adjustment', () => {
     }
   });
 
-  it('retains achromatic muted fills and derived borders through reuse', () => {
+  it('retains achromatic colored-family muted fills and derived borders through reuse', () => {
     const input = config({ light: 0, dark: 0 });
     input.muted.distance = { light: 0.03, dark: 0.03 };
     input.muted.separation = 0.035;
     const result = generateSystem(input);
     for (const mode of ['light', 'dark'] as const) {
       for (const family of Object.values(result.modes[mode].families)) {
+        if (family.id === 'neutral') continue;
         for (const [name, role] of Object.entries(family.roles)) {
           if (name.startsWith('muted.') || name.startsWith('border.muted.')) expect(role!.color.c).toBe(0);
         }
