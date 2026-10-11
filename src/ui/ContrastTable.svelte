@@ -27,11 +27,10 @@
 <section class="contrast-section" id="contrast">
   <div class="subsection-title">
     <div>
-      <span class="eyebrow">WCAG CONTRAST</span>
       <h3>Contrast checks</h3>
     </div>
     <span class={`summary-badge ${failures ? 'has-failures' : ''}`}
-      >{failures ? `${failures} failing` : 'All checks pass'} · {all.length} relationships</span
+      >{failures ? `${failures} failing` : 'All checks pass'} · {all.length} checks</span
     >
   </div>
   <p class="section-description">
@@ -94,7 +93,7 @@
       >
     </table>
   </div>
-  {#if !filtered.length}<p class="empty-state">No relationships match this filter.</p>{/if}
+  {#if !filtered.length}<p class="empty-state">No checks match this filter.</p>{/if}
   <div class="table-footer">
     <span
       >Showing {Math.min(filtered.length, limit)} of {filtered.length} relationships · status uses unrounded ratios</span

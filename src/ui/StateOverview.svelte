@@ -21,8 +21,7 @@
 <section class="state-overview">
   <div class="subsection-title">
     <div>
-      <span class="eyebrow">RELATIONSHIPS, NOT RAMPS</span>
-      <h3>One family. Every role.</h3>
+      <h3>Brand color in use</h3>
     </div>
     <span class="mini-tag">Brand · {mode}</span>
   </div>

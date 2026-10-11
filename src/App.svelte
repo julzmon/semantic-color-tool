@@ -22,9 +22,10 @@
   import type { BuilderConfig, GeneratedSystem, Mode } from './engine/types';
   import reference from 'virtual:kds-reference';
   import Controls from './ui/Controls.svelte';
+  import PwaStatus from './ui/PwaStatus.svelte';
   import ThemePreview from './ui/ThemePreview.svelte';
   const initialConfig = configFromReference(reference);
-  const tabs = ['Overview', 'Semantic matrix', 'Primitive palette', 'Export'] as const;
+  const tabs = ['Overview', 'Color roles', 'Color palette', 'Export'] as const;
   type Tab = (typeof tabs)[number];
   const stored = loadStoredConfiguration(
     typeof window === 'undefined' ? null : window.localStorage,
@@ -53,7 +54,7 @@
     return () => balancer?.dispose();
   });
   let configurationStatus = $state(
-    restored.message || stored.error || (stored.restored ? 'Restored the saved configuration.' : ''),
+    restored.message || stored.error || (stored.restored ? 'Your saved colors are restored.' : ''),
   );
   let mode = $state<PreviewMode>('split');
   let tab = $state<Tab>('Overview');
@@ -71,7 +72,7 @@
   let modes: Mode[] = $derived(mode === 'split' ? ['light', 'dark'] : [mode]);
   const select = (selection: Selection) => {
     selected = selection;
-    tab = 'Semantic matrix';
+    tab = 'Color roles';
   };
   const reset = () => {
     editVersion++;
@@ -87,21 +88,21 @@
     const balanced = balanceConfiguration(initialConfig, initialConfig);
     config = draft = balanced.config;
     system = balanced.system;
-    configurationStatus = 'Restored defaults and cleared the saved configuration.';
+    configurationStatus = 'Default colors restored.';
   };
   const importConfiguration = async (json: string) => {
     const next = parseConfigurationJson(json, initialConfig);
     const accepted = await updateConfiguration(next);
     if (accepted === undefined) throw new Error('Import was superseded by a newer edit.');
     if (!accepted) throw new Error('Import was not accepted. Previous configuration retained.');
-    configurationStatus ||= 'Imported configuration saved for this browser.';
+    configurationStatus ||= 'Imported settings saved.';
   };
   const updateConfiguration = async (next: BuilderConfig) => {
     const version = ++editVersion;
     const previous = { config, system };
     checking = true;
     draft = next;
-    configurationStatus = 'Checking contrast… Preview and exports retain the last verified result.';
+    configurationStatus = 'Checking contrast… Your previous colors remain available.';
     try {
       if (!balancer) throw new Error('Contrast checker is not ready. Previous settings retained.');
       const balanced = await balancer.balance(config, next);
@@ -129,30 +130,15 @@
     undo = null;
     adjusted = [];
     checking = false;
-    configurationStatus = 'Undid the last change and its automatic adjustments. Restored the previous verified colors.';
+    configurationStatus = 'Last change undone. Your previous colors are restored.';
   };
-  let failed = $derived(system?.checks.filter((check) => !check.pass).length ?? 0);
-  let shared = $derived(
-    system?.semantics.filter(
-      (token) =>
-        token.name.startsWith(`--${config.prefix}-fg-`) &&
-        system.semantics.some(
-          (other) =>
-            other.name.startsWith(`--${config.prefix}-bg-`) &&
-            other.light === token.light &&
-            other.dark === token.dark,
-        ),
-    ).length ?? 0,
-  );
 </script>
 
 <a class="skip-link" href="#workspace">Skip to workspace</a>
 <header class="app-header">
-  <a class="brand-mark" href="#workspace" aria-label="Semantic Color System Generator">S</a>
-  <div class="brand-name">Semantic <span>/</span> <span>Color System Generator</span></div>
-  <span class="prototype-tag">CORE BUILDER</span>
+  <div class="brand-name">Semantic Color System Generator</div>
   <div class="header-end">
-    <span class="local-label"><span class="status-dot"></span>Local workspace</span><button
+    <button
       class="primary-button"
       onclick={() => (tab = 'Export')}>Export tokens <span aria-hidden="true">↗</span></button
     >
@@ -171,29 +157,16 @@
   <main id="workspace" class="workspace">
     <div class="workspace-title">
       <div>
-        <span class="eyebrow">FOUNDATIONS / COLOR</span>
-        <h1>Designed by intent.<br class="mobile-break" /> Resolved by contrast.</h1>
-        <p>Build the relationships. Let the system find the colors.</p>
+        <h1>Build your color system</h1>
+        <p>Adjust your colors and preview them in light and dark themes.</p>
       </div>
-      <span class="engine-badge"
-        ><span class="engine-icon" aria-hidden="true">◈</span>OKLCH engine<span>v0.2</span></span
-      >
     </div>
     <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
     <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
       <p role="status">
         {configurationStatus}
       </p>
-    </div>{#if system}<div class="metrics-strip">
-        <div><strong>{system.primitives.length}</strong><span>shared primitives</span></div>
-        <div><strong>{system.semantics.length}</strong><span>semantic tokens</span></div>
-        <div><strong>{shared}</strong><span>foreground / fill reuses</span></div>
-        <div class={failed ? 'metric-fail' : 'metric-pass'}>
-          <strong>{failed ? `${failed} failed` : 'Passing'}</strong><span
-            >{system.checks.length} contrast relationships</span
-          >
-        </div>
-      </div>
+    </div>{#if system}
       <div class="workspace-toolbar">
         <nav class="workspace-tabs" aria-label="Workspace sections">
           {#each tabs as item}<button
@@ -226,9 +199,9 @@
           {system}
           mode={mode === 'dark' ? 'dark' : 'light'}
           onSelect={select}
-        />{/if}{#if tab === 'Semantic matrix'}<div class="view-intro">
-          <h2>Same roles. Different intents.</h2>
-          <p>Compare every generated color. Select a cell to inspect its primitive, usage, and contrast.</p>
+        />{/if}{#if tab === 'Color roles'}<div class="view-intro">
+          <h2>Color roles</h2>
+          <p>Compare colors across families. Select a color to see its uses and contrast checks.</p>
         </div>
         <Matrix
           {system}
@@ -237,14 +210,16 @@
           onSelect={(next) => {
             selected = next;
           }}
-        />{/if}{#if tab === 'Primitive palette'}<Primitives {system} />{/if}{#if tab === 'Export'}<ExportPanel
+        />{/if}{#if tab === 'Color palette'}<Primitives {system} />{/if}{#if tab === 'Export'}<ExportPanel
           {system}
           prefix={draft.prefix}
           onPrefixChange={(prefix) => updateConfiguration({ ...draft, prefix })}
           onImport={importConfiguration}
         />{/if}{#if tab !== 'Export'}<NeutralRoleMap {system} {modes} /><ContrastTable {system} {modes} />{/if}<ModelNotes />{/if}
-    <footer class="workspace-footer">
-      <span>Semantic Color System Generator</span><span>Six semantic families</span>
-    </footer>
+
   </main>
 </div>
+<PwaStatus {checking} save={() => {
+  try { return saveStoredConfiguration(window.localStorage, config); }
+  catch { return false; }
+}} />

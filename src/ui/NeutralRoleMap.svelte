@@ -39,13 +39,11 @@
 <section class="neutral-role-map" aria-labelledby="neutral-role-map-title">
   <div class="subsection-title">
     <div>
-      <span class="eyebrow">NEUTRAL ROLE MAP</span>
-      <h3 id="neutral-role-map-title">Semantic roles across the neutral ramp</h3>
+      <h3 id="neutral-role-map-title">Neutral colors and their uses</h3>
     </div>
     <span class="mini-tag">{model.stops.length} generated stops</span>
   </div>
-  <p class="section-description">Text, borders, surfaces, and fills are placed on their exact generated stop. Shared roles stack in the same column.</p>
-  <p class="role-map-note">Generated stops, ordered light to dark. Spacing does not represent equal lightness steps.</p>
+  <p class="section-description">Select a color to see its uses. Colors run from light to dark; labels stack when uses share a color.</p>
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus lets users access the horizontal map scroll region.) -->
   <div class="role-map-scroll" role="region" tabindex="0" aria-label="Neutral role map. Scroll horizontally to view all generated stops.">
     {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style:background={surfaceBase(mode)} style:color={mode === 'light' ? inkFor(surfaceBase(mode)) : '#f3f7f6'}>

@@ -241,7 +241,6 @@ summary { cursor: pointer; }
 .theme-preview[data-mode="dark"] { color-scheme: dark; background: var(--kds-bg-surface-base); color: var(--kds-fg-base); }
 .theme-preview :focus-visible { outline-color: var(--kds-fg-base); }
 .preview-product-heading { display: flex; align-items: center; gap: 9px; padding: 14px 19px; border-block-end: 1px solid var(--kds-border-neutral-muted-base); font-size: 11px; font-weight: 550; }
-.preview-logo { display: grid; place-items: center; inline-size: 23px; block-size: 23px; background: var(--kds-bg-neutral-emphasis-base); color: var(--kds-fg-on-emphasis); border-radius: 4px; font-size: 16px; font-weight: 600; }
 .preview-avatar { display: grid; place-items: center; inline-size: 24px; block-size: 24px; margin-inline-start: auto; border-radius: 50%; background: var(--kds-bg-neutral-muted-base); color: var(--kds-fg-neutral-base); font-size: 8px; font-weight: 600; }
 .preview-product-body { padding: 25px 23px 24px; }
 .preview-overline { color: var(--kds-fg-muted); font: 9px/1.5 var(--mono); letter-spacing: .055em; }
@@ -640,3 +639,15 @@ summary { cursor: pointer; }
 .adjustment-note, .field-error { font-size: 12px; }
 .workspace-title p { font-size: 15px; }
 .workspace .section-description { font-size: 14px; }
+
+/* Sidebar text stays at the 16px default, including expanded controls. */
+.controls { font-size: 1rem; }
+.controls :is(p, label, legend, button, input, select, textarea, summary, output, code, small, span, strong, dt, dd, .help, .control-label, .numeric-value, .checkbox-row, .target-row, .anchor-preview) {
+  font-size: 1rem;
+}
+.controls .section-heading h3 { font-size: 1rem; }
+.controls .control-label { flex-wrap: wrap; row-gap: .375rem; }
+.controls .control-label label { flex: 1 1 9rem; min-inline-size: 0; }
+.controls .numeric-value input { inline-size: 6.5rem; min-block-size: 2.25rem; }
+.controls .anchor-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); }
+.controls .anchor-options { grid-template-columns: minmax(0, 1fr); }

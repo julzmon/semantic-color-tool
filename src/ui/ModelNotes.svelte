@@ -2,35 +2,35 @@
 </script>
 
 <details class="model-notes">
-  <summary>Model decisions & scope <span>Read the assumptions ↗</span></summary>
+  <summary>How it works</summary>
   <div class="notes-grid">
     <div>
-      <h3>Semantic first</h3>
+      <h3>Colors with a purpose</h3>
       <p>
-        Generate surfaces → position muted states → solve shared family lightness → collect primitives. No
-        manually designed lightness ramp. All color math lives in a pure TypeScript engine using Culori.
+        Adjust surfaces and color families. The app finds colors for text, fills, borders, and interaction states,
+        then checks their intended contrast relationships.
       </p>
     </div>
     <div>
-      <h3>One palette, two modes</h3>
+      <h3>Light and dark themes</h3>
       <p>
-        Corresponding roles across Neutral, Brand, Info, Positive, Negative, and Warning share lightness.
-        Emphasis fills are shared across themes by default; adaptive emphasis remains available.
+        Both themes use one color palette. Emphasis fills match across themes by default. You can choose
+        different emphasis colors for each theme in Interaction states.
       </p>
     </div>
     <div>
-      <h3>Exact Brand constraints</h3>
+      <h3>Locked brand colors</h3>
       <p>
-        Brand anchors default to background emphasis base. An exact lock remains literal, even when it cannot
-        satisfy a contrast relationship; failures stay visible.
+        Lock a brand color to keep its exact value. Contrast protection may adjust other settings or reject
+        a change that cannot pass. Some roles may need separate colors to meet their contrast requirements.
       </p>
     </div>
     <div>
-      <h3>Current boundary</h3>
+      <h3>What contrast checks cover</h3>
       <p>
-        Opaque sRGB colors, normal/large text, emphasis-fill text, decorative borders, CSS/DTCG exports, and
-        configuration import are included. UI-boundary checks apply to emphasis borders. Transparent overlays
-        and Figma Variables remain outside this builder.
+        Normal text needs 4.5:1 contrast; large text and emphasis borders need 3:1. Checks use the intended
+        backgrounds and opaque sRGB colors. Muted borders are decorative and have no contrast target.
+        Transparent overlays and other aspects of accessibility need separate checks.
       </p>
     </div>
   </div>

@@ -39,7 +39,6 @@
         ? file.split('/').at(-1)!
         : `${system.config.prefix}-generator.config.json`,
   );
-  let familyNames = $derived(system.config.families.map((family) => family.label).join(', '));
   let textarea: HTMLTextAreaElement | undefined = $state();
   let fileInput: HTMLInputElement | undefined = $state();
   const copy = async () => {
@@ -89,16 +88,6 @@
     </label>
     <p class="help" id="token-prefix-help">{prefixError || `Letters, numbers and hyphens. Exported as --${system.config.prefix}-*. Applies to CSS, tokens and filenames.`}</p>
   </div>
-  <div class="export-note">
-    <span aria-hidden="true">↗</span>
-    <div>
-      <strong>Shared foundations. Two semantic contexts.</strong>
-      <p>
-        {familyNames} tokens share corresponding lightness while retaining family hue and chroma. CSS uses the
-        <code>--{system.config.prefix}-*</code> namespace.
-      </p>
-    </div>
-  </div>
   <div class="export-toolbar">
     <div class="segmented">
       {#each [['css', 'CSS tokens'], ['dtcg', 'DTCG JSON'], ['json', 'Configuration']] as const as [value, label]}<button
@@ -123,6 +112,7 @@
       ><button class="primary-button" onclick={copy}>Copy {format === 'css' ? 'CSS' : 'JSON'}</button>
     </div>
   </div>
+  <p class="section-description">{format === 'css' ? 'Use these CSS variables in your app. Includes light and dark themes.' : format === 'dtcg' ? 'Design tokens in DTCG JSON format for compatible tools.' : 'Save your settings as JSON, or import a saved configuration.'}</p>
   {#if format === 'dtcg'}<div class="export-file-picker">
       <label for="dtcg-file">DTCG 2025.10 document</label><select
         id="dtcg-file"
@@ -149,6 +139,6 @@
     value={output}></textarea>
   <p class="export-status" role="status">
     {message ||
-      `${system.primitives.length} primitives · ${system.semantics.length} semantic mappings · both modes`}
+      `${system.primitives.length} palette colors · ${system.semantics.length} color roles · both themes`}
   </p>
 </section>

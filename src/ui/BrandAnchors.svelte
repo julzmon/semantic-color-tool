@@ -17,10 +17,10 @@
   <div class="brand-anchor-heading">
     <div>
       <strong>Brand color lock</strong>
-      <p>By default, this anchors the Brand emphasis-base token. Use OKLCH only.</p>
+      <p>Set a preferred or exact brand color in OKLCH. Defaults to the emphasis base fill.</p>
     </div>
     <button type="button" class="text-button" onclick={() => onChange([...anchors, createBrandAnchor(brand)])}
-      >Add anchor</button
+      >Add color</button
     >
   </div>
   {#if brandAnchors.length}{#each brandAnchors as anchor, index}<AnchorCard
@@ -30,6 +30,6 @@
         onChange={(next) => updateAnchor(anchor, next)}
         onRemove={() => removeAnchor(anchor)}
       />{/each}{:else}<p class="help">
-      No Brand color is anchored. Add one to set a preferred or exact emphasis-base color.
+      Add a brand color to set a preference or keep an exact color.
     </p>{/if}
 </div>

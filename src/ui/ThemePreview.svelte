@@ -57,7 +57,6 @@
   </header>
   <div class="theme-preview" data-mode={mode} style={previewStyle(system)}>
     <div class="preview-product-heading">
-      <div class="preview-logo" aria-hidden="true">K</div>
       <span>Workspace</span><span class="preview-avatar">JD</span>
     </div>
     <div class="preview-product-body">

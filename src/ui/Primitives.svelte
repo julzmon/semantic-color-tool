@@ -8,8 +8,7 @@
 
 <section class="primitive-section">
   <p class="section-description">
-    Only colors used by the semantic system are collected. Light and dark share this palette. Matching numbers
-    share one lightness across families.
+    {system.primitives.length} colors used across both themes. Select a color to see where it is used.
   </p>
   {#each system.config.families as family}{@const generated = system.primitives.filter(
       (item) => item.family === family.key,
@@ -33,7 +32,7 @@
       <div class="detail-dot" style:background={primitive.color.css}></div>
       <div>
         <strong>{primitive.name}</strong><code>{primitive.color.css}</code>
-        <p>Used by {primitive.usages.length} semantic mappings:</p>
+        <p>Used in {primitive.usages.length} roles:</p>
         <ul class="usage-list">
           {#each primitive.usages as name}<li><code>{name}</code></li>{/each}
         </ul>

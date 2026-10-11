@@ -23,12 +23,21 @@ pnpm run dev
 
 Open the localhost URL printed by Vite, normally http://127.0.0.1:5173.
 
+## Install and work offline
+
+Production builds include a web app manifest and a service worker. Use your browser's installation option to open the generator as a standalone app. After the “Ready to work offline” notice, the interface and calculation worker are cached for offline use. Configuration import/export and color calculations run locally.
+
+New versions show an “Update available” notice. Choose **Reload to update** when ready; the app saves the current configuration before reloading and waits for active calculations to finish. **Later** keeps the current page open. Browser storage is specific to the site's origin; installation does not transfer settings between localhost and the published site. Configuration exports provide a portable backup.
+
+Service workers are disabled in the development server. To test installation and offline behavior locally, run `pnpm build` followed by `pnpm preview` and open its printed URL. Published GitHub Pages builds use the same relative asset and service-worker paths.
+
 ## Validate
 
 ```sh
 pnpm test
 pnpm run check
 pnpm run build
+pnpm run verify:pwa
 ```
 
 ## Builder scope
