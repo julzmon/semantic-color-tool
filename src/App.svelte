@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import type { PreviewMode, Selection } from './ui/types';
   import ModelNotes from './ui/ModelNotes.svelte';
   import ContrastTable from './ui/ContrastTable.svelte';
@@ -59,6 +59,33 @@
   let mode = $state<PreviewMode>('split');
   let tab = $state<Tab>('Overview');
   let selected = $state<Selection>({ mode: 'light', family: 'brand', role: 'emphasis.base' });
+  let settingsOpen = $state(false);
+  let settingsToggle = $state<HTMLButtonElement | undefined>(undefined);
+  const openSettings = async () => {
+    settingsOpen = true;
+    await tick();
+    document.querySelector<HTMLButtonElement>('#settings-panel .settings-close')?.focus();
+  };
+  const closeSettings = async () => {
+    settingsOpen = false;
+    await tick();
+    settingsToggle?.focus();
+  };
+  const handleSettingsKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      void closeSettings();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const panel = event.currentTarget as HTMLElement;
+    const focusable = [...panel.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])')];
+    if (!focusable.length) { event.preventDefault(); return; }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
   let skipPersistence = false;
   $effect(() => {
     const currentConfig = config;
@@ -138,68 +165,56 @@
 <header class="app-header">
   <div class="brand-name">Semantic Color System Generator</div>
   <div class="header-end">
-    <button
-      class="primary-button"
-      onclick={() => (tab = 'Export')}>Export tokens <span aria-hidden="true">↗</span></button
-    >
+    <button class="primary-button" onclick={() => (tab = 'Export')}>Export tokens</button>
   </div>
 </header>
-<div class="app-layout">
-  <Controls
-    config={draft}
-    {adjusted}
-    {checking}
-    canUndo={!!undo}
-    onUndo={undoAdjustments}
-    onChange={updateConfiguration}
-    onReset={reset}
-  />
-  <main id="workspace" class="workspace">
-    <div class="workspace-title">
-      <div>
-        <h1>Build your color system</h1>
-        <p>Adjust your colors and preview them in light and dark themes.</p>
+<div class="workspace-shell">
+  {#if system}
+    <nav class="workspace-tabs" aria-label="Workspace sections">
+      {#each tabs as item}
+        <button aria-current={tab === item ? 'page' : undefined} onclick={() => (tab = item)}>{item}</button>
+      {/each}
+      <button class="settings-toggle" bind:this={settingsToggle} aria-controls="settings-panel" aria-expanded={settingsOpen} onclick={() => void openSettings()}>Settings</button>
+      <ModeSwitch
+        value={mode}
+        onChange={(next) => {
+          mode = next;
+          if (next !== 'split') selected = ((value) => ({ ...value, mode: next }))(selected);
+        }}
+      />
+    </nav>
+    <div class="app-layout">
+      {#if settingsOpen}<button class="settings-backdrop" aria-label="Close settings" onclick={() => void closeSettings()}></button>{/if}
+      <Controls
+        config={draft}
+        {adjusted}
+        {checking}
+        canUndo={!!undo}
+        settingsOpen={settingsOpen}
+        onKeydown={handleSettingsKeydown}
+        onClose={() => void closeSettings()}
+        onUndo={undoAdjustments}
+        onChange={updateConfiguration}
+        onReset={reset}
+      />
+    <main id="workspace" class="workspace" tabindex="-1">
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
+      <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
+        <p role="status">{configurationStatus}</p>
       </div>
-    </div>
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
-    <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
-      <p role="status">
-        {configurationStatus}
-      </p>
-    </div>{#if system}
-      <div class="workspace-toolbar">
-        <nav class="workspace-tabs" aria-label="Workspace sections">
-          {#each tabs as item}<button
-              aria-current={tab === item ? 'page' : undefined}
-              onclick={() => (tab = item)}>{item}</button
-            >{/each}
-        </nav>
-        {#if tab !== 'Export'}<ModeSwitch
-            value={mode}
-            onChange={(next) => {
-              mode = next;
-              if (next !== 'split') selected = ((value) => ({ ...value, mode: next }))(selected);
-            }}
-          />{/if}
-      </div>
-      {#if system.diagnostics.length > 0}<details class="diagnostics">
-          <summary
-            >{system.diagnostics.length} generation notice{system.diagnostics.length === 1 ? '' : 's'} — review
-            constraints</summary
-          >
-          <ul>
-            {#each system.diagnostics as notice, index}<li>{notice}</li>{/each}
-          </ul>
-        </details>{/if}{#if tab === 'Overview'}<div
-          class={`preview-grid ${mode !== 'split' ? 'single' : ''}`}
-        >
+      {#if system.diagnostics.length > 0}
+        <details class="diagnostics">
+          <summary>{system.diagnostics.length} generation notice{system.diagnostics.length === 1 ? '' : 's'} — review constraints</summary>
+          <ul>{#each system.diagnostics as notice}<li>{notice}</li>{/each}</ul>
+        </details>
+      {/if}
+      {#if tab === 'Overview'}
+        <div class={`preview-grid ${mode !== 'split' ? 'single' : ''}`}>
           {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} />{/each}
         </div>
-        <StateOverview
-          {system}
-          mode={mode === 'dark' ? 'dark' : 'light'}
-          onSelect={select}
-        />{/if}{#if tab === 'Color roles'}<div class="view-intro">
+        <StateOverview {system} mode={mode === 'dark' ? 'dark' : 'light'} onSelect={select} />
+      {:else if tab === 'Color roles'}
+        <div class="view-intro">
           <h2>Color roles</h2>
           <p>Compare colors across families. Select a color to see its uses and contrast checks.</p>
         </div>
@@ -207,17 +222,24 @@
           {system}
           {modes}
           {selected}
-          onSelect={(next) => {
-            selected = next;
-          }}
-        />{/if}{#if tab === 'Color palette'}<Primitives {system} />{/if}{#if tab === 'Export'}<ExportPanel
+          onSelect={(next) => { selected = next; }}
+        />
+      {:else if tab === 'Color palette'}
+        <Primitives {system} />
+      {:else if tab === 'Export'}
+        <ExportPanel
           {system}
           prefix={draft.prefix}
           onPrefixChange={(prefix) => updateConfiguration({ ...draft, prefix })}
           onImport={importConfiguration}
-        />{/if}{#if tab !== 'Export'}<NeutralRoleMap {system} {modes} /><ContrastTable {system} {modes} />{/if}<ModelNotes />{/if}
-
-  </main>
+        />
+      {/if}
+      {#if tab !== 'Color roles'}<NeutralRoleMap {system} {modes} />{/if}
+      {#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}
+      <ModelNotes />
+      </main>
+    </div>
+  {/if}
 </div>
 <PwaStatus {checking} save={() => {
   try { return saveStoredConfiguration(window.localStorage, config); }

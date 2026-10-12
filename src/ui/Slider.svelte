@@ -1,9 +1,9 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { normalizeNumericControl } from './controlValues';
-  let { label, value, min, max, step = 0.001, unit = '', adjusted = false, onChange }: {
+  let { label, value, min, max, step = 0.001, unit = '', adjusted = false, rangeClass = '', rangeStyle = '', onChange }: {
     label: string; value: number; min: number; max: number; step?: number; unit?: string;
-    adjusted?: boolean; onChange: (value: number) => void | Promise<unknown>;
+    adjusted?: boolean; rangeClass?: string; rangeStyle?: string; onChange: (value: number) => void | Promise<unknown>;
   } = $props();
   const id = $props.id();
   let editing = $state(false);
@@ -45,7 +45,7 @@
       {#if unit}<span>{unit}</span>{/if}
     </span>
   </div>
-  <input {id} type="range" {min} {max} {step} {value}
+  <input {id} type="range" class={rangeClass} style={rangeStyle} {min} {max} {step} {value}
     aria-describedby={adjusted ? `${id}-adjusted` : undefined}
     oninput={async (event) => {
       const input = event.currentTarget;
