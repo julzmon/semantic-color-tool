@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import type { ColorValue, GeneratedSystem, Mode } from '../engine/types';
   import { buildNeutralRoleMap, type RoleGroup } from './neutralRoleMap';
   import { inkFor, shortToken } from './presentation';
@@ -6,6 +7,12 @@
   let { system, modes }: { system: GeneratedSystem; modes: Mode[] } = $props();
   let model = $derived(buildNeutralRoleMap(system));
   let selected = $state<string>('');
+  let detailDialog: HTMLDialogElement;
+  async function inspectStop(primitive: string) {
+    selected = primitive;
+    await tick();
+    detailDialog.showModal();
+  }
   let selectedStop = $derived(model.stops.find((stop) => stop.primitive === selected) ?? model.stops[0]);
   let related = $derived(selectedStop ? [...new Map(modes.flatMap((mode) => selectedStop!.checks[mode]).map((check) => [check.id, check])).values()] : []);
   let neutral = $derived(system.config.families.find(family => family.id === 'neutral')!);
@@ -46,7 +53,7 @@
   <p class="section-description">Select a color to see its uses. Colors run from light to dark; labels stack when uses share a color.</p>
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus lets users access the horizontal map scroll region.) -->
   <div class="role-map-scroll" role="region" tabindex="0" aria-label="Neutral role map. Scroll horizontally to view all generated stops.">
-    {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style:background={surfaceBase(mode)} style:color={mode === 'light' ? inkFor(surfaceBase(mode)) : '#f3f7f6'}>
+    {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style={`--role-map-surface: ${surfaceBase(mode)}`} style:color={inkFor(surfaceBase(mode))}>
         <h4>{modeNames[mode]} neutral roles</h4>
         <div class="role-map-grid" style={`--role-map-columns: ${model.stops.length}`}>
           {#each groups.filter((group) => group.position === 'above') as group (group.id)}<div class="role-map-group-label">{group.label}</div>
@@ -59,8 +66,10 @@
               class:selected={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-pressed={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-label={`${modeNames[mode]} ${shortToken(stop.primitive)} ${stop.color.hex}`}
+              aria-haspopup="dialog"
+              aria-controls="neutral-color-details"
               title={neutralNote(stop.color)}
-              onclick={() => (selected = stop.primitive)}
+              onclick={() => void inspectStop(stop.primitive)}
               ><span class="role-map-swatch" style:background={stop.color.css}></span><code>{stop.color.hex}</code><small>{shortToken(stop.primitive)}</small></button
             >{/each}
           {#each groups.filter((group) => group.position === 'below') as group (group.id)}<div class="role-map-group-label">{group.label}</div>
@@ -70,12 +79,19 @@
         </div>
       </div>{/each}
   </div>
-  {#if selectedStop}<div class="role-map-detail" aria-live="polite">
+  <dialog class="role-map-dialog" id="neutral-color-details" bind:this={detailDialog} aria-labelledby="neutral-color-detail-title">
+    {#if selectedStop}
+    <div class="role-map-dialog-heading">
+      <h3 id="neutral-color-detail-title">Neutral color {shortToken(selectedStop.primitive)}</h3>
+      <button class="secondary-button" onclick={() => detailDialog.close()}>Close</button>
+    </div>
+    <div class="role-map-detail">
       <div class="role-map-detail-swatch" style:background={selectedStop.color.css}></div>
-      <div><span class="eyebrow">SELECTED STOP</span><h4>{shortToken(selectedStop.primitive)}</h4><code>{selectedStop.color.hex} · {selectedStop.color.css}</code>
+      <div><code>{selectedStop.color.hex} · {selectedStop.color.css}</code>
         <p class="help">{neutralNote(selectedStop.color)}</p>
         {#each modes as mode (mode)}<p><strong>{modeNames[mode]}</strong>: {Object.values(selectedStop.labels[mode]).flat().map((label) => label.label).join(', ') || 'Unused in this mode.'}</p>{/each}
         {#if related.length}<ul class="role-map-checks">{#each related.slice(0, 6) as check (check.id)}<li><span class={check.pass ? 'check-pass' : 'check-fail'}>{check.pass ? 'Pass' : 'Fail'} · {check.ratio.toFixed(3)}:1</span> <span>{shortToken(check.foreground)} → {shortToken(check.background)}</span></li>{/each}</ul>{:else}<p class="help">No checked contrast relationship is attached to this stop.</p>{/if}
       </div>
     </div>{/if}
+  </dialog>
 </section>

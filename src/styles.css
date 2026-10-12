@@ -1418,196 +1418,160 @@ summary {
   }
 }
 
-.neutral-role-map h3 {
-  font-size: 19px;
-}
-
-.role-map-note {
-  margin: 8px 0 14px;
-  color: var(--muted);
-  font-size: 11px;
+.neutral-role-map {
+  & h3 { font-size: 19px; }
+  & .mini-tag {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  & > .section-description { margin-block: 8px 16px; }
 }
 
 .role-map-scroll {
   overflow-x: auto;
-  padding: 2px 2px 12px;
-  outline: none;
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
+  padding: 4px 0 12px;
+  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 }
 
 .role-map-mode {
   inline-size: max-content;
   min-inline-size: 100%;
-  padding: 14px;
-  border-radius: 6px;
-  background: var(--panel);
-  & + .role-map-mode {
-    margin-block-start: 24px;
-  }
+  padding: 16px 12px;
+  background: var(--role-map-surface);
+  & + .role-map-mode { margin-block-start: 16px; }
   & h4 {
-    margin: 0 0 8px;
+    position: sticky;
+    inset-inline-start: 0;
+    inline-size: fit-content;
+    margin-block: 0 12px;
     font-size: 12px;
     font-weight: 600;
   }
-  &[data-mode="dark"] {
-    color: #f3f7f6;
-  }
-  &[data-mode="dark"] .role-map-group-label {
-    color: #aebbb8;
-  }
-  &[data-mode="dark"] .role-map-annotation {
-    border-color: rgb(255 255 255 / 14%);
-  }
-  &[data-mode="dark"] .role-map-annotation span {
-    border-color: rgb(255 255 255 / 20%);
-    background: #252d2d;
-    color: #f3f7f6;
-  }
-  &[data-mode="dark"] .role-map-spacer {
-    border-color: rgb(255 255 255 / 14%);
-    background: rgb(255 255 255 / 10%);
-  }
-  &[data-mode="dark"] .role-map-stop {
-    border-color: rgb(255 255 255 / 20%);
-    background: #1b2222;
-    color: #f3f7f6;
-  }
-  &[data-mode="dark"] .role-map-stop:hover:where(:not(:disabled)), &[data-mode="dark"] .role-map-stop.selected {
-    background: #304140;
-  }
-  &[data-mode="dark"] .role-map-stop small {
-    color: #aebbb8;
-  }
+  &[data-mode="light"] { color-scheme: light; }
+  &[data-mode="dark"] { color-scheme: dark; }
 }
 
 .role-map-grid {
   display: grid;
-  grid-template-columns: 78px repeat(var(--role-map-columns), minmax(96px, 1fr));
-  min-inline-size: calc(78px + var(--role-map-columns) * 96px);
-  border-block: 1px solid var(--line);
+  grid-template-columns: 72px repeat(var(--role-map-columns), minmax(96px, 1fr));
+  min-inline-size: calc(72px + var(--role-map-columns) * 96px);
 }
 
 .role-map-group-label {
-  align-self: center;
-  padding: 5px 8px 5px 0;
-  color: var(--muted);
-  font-size: 10px;
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding-inline-end: 8px;
+  background: var(--role-map-surface);
+  font-size: 11px;
   font-weight: 600;
 }
 
 .role-map-annotation {
   min-block-size: calc(var(--role-map-slots) * 22px);
-  padding: 3px;
-  border-inline-start: 1px solid var(--line-soft);
+  padding: 4px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   justify-content: center;
   & span {
-    overflow: hidden;
-    padding: 3px 5px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--panel);
-    color: var(--ink);
-    font-size: 9px;
-    line-height: 1.25;
+    padding-block: 2px;
+    color: inherit;
+    font-size: 10px;
+    line-height: 1.4;
     text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 }
 
-.role-map-spacer {
-  block-size: 8px;
-  border-inline-start: 1px solid var(--line-soft);
-  background: var(--line-soft);
-}
+.role-map-spacer { background: var(--role-map-surface); }
 
 .role-map-stop {
-  min-block-size: 86px;
-  padding: 8px 6px;
-  border: 1px solid var(--line);
-  border-block-width: 0;
-  border-radius: 0;
-  background: var(--panel);
-  color: var(--ink);
-  cursor: pointer;
+  min-block-size: 84px;
+  padding: 10px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  & + .role-map-stop {
-    border-inline-start: 0;
+  gap: 6px;
+  &:hover:where(:not(:disabled)) .role-map-swatch {
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
   }
-  &:hover:where(:not(:disabled)), &.selected {
-    background: var(--accent-soft);
+  &.selected .role-map-swatch {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
   }
   &:focus-visible {
     position: relative;
     z-index: 1;
-    outline: 2px solid var(--accent);
+    outline: 2px solid currentColor;
     outline-offset: -2px;
   }
-  & code {
-    font-size: 10px;
-  }
-  & small {
-    overflow: hidden;
-    max-inline-size: 100%;
-    color: var(--muted);
-    font: 9px/1.2 var(--mono);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  & code { font-size: 10px; }
+  & small { font: 10px/1.2 var(--mono); }
 }
 
 .role-map-swatch {
   inline-size: 100%;
-  block-size: 24px;
-  border: 1px solid rgb(0 0 0 / 18%);
-  border-radius: 3px;
+  block-size: 28px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 2px;
+  forced-color-adjust: none;
+}
+
+.role-map-dialog {
+  inline-size: min(36rem, calc(100dvw - 32px));
+  max-block-size: calc(100dvh - 32px);
+  margin: auto;
+  padding: 24px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  &::backdrop { background: rgb(0 0 0 / .35); }
+}
+
+.role-map-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  & h3 { font-size: 18px; }
+  & button { min-block-size: 44px; }
 }
 
 .role-map-detail {
   display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: 14px;
-  margin-block-start: 14px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel);
-  & h4 {
-    margin: 2px 0 4px;
-    font-size: 14px;
-  }
-  & p {
-    margin: 8px 0 0;
-    font-size: 11px;
-  }
-  & code {
-    font-size: 10px;
-  }
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+  margin-block-start: 20px;
+  & h4 { margin-block: 0 6px; font-size: 14px; }
+  & p { margin-block: 8px 0; font-size: 12px; }
+  & code { font-size: 11px; overflow-wrap: anywhere; }
 }
 
 .role-map-detail-swatch {
-  min-block-size: 64px;
-  border: 1px solid rgb(0 0 0 / 18%);
-  border-radius: 4px;
+  block-size: 48px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  forced-color-adjust: none;
 }
 
 .role-map-checks {
-  margin: 8px 0 0;
+  margin-block: 12px 0;
   padding: 0;
   list-style: none;
-  font-size: 10px;
-  & li + li {
-    margin-block-start: 4px;
-  }
+  font-size: 11px;
+  & li + li { margin-block-start: 6px; }
 }
 
 .summary-badge {

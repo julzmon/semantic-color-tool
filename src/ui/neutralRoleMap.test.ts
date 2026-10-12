@@ -21,7 +21,10 @@ it('renders aligned light and dark maps with accessible stop buttons', () => {
   expect(markup).toContain('Borders');
   expect(markup).toContain('Surfaces');
   expect(markup).toContain('Fills');
-  expect(markup).toContain('SELECTED STOP');
+  expect(markup).toContain('<dialog');
+  expect(markup).toContain('aria-labelledby="neutral-color-detail-title"');
+  expect(markup.match(/aria-haspopup="dialog"/g)).toHaveLength(buildNeutralRoleMap(system).stops.length * 2);
+  expect(markup).toContain('>Close</button>');
 });
 
 it('orders actual neutral primitives and preserves shared role stacks', () => {
