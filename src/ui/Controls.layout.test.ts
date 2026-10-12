@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { render } from 'svelte/server';
+import { parse } from 'postcss';
 import { expect, it } from 'vitest';
 import { configFromReference, parseKdsTokens } from '../engine/reference';
 import Controls from './Controls.svelte';
@@ -20,8 +21,14 @@ it('keeps every color family visible without a collapse control', () => {
   expect(markup).toContain('<details class="control-section sidebar-section" aria-labelledby="families-heading" open="">');
   expect(markup).toContain('--swatch-color: oklch(0.62');
   const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-  expect(styles).toContain('.settings-sidebar .family-color-swatch');
-  expect(styles).toContain('inline-size: 14px;');
+  const stylesheet = parse(styles);
+  const sidebar = stylesheet.nodes.find(node => node.type === 'rule' && node.selector === '.settings-sidebar');
+  expect(sidebar?.type).toBe('rule');
+  const swatch = sidebar?.type === 'rule'
+    ? sidebar.nodes.find(node => node.type === 'rule' && node.selector === '& .family-color-swatch')
+    : undefined;
+  expect(swatch?.type).toBe('rule');
+  expect(swatch?.type === 'rule' && swatch.nodes.some(node => node.type === 'decl' && node.prop === 'inline-size' && node.value === '14px')).toBe(true);
   expect(markup).not.toContain('Edit semantic color family');
 });
 

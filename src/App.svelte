@@ -185,10 +185,14 @@
       />
     <main id="workspace" class="workspace" tabindex="-1">
       <nav class="workspace-tabs" aria-label="Workspace sections">
+        <button class="settings-toggle" bind:this={settingsToggle} aria-label="Settings" title="Settings" aria-controls="settings-panel" aria-expanded={settingsOpen} onclick={() => void openSettings()}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         {#each tabs as item}
           <button aria-current={tab === item ? 'page' : undefined} onclick={() => (tab = item)}>{item}</button>
         {/each}
-        <button class="settings-toggle" bind:this={settingsToggle} aria-controls="settings-panel" aria-expanded={settingsOpen} onclick={() => void openSettings()}>Settings</button>
       </nav>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
       <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">

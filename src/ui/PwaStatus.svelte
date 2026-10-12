@@ -73,10 +73,33 @@
 {/if}
 
 <style>
-  .pwa-notice { position: fixed; right: 1rem; bottom: 1rem; z-index: 100; max-width: min(26rem, calc(100vw - 2rem)); padding: 1rem; background: #fff; color: #19282c; border: 1px solid #b8c5c8; border-radius: .75rem; box-shadow: 0 4px 24px #19282c26; font-size: 16px; }
-  p { margin: 0 0 .75rem; line-height: 1.5; }
-  div { display: flex; gap: .5rem; flex-wrap: wrap; }
-  button { font: inherit; padding: .5rem .75rem; border-radius: .35rem; border: 1px solid #607378; background: #fff; color: #19282c; cursor: pointer; }
-  button:first-child:not(:last-child) { background: #006e78; color: #fff; }
-  button:disabled { opacity: .6; cursor: wait; }
+  .pwa-notice {
+    position: fixed;
+    inset-inline-end: 1rem;
+    inset-block-end: 1rem;
+    z-index: 100;
+    max-inline-size: min(26rem, calc(100dvw - 2rem));
+    padding: 1rem;
+    background: #fff;
+    color: #19282c;
+    border: 1px solid #b8c5c8;
+    border-radius: .75rem;
+    box-shadow: 0 4px 24px #19282c26;
+    font-size: 16px;
+
+    & p { margin: 0 0 .75rem; line-height: 1.5; }
+    & div { display: flex; gap: .5rem; flex-wrap: wrap; }
+    & button {
+      font: inherit;
+      padding: .5rem .75rem;
+      border-radius: .35rem;
+      border: 1px solid #607378;
+      background: #fff;
+      color: #19282c;
+      cursor: pointer;
+
+      &:first-child:not(:last-child) { background: #006e78; color: #fff; }
+      &:disabled { opacity: .6; cursor: wait; }
+    }
+  }
 </style>
