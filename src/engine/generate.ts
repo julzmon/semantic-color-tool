@@ -13,7 +13,7 @@ const allStates: State[] = ['base', 'hover', 'active', 'selected'];
 const direction = (mode: Mode) => mode === 'light' ? -1 : 1;
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 const textTarget = (config: BuilderConfig) => Math.max(config.targets.normalText, config.targets.largeText);
-const emphasisStrategy = (config: BuilderConfig) => config.emphasis.strategy ?? 'shared';
+const emphasisStrategy = (config: BuilderConfig) => config.emphasis.reverseDarkStates ? 'shared' : config.emphasis.strategy ?? 'shared';
 type ColorFactory = (lightness: number) => ColorValue;
 type Constraint = { background: ColorValue; target: number };
 interface ColorGroup { colors: ColorValue[]; diagnostics: string[] }
@@ -42,6 +42,7 @@ export function validateConfig(config: BuilderConfig): void {
   finite(config.muted?.separation, 'Muted separation');
   finite(config.emphasis?.separation, 'Emphasis separation');
   if (typeof config.emphasis.selected !== 'boolean') throw new Error('Selected-state configuration must be a boolean.');
+  if (config.emphasis.reverseDarkStates !== undefined && typeof config.emphasis.reverseDarkStates !== 'boolean') throw new Error('Reverse dark emphasis states must be a boolean.');
   if (config.emphasis.strategy !== undefined && config.emphasis.strategy !== 'shared' && config.emphasis.strategy !== 'adaptive') throw new Error('Emphasis strategy must be shared or adaptive.');
   for (const [name, target] of Object.entries(config.targets ?? {})) finite(target, name, 1);
   for (const name of ['normalText', 'largeText', 'ui'] as const) finite(config.targets?.[name], name, 1);
@@ -477,10 +478,12 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
       }
       const locked = lightAnchor?.locked ? lightAnchor.color : darkAnchor?.locked ? darkAnchor.color : undefined;
       const states = locked ? generateStates(locked, 'light', config.emphasis.separation, count).colors : allStates.slice(0, count).map((state) => lightFamily.roles[`emphasis.${state}` as FamilyRole]!.color);
+      const reversed = config.emphasis.reverseDarkStates ? generateStates(states[0], 'dark', config.emphasis.separation, count) : undefined;
+      if (reversed) diagnostics.push(...reversed.diagnostics.map(message => `${family.id}: ${message}`));
       allStates.slice(0, count).forEach((state, index) => {
         const path = `emphasis.${state}` as FamilyRole;
         lightFamily.roles[path] = role(states[index], semanticName(config.prefix, family.id, path));
-        darkFamily.roles[path] = role(states[index], semanticName(config.prefix, family.id, path));
+        darkFamily.roles[path] = role(reversed?.colors[index] ?? states[index], semanticName(config.prefix, family.id, path));
       });
     }
     themes.dark.foreground.onEmphasis = role(themes.light.foreground.onEmphasis.color, tokenName(config.prefix, 'fg-on-emphasis'));

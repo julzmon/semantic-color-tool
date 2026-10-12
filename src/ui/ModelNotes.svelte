@@ -14,8 +14,8 @@
     <div>
       <h3>Light and dark themes</h3>
       <p>
-        Both themes use one color palette. Emphasis fills match across themes by default. You can choose
-        different emphasis colors for each theme in Interaction states.
+        Both themes use one color palette and the same default emphasis fills. In Interaction states,
+        you can reverse dark emphasis states so hover, pressed, and selected fills become lighter.
       </p>
     </div>
     <div>

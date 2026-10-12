@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import type { PreviewMode, Selection } from './ui/types';
+  import type { Selection } from './ui/types';
   import ModelNotes from './ui/ModelNotes.svelte';
   import ContrastTable from './ui/ContrastTable.svelte';
   import NeutralRoleMap from './ui/NeutralRoleMap.svelte';
   import Primitives from './ui/Primitives.svelte';
   import Matrix from './ui/Matrix.svelte';
   import StateOverview from './ui/StateOverview.svelte';
-  import ModeSwitch from './ui/ModeSwitch.svelte';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
   import { adjustedControlKeys } from './ui/controlValues';
@@ -56,7 +55,6 @@
   let configurationStatus = $state(
     restored.message || stored.error || (stored.restored ? 'Your saved colors are restored.' : ''),
   );
-  let mode = $state<PreviewMode>('split');
   let tab = $state<Tab>('Overview');
   let selected = $state<Selection>({ mode: 'light', family: 'brand', role: 'emphasis.base' });
   let settingsOpen = $state(false);
@@ -96,7 +94,7 @@
     if (!saveStoredConfiguration(typeof window === 'undefined' ? null : window.localStorage, currentConfig))
       configurationStatus = 'Changes could not be saved in this browser.';
   });
-  let modes: Mode[] = $derived(mode === 'split' ? ['light', 'dark'] : [mode]);
+  const modes: Mode[] = ['light', 'dark'];
   const select = (selection: Selection) => {
     selected = selection;
     tab = 'Color roles';
@@ -170,23 +168,11 @@
 </header>
 <div class="workspace-shell">
   {#if system}
-    <nav class="workspace-tabs" aria-label="Workspace sections">
-      {#each tabs as item}
-        <button aria-current={tab === item ? 'page' : undefined} onclick={() => (tab = item)}>{item}</button>
-      {/each}
-      <button class="settings-toggle" bind:this={settingsToggle} aria-controls="settings-panel" aria-expanded={settingsOpen} onclick={() => void openSettings()}>Settings</button>
-      <ModeSwitch
-        value={mode}
-        onChange={(next) => {
-          mode = next;
-          if (next !== 'split') selected = ((value) => ({ ...value, mode: next }))(selected);
-        }}
-      />
-    </nav>
     <div class="app-layout">
       {#if settingsOpen}<button class="settings-backdrop" aria-label="Close settings" onclick={() => void closeSettings()}></button>{/if}
       <Controls
         config={draft}
+        {system}
         {adjusted}
         {checking}
         canUndo={!!undo}
@@ -198,6 +184,12 @@
         onReset={reset}
       />
     <main id="workspace" class="workspace" tabindex="-1">
+      <nav class="workspace-tabs" aria-label="Workspace sections">
+        {#each tabs as item}
+          <button aria-current={tab === item ? 'page' : undefined} onclick={() => (tab = item)}>{item}</button>
+        {/each}
+        <button class="settings-toggle" bind:this={settingsToggle} aria-controls="settings-panel" aria-expanded={settingsOpen} onclick={() => void openSettings()}>Settings</button>
+      </nav>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
       <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
         <p role="status">{configurationStatus}</p>
@@ -209,10 +201,10 @@
         </details>
       {/if}
       {#if tab === 'Overview'}
-        <div class={`preview-grid ${mode !== 'split' ? 'single' : ''}`}>
+        <div class="preview-grid">
           {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} />{/each}
         </div>
-        <StateOverview {system} mode={mode === 'dark' ? 'dark' : 'light'} onSelect={select} />
+        <StateOverview {system} mode="light" onSelect={select} />
       {:else if tab === 'Color roles'}
         <div class="view-intro">
           <h2>Color roles</h2>

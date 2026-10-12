@@ -43,7 +43,7 @@ pnpm run verify:pwa
 ## Builder scope
 
 - Six generated semantic families: Neutral, Brand, Info, Positive, Negative, and Warning.
-- Light and dark surface controls, independent light and dark muted-distance controls, generated gray levels, muted and emphasis states, semantic foregrounds, and borders. Emphasis fills are shared across themes by default; adaptive per-theme emphasis remains available.
+- Light and dark surface controls, independent light and dark muted-distance controls, generated gray levels, muted and emphasis states, semantic foregrounds, and borders. Default emphasis fills stay shared across themes; dark hover, pressed, and selected fills can reverse direction while contrast protection remains enabled.
 - Fixed contrast requirements: normal text **4.5:1**, large text **3:1**, and UI boundaries **3:1**.
 - Shared lightness positions for corresponding roles across every family, with contextual contrast checks for each emitted relationship.
 - Shared primitive reuse where it preserves contrast, gamut, state separation, and exact locks.

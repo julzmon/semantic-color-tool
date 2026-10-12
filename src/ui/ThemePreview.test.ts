@@ -35,3 +35,23 @@ it('keeps semantic CSS variables available to nested mode boundaries', () => {
   }
   expect(markup).toContain('data-mode="dark"');
 });
+
+it.each(['light', 'dark'] as const)('shows Brand interaction samples next to the buttons in %s mode', (mode) => {
+  const markup = render(ThemePreview, { props: { system: defaultSystem, mode } }).body;
+  expect(markup).toContain(`aria-label="${mode === 'light' ? 'Light' : 'Dark'} interaction states"`);
+  for (const fill of ['muted', 'emphasis']) {
+    for (const state of ['base', 'hover', 'active']) {
+      expect(markup).toContain(`background: var(--kds-bg-brand-${fill}-${state})`);
+    }
+    expect(markup).not.toContain(`background: var(--kds-bg-brand-${fill}-selected)`);
+  }
+});
+
+it('shows selected samples when the selected state is enabled', () => {
+  const config = { ...defaultSystem.config, emphasis: { ...defaultSystem.config.emphasis, selected: true } };
+  const system = generateSystem(config);
+  const markup = render(ThemePreview, { props: { system, mode: 'light' } }).body;
+  for (const fill of ['muted', 'emphasis']) {
+    expect(markup).toContain(`background: var(--kds-bg-brand-${fill}-selected)`);
+  }
+});

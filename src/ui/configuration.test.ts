@@ -121,6 +121,21 @@ it('round-trips independent muted chroma through configuration storage', () => {
   expect(loadStoredConfiguration(storage, defaults()).config.muted).toMatchObject({ chromaScale: { light: 0.5, dark: 1.75 } });
 });
 
+it('migrates adaptive emphasis to shared bases with reversed dark states', () => {
+  const input = defaults();
+  input.emphasis.strategy = 'adaptive';
+  const result = parseConfigurationJson(JSON.stringify(input), defaults());
+  expect(result.emphasis).toMatchObject({ strategy: 'shared', reverseDarkStates: true });
+});
+
+it('round-trips the dark emphasis reversal option', () => {
+  const input = defaults();
+  input.emphasis.reverseDarkStates = true;
+  const storage = new MemoryStorage();
+  expect(saveStoredConfiguration(storage, input)).toBe(true);
+  expect(loadStoredConfiguration(storage, defaults()).config.emphasis.reverseDarkStates).toBe(true);
+});
+
 it.each([null, 1, {}, { light: 1 }, { light: -1, dark: 1 }, { light: 1, dark: 3 }, { light: '1', dark: 1 }])('rejects malformed imported muted chroma %j', (chromaScale) => {
   const input = { ...defaults(), muted: { ...defaults().muted, chromaScale } };
   expect(() => parseConfigurationJson(JSON.stringify(input), defaults())).toThrow(/chroma/i);

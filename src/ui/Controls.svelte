@@ -2,14 +2,14 @@
   import { tick } from 'svelte';
   import Slider from './Slider.svelte';
   import { mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
-  import type { BuilderConfig, FamilyId, Mode } from '../engine/types';
+  import type { BuilderConfig, FamilyId, GeneratedSystem, Mode } from '../engine/types';
+  import { familyControlColor, familyTrackStyle, mutedTrackStyle, stateTrackStyle, surfaceTrackStyle } from './controlTracks';
   import BrandAnchors from './BrandAnchors.svelte';
-  let { config, adjusted = [], checking = false, canUndo = false, settingsOpen = false, onKeydown, onClose, onChange, onReset, onUndo }: {
-    config: BuilderConfig; adjusted?: string[]; checking?: boolean; canUndo?: boolean; settingsOpen?: boolean;
+  let { config, system, adjusted = [], checking = false, canUndo = false, settingsOpen = false, onKeydown, onClose, onChange, onReset, onUndo }: {
+    config: BuilderConfig; system: GeneratedSystem; adjusted?: string[]; checking?: boolean; canUndo?: boolean; settingsOpen?: boolean;
     onKeydown: (event: KeyboardEvent) => void; onClose: () => void;
     onChange: (config: BuilderConfig) => Promise<boolean | undefined>; onReset: () => void; onUndo: () => void;
   } = $props();
-  const paletteTrackStyle = (families: BuilderConfig['families']) => `--family-spectrum: linear-gradient(90deg, #dedede, ${families.map(family => `oklch(.68 ${Math.min(family.chroma, .2)} ${family.hue})`).join(', ')})`;
   const updateFamily = (id: FamilyId, patch: { hue?: number; chroma?: number }) => onChange({ ...config, families: config.families.map(item => item.id === id ? { ...item, ...patch } : item) });
   const updateStep = (mode: Mode, value: number) => onChange({ ...config, surfaces: { ...config.surfaces, step: { light: surfaceStep(config, 'light'), dark: surfaceStep(config, 'dark'), [mode]: value } } });
   const updateDistance = (mode: Mode, value: number) => onChange({ ...config, muted: { ...config.muted, distance: { light: mutedDistance(config, 'light'), dark: mutedDistance(config, 'dark'), [mode]: value } } });
@@ -42,16 +42,16 @@
 
   <details class="control-section sidebar-section" aria-labelledby="families-heading" open>
     <summary class="section-heading"><h3 id="families-heading">Color adjustments</h3></summary>
+    <p class="help">Chroma controls intensity. Lightness adjusts to meet contrast requirements.</p>
     <div class="family-adjustments">
       {#each config.families as family (family.id)}
-        <details class="sidebar-group family-group" open={family.id === 'brand'} style={`--family-color: oklch(.62 ${family.chroma} ${family.hue})`}>
-          <summary><span class="family-color-swatch" aria-hidden="true" style={`--swatch-color: oklch(.62 ${family.chroma} ${family.hue})`}></span>{family.label}</summary>
-          {#if family.id !== 'neutral'}<p class="help">Chroma controls intensity. Lightness adjusts to meet contrast requirements.</p>{/if}
-          <Slider label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" onChange={value => updateFamily(family.id, { hue: value })} />
-          <Slider label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={`--family-color: oklch(.62 ${family.chroma} ${family.hue})`} onChange={value => updateFamily(family.id, { chroma: value })} />
-          {#if family.id === 'brand'}<details class="advanced-controls"><summary>Lock a brand color</summary><BrandAnchors brand={family} anchors={config.anchors} onChange={anchors => onChange({ ...config, anchors })} /></details>{/if}
-          {#if family.id === 'neutral'}<details class="advanced-controls"><summary>Neutral color limits</summary><p class="help">Exact color locks and related states keep their own colors. Pure white and black have no tint. Chroma is reduced when needed to fit the sRGB color range.</p></details>{/if}
-        </details>
+        <div class="sidebar-group family-group">
+          <h4 class="family-heading"><span class="family-color-swatch" aria-hidden="true" style={`--swatch-color: ${familyControlColor(family)}`}></span>{family.label}</h4>
+          <Slider label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" rangeStyle={familyTrackStyle(family, 'hue')} onChange={value => updateFamily(family.id, { hue: value })} />
+          <Slider label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={familyTrackStyle(family, 'chroma')} onChange={value => updateFamily(family.id, { chroma: value })} />
+          {#if family.id === 'brand'}<div class="advanced-controls"><BrandAnchors brand={family} anchors={config.anchors} onChange={anchors => onChange({ ...config, anchors })} /></div>{/if}
+          {#if family.id === 'neutral'}<div class="advanced-controls"><strong>Neutral color limits</strong><p class="help">Exact color locks and related states keep their own colors. Pure white and black have no tint. Chroma is reduced when needed to fit the sRGB color range.</p></div>{/if}
+        </div>
       {/each}
     </div>
   </details>
@@ -61,10 +61,11 @@
     {#each ['light', 'dark'] as const as theme}
       <fieldset class="theme-controls"><legend>{theme === 'light' ? 'Light theme' : 'Dark theme'}</legend>
         <p class="help">{theme === 'light' ? 'Each added level is darker than the previous one.' : 'Each added level is lighter than the previous one.'}</p>
-        <Slider label="Base lightness" min={0} max={1} value={config.surfaces[theme].l} adjusted={adjusted.includes(`surfaces.${theme}.l`)} rangeClass="lightness-range" onChange={l => onChange({ ...config, surfaces: { ...config.surfaces, [theme]: { l } } })} />
-        <Slider label="Level spacing" min={0.001} max={0.2} step={0.001} value={surfaceStep(config, theme)} adjusted={adjusted.includes(`surfaces.${theme}.step`)} rangeClass="surface-step-range" onChange={value => updateStep(theme, value)} />
+        <Slider label="Base lightness" min={0} max={1} value={config.surfaces[theme].l} adjusted={adjusted.includes(`surfaces.${theme}.l`)} rangeClass="lightness-range" rangeStyle={surfaceTrackStyle(config, theme, 'lightness')} onChange={l => onChange({ ...config, surfaces: { ...config.surfaces, [theme]: { l } } })} />
+        <Slider label="Level spacing" min={0.001} max={0.2} step={0.001} value={surfaceStep(config, theme)} adjusted={adjusted.includes(`surfaces.${theme}.step`)} rangeClass="surface-step-range" rangeStyle={surfaceTrackStyle(config, theme, 'spacing')} onChange={value => updateStep(theme, value)} />
       </fieldset>
     {/each}
+    <p class="help">Level spacing tracks preview the deepest surface at the current surface count.</p>
   </details>
 
   <details class="control-section sidebar-section" aria-labelledby="muted-heading">
@@ -73,25 +74,28 @@
     {#each ['light', 'dark'] as const as theme}
       <fieldset class="theme-controls"><legend>{theme === 'light' ? 'Light theme' : 'Dark theme'}</legend>
         <p class="help">{theme === 'light' ? 'Higher values make muted fills darker.' : 'Higher values make muted fills lighter.'}</p>
-        <Slider label="Muted distance" min={-0.08} max={theme === 'dark' ? 0.5 : 0.16} step={0.005} value={mutedDistance(config, theme)} adjusted={adjusted.includes(`muted.${theme}.distance`)} rangeClass={`muted-distance-range ${theme}-theme-range`} onChange={value => updateDistance(theme, value)} />
-        <Slider label="Muted chroma" min={0} max={200} step={1} unit="%" value={mutedChromaScale(config, theme) * 100} adjusted={adjusted.includes(`muted.${theme}.chroma`)} rangeClass="muted-chroma-range" rangeStyle={paletteTrackStyle(config.families)} onChange={value => updateChroma(theme, value)} />
+        <Slider label="Muted distance" min={-0.08} max={theme === 'dark' ? 0.5 : 0.16} step={0.005} value={mutedDistance(config, theme)} adjusted={adjusted.includes(`muted.${theme}.distance`)} rangeClass="muted-distance-range" rangeStyle={mutedTrackStyle(config, theme, 'distance')} onChange={value => updateDistance(theme, value)} />
+        <Slider label="Muted chroma" min={0} max={200} step={1} unit="%" value={mutedChromaScale(config, theme) * 100} adjusted={adjusted.includes(`muted.${theme}.chroma`)} rangeClass="muted-chroma-range" rangeStyle={mutedTrackStyle(config, theme, 'chroma')} onChange={value => updateChroma(theme, value)} />
       </fieldset>
     {/each}
-    <details class="advanced-controls"><summary>Muted color limits</summary><p class="help">100% uses the family chroma; 0% removes color. Higher values add color where the sRGB range allows it. Muted borders are decorative; their text is checked for contrast.</p></details>
+    <p class="help">Tracks preview the Brand muted base fill in each theme.</p>
+    <div class="advanced-controls"><strong>Muted color limits</strong><p class="help">100% uses the family chroma; 0% removes color. Higher values add color where the sRGB range allows it. Muted borders are decorative; their text is checked for contrast.</p></div>
   </details>
 
   <details class="control-section sidebar-section" aria-labelledby="states-heading">
     <summary class="section-heading"><h3 id="states-heading">Interaction states</h3></summary>
     <p class="help">Controls how much colors change on hover, press, and selection in both themes.</p>
-    <Slider label="Muted state spacing" min={0.005} max={0.07} step={0.005} value={config.muted.separation} adjusted={adjusted.includes('muted.separation')} rangeClass="state-spacing-range" rangeStyle={paletteTrackStyle(config.families)} onChange={separation => onChange({ ...config, muted: { ...config.muted, separation } })} />
-    <Slider label="Emphasis state spacing" min={0.01} max={0.1} step={0.005} value={config.emphasis.separation} adjusted={adjusted.includes('emphasis.separation')} rangeClass="state-spacing-range" rangeStyle={paletteTrackStyle(config.families)} onChange={separation => onChange({ ...config, emphasis: { ...config.emphasis, separation } })} />
-    <details class="advanced-controls"><summary>Emphasis across themes</summary>
-      <div class="strategy-options" aria-label="Emphasis across themes">
-        <button aria-pressed={(config.emphasis.strategy ?? 'shared') === 'shared'} onclick={() => onChange({ ...config, emphasis: { ...config.emphasis, strategy: 'shared' } })}>Same colors</button>
-        <button aria-pressed={config.emphasis.strategy === 'adaptive'} onclick={() => onChange({ ...config, emphasis: { ...config.emphasis, strategy: 'adaptive' } })}>Different colors</button>
+    <p class="help">Tracks preview the last Brand state: light theme above, dark below. Emphasis uses the current base fill; contrast protection may adjust it after an edit.</p>
+    <Slider label="Muted state spacing" min={0.005} max={0.07} step={0.005} value={config.muted.separation} adjusted={adjusted.includes('muted.separation')} rangeClass="state-spacing-range" rangeStyle={stateTrackStyle(config, system, 'muted')} onChange={separation => onChange({ ...config, muted: { ...config.muted, separation } })} />
+    <Slider label="Emphasis state spacing" min={0.01} max={0.1} step={0.005} value={config.emphasis.separation} adjusted={adjusted.includes('emphasis.separation')} rangeClass="state-spacing-range" rangeStyle={stateTrackStyle(config, system, 'emphasis')} onChange={separation => onChange({ ...config, emphasis: { ...config.emphasis, separation } })} />
+    <fieldset class="emphasis-state-options">
+      <legend>Emphasis states in dark mode</legend>
+      <div class="strategy-options">
+        <button type="button" aria-pressed={!config.emphasis.reverseDarkStates} onclick={() => onChange({ ...config, emphasis: { ...config.emphasis, strategy: 'shared', reverseDarkStates: false } })}>Match light mode</button>
+        <button type="button" aria-pressed={config.emphasis.reverseDarkStates ?? false} onclick={() => onChange({ ...config, emphasis: { ...config.emphasis, strategy: 'shared', reverseDarkStates: true } })}>Reverse direction</button>
       </div>
-      <p class="help">Use the same emphasis fills and text in both themes, or let each theme use its own colors.</p>
-    </details>
+      <p class="help">Match uses identical colors for every state. Reverse makes dark hover, pressed, and selected fills lighter. The default emphasis fill stays the same in both themes.</p>
+    </fieldset>
   </details>
 
   <details class="control-section sidebar-section protection-section">

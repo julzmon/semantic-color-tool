@@ -3,31 +3,38 @@ import { render } from 'svelte/server';
 import { expect, it } from 'vitest';
 import { configFromReference, parseKdsTokens } from '../engine/reference';
 import Controls from './Controls.svelte';
+import { generateSystem } from '../engine/generate';
 
 const config = configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
-const props = { config, onKeydown: () => {}, onClose: () => {}, onChange: async () => true, onReset: () => {}, onUndo: () => {} };
+const props = { config, system: generateSystem(config), onKeydown: () => {}, onClose: () => {}, onChange: async () => true, onReset: () => {}, onUndo: () => {} };
 
-it('puts each color family adjustment in its own collapsible sidebar section', () => {
+it('keeps every color family visible without a collapse control', () => {
   const markup = render(Controls, { props }).body;
   for (const family of ['Neutral', 'Brand', 'Info', 'Positive', 'Negative', 'Warning']) {
-    expect(markup).toContain(`<summary><span class="family-color-swatch"`);
+    expect(markup).toContain(`</span>${family}</h4>`);
     expect(markup).toContain(`${family} hue`);
     expect(markup).toContain(`${family} chroma`);
   }
   expect(markup.match(/class="family-color-swatch"/g)).toHaveLength(6);
-  expect(markup).toContain('--swatch-color: oklch(.62');
+  expect(markup).not.toMatch(/<details[^>]*family-group/);
+  expect(markup).toContain('<details class="control-section sidebar-section" aria-labelledby="families-heading" open="">');
+  expect(markup).toContain('--swatch-color: oklch(0.62');
   const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
   expect(styles).toContain('.settings-sidebar .family-color-swatch');
   expect(styles).toContain('inline-size: 14px;');
   expect(markup).not.toContain('Edit semantic color family');
 });
 
-it('makes each control section title its own collapsible summary', () => {
+it('keeps advanced control sections collapsible', () => {
   const markup = render(Controls, { props }).body;
   for (const [id, title] of [['structure-heading', 'Surface structure'], ['families-heading', 'Color adjustments'], ['surface-heading', 'Surface appearance'], ['muted-heading', 'Muted fills'], ['states-heading', 'Interaction states']] as const) {
     expect(markup).toContain(`<summary class="section-heading"><h3 id="${id}">${title}</h3></summary>`);
   }
   expect(markup).toContain('<summary class="section-heading"><h3>Contrast protection</h3></summary>');
+  expect(markup).toContain('<legend>Emphasis states in dark mode</legend>');
+  expect(markup).toContain('aria-pressed="true">Match light mode</button>');
+  expect(markup).toContain('aria-pressed="false">Reverse direction</button>');
+  expect(markup).not.toContain('Emphasis across themes');
   for (const redundant of ['Surface count and states', 'Light and dark surfaces', 'Muted fill controls', 'State spacing and emphasis']) expect(markup).not.toContain(`<summary>${redundant}</summary>`);
 });
 
@@ -55,7 +62,6 @@ it('gives every color-adjusting slider an explanatory track and square black-bor
   const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
   for (const track of ['hue-range', 'chroma-range', 'lightness-range', 'surface-step-range', 'muted-distance-range', 'muted-chroma-range', 'state-spacing-range']) {
     expect(markup).toContain(track);
-    expect(styles).toContain(`.${track}`);
   }
   expect(styles).toMatch(/::-webkit-slider-thumb\s*\{[^}]*border-radius:\s*0/s);
   expect(styles).toMatch(/::-webkit-slider-thumb\s*\{[^}]*border:\s*2px solid #111/s);

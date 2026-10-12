@@ -29,7 +29,13 @@ export interface BuilderConfig {
   surfaces: { light: { l: number }; dark: { l: number }; levels: number; step: number | Record<Mode, number> };
   families: FamilyConfig[];
   muted: { distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number> };
-  emphasis: { separation: number; selected: boolean; strategy?: 'shared' | 'adaptive' };
+  emphasis: {
+    separation: number;
+    selected: boolean;
+    reverseDarkStates?: boolean;
+    /** Legacy engine strategy; imported adaptive settings migrate to shared bases with reversed dark states. */
+    strategy?: 'shared' | 'adaptive';
+  };
   targets: { normalText: number; largeText: number; ui: number };
   anchors: ColorAnchor[];
 }

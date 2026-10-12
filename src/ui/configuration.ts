@@ -94,7 +94,9 @@ export function normalizeConfiguration(value: unknown, defaults: BuilderConfig):
   normalized.surfaces = normalizeSurfaces(source.surfaces);
   normalized.muted = normalizeMuted(source.muted);
   const emphasis = record(source.emphasis, 'Configuration emphasis');
-  normalized.emphasis = { ...emphasis, strategy: emphasis.strategy ?? 'shared' };
+  if (emphasis.strategy !== undefined && emphasis.strategy !== 'shared' && emphasis.strategy !== 'adaptive') throw new Error('Emphasis strategy must be shared or adaptive.');
+  normalized.emphasis = { ...emphasis, strategy: 'shared',
+    reverseDarkStates: emphasis.reverseDarkStates === undefined ? emphasis.strategy === 'adaptive' : emphasis.reverseDarkStates };
   normalized.targets = { ...record(source.targets, 'Configuration targets') };
   normalized.anchors = list(source.anchors, 'Configuration anchors').map((anchor, index) => copyAnchor(anchor, `Configuration anchors[${index}]`));
 

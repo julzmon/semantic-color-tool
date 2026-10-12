@@ -68,10 +68,11 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
   result = tryConfig(candidate);
   if (result) return finish(result);
 
-  // Anchors/targets/strategy/state inclusion are hard requests, never interpolated away.
+  // Anchors/targets/state direction/state inclusion are hard requests, never interpolated away.
   const hard = (config: BuilderConfig) => ({ ...structuredClone(config), prefix: requested.prefix,
     targets: structuredClone(requested.targets), anchors: structuredClone(requested.anchors),
-    emphasis: { ...config.emphasis, strategy: requested.emphasis.strategy, selected: requested.emphasis.selected } });
+    emphasis: { ...config.emphasis, strategy: requested.emphasis.strategy, selected: requested.emphasis.selected,
+      reverseDarkStates: requested.emphasis.reverseDarkStates } });
   const start = hard(previous);
   let best = tryConfig(start);
   if (!best) throw new Error('No passing contrast configuration was found with these targets and locked colors. The previous settings were kept.');

@@ -96,6 +96,18 @@
           }}>Reset project</button
         >
       </div>
+      <div class="preview-interaction-states" aria-label={`${mode === 'light' ? 'Light' : 'Dark'} interaction states`} role="group" style={`--state-count: ${system.config.emphasis.selected ? 4 : 3}`}>
+        {#each ['muted', 'emphasis'] as const as fill}
+          <div class="preview-state-row">
+            <span class="preview-state-label">{fill === 'muted' ? 'Muted' : 'Emphasis'}</span>
+            {#each [['base', 'Default'], ['hover', 'Hover'], ['active', 'Pressed'], ['selected', 'Selected']] as const as [state, label]}
+              {#if state !== 'selected' || system.config.emphasis.selected}
+                <span class="preview-state-sample" style:background={`var(--kds-bg-brand-${fill}-${state})`} style:color={fill === 'muted' ? 'var(--kds-fg-brand-base)' : 'var(--kds-fg-on-emphasis)'}>{label}</span>
+              {/if}
+            {/each}
+          </div>
+        {/each}
+      </div>
       <a class="preview-link" href="#contrast"
         >View contrast checks <span aria-hidden="true">↗</span></a
       >
