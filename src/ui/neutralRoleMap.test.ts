@@ -6,6 +6,7 @@ import { generateSystem } from '../engine/generate';
 import { parseKdsTokens } from '../engine/reference';
 import NeutralRoleMap from './NeutralRoleMap.svelte';
 import { buildNeutralRoleMap } from './neutralRoleMap';
+import { groupContrastChecks } from './neutralColorDetails';
 
 const system = generateSystem(configFromReference(parseKdsTokens(
   readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8'),
@@ -22,6 +23,7 @@ it('renders aligned light and dark maps with accessible stop buttons', () => {
   expect(markup).toContain('Surfaces');
   expect(markup).toContain('Fills');
   expect(markup).toContain('<dialog');
+  expect(markup).toContain('closedby="any"');
   expect(markup).toContain('aria-labelledby="neutral-color-detail-title"');
   expect(markup.match(/aria-haspopup="dialog"/g)).toHaveLength(buildNeutralRoleMap(system).stops.length * 2);
   expect(markup).toContain('>Close</button>');
@@ -39,6 +41,22 @@ it('orders actual neutral primitives and preserves shared role stacks', () => {
   expect(map.stops.every((stop) => system.primitives.some((item) => item.name === stop.primitive && item.family === 'gray'))).toBe(true);
   expect(map.stops.map((stop) => stop.color.l)).toEqual([...map.stops].map((stop) => stop.color.l).sort((a, b) => b - a));
   expect(map.stops.some((stop) => Object.values(stop.labels.light).flat().length > 1)).toBe(true);
+});
+
+it('renders every selected color relationship as a table row with explicit requirements', () => {
+  const markup = render(NeutralRoleMap, { props: { system, modes: ['light', 'dark'] } }).body;
+  const dialog = markup.slice(markup.indexOf('<dialog'));
+  const selectedStop = buildNeutralRoleMap(system).stops[0];
+  const relationships = groupContrastChecks([...selectedStop.checks.light, ...selectedStop.checks.dark]);
+  const rows = [...dialog.matchAll(/<tbody>([\s\S]*?)<\/tbody>/g)].flatMap(match => match[1].match(/<tr>/g) ?? []);
+  expect(rows).toHaveLength(relationships.length);
+  expect(dialog).toContain('<caption>');
+  expect(dialog).toContain('scope="row"');
+  expect(dialog).toContain('Normal text');
+  expect(dialog).toContain('≥ 4.5:1');
+  expect(dialog).toContain('Large text');
+  expect(dialog).toContain('≥ 3:1');
+  expect(dialog).not.toContain('View all contrast checks');
 });
 
 it('does not leak labels or checks between modes', () => {
