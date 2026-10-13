@@ -918,9 +918,12 @@ summary {
 
 .preview-shell {
   min-inline-size: 0;
-  border: 1px solid #cfd7cf;
+  border: 1px solid var(--kds-border-neutral-muted-base);
   border-radius: 7px;
-  background: white;
+  background: var(--kds-bg-surface-base);
+  color: var(--kds-fg-base);
+  &[data-mode="light"] { color-scheme: light; }
+  &[data-mode="dark"] { color-scheme: dark; }
 }
 
 .preview-heading {
@@ -930,8 +933,9 @@ summary {
   flex-wrap: wrap;
   gap: 8px;
   padding: 13px 16px;
-  background: #fff;
-  border-block-end: 1px solid var(--line);
+  background: var(--kds-bg-surface-base);
+  color: var(--kds-fg-base);
+  border-block-end: 1px solid var(--kds-border-neutral-muted-base);
   border-start-start-radius: 6px;
   border-start-end-radius: 6px;
   font-size: 11px;
@@ -943,7 +947,7 @@ summary {
   }
   & > span:first-child > span {
     font-size: 15px;
-    color: #5f6e64;
+    color: var(--kds-fg-muted);
   }
 }
 
@@ -951,7 +955,7 @@ summary {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #526e4c;
+  color: var(--kds-fg-positive-base);
   font-size: 9px;
   font-weight: 400;
   &::before {
@@ -962,7 +966,7 @@ summary {
     border-radius: 50%;
   }
   &.fail {
-    color: #aa3f32;
+    color: var(--kds-fg-negative-base);
   }
 }
 

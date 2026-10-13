@@ -46,7 +46,7 @@
   let failures = $derived(checks.filter((check) => !check.pass).length);
 </script>
 
-<article class="preview-shell">
+<article class="preview-shell" data-mode={mode} style={previewStyle(system)}>
   <header class="preview-heading">
     <span
       ><span aria-hidden="true">{mode === 'light' ? '☀' : '◐'}</span>
@@ -55,7 +55,7 @@
       >{failures ? `${failures} failed checks` : 'Checks pass'}</span
     >
   </header>
-  <div class="theme-preview" data-mode={mode} style={previewStyle(system)}>
+  <div class="theme-preview" data-mode={mode}>
     <div class="preview-product-heading">
       <span>Workspace</span><span class="preview-avatar">JD</span>
     </div>
