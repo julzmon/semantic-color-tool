@@ -4,14 +4,11 @@
   import ModelNotes from './ui/ModelNotes.svelte';
   import ContrastTable from './ui/ContrastTable.svelte';
   import NeutralRoleMap from './ui/NeutralRoleMap.svelte';
-  import Primitives from './ui/Primitives.svelte';
-  import Matrix from './ui/Matrix.svelte';
   import StateOverview from './ui/StateOverview.svelte';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
   import { adjustedControlKeys } from './ui/controlValues';
   import { configFromReference } from './engine/config';
-  import ExportPanel from './ui/ExportPanel.svelte';
   import {
     CONFIGURATION_STORAGE_KEY,
     loadStoredConfiguration,
@@ -26,6 +23,12 @@
   const initialConfig = configFromReference(reference);
   const tabs = ['Overview', 'Color roles', 'Color palette', 'Export'] as const;
   type Tab = (typeof tabs)[number];
+  let matrixModule: Promise<typeof import('./ui/Matrix.svelte')> | undefined;
+  let primitivesModule: Promise<typeof import('./ui/Primitives.svelte')> | undefined;
+  let exportModule: Promise<typeof import('./ui/ExportPanel.svelte')> | undefined;
+  const loadMatrix = () => matrixModule ??= import('./ui/Matrix.svelte');
+  const loadPrimitives = () => primitivesModule ??= import('./ui/Primitives.svelte');
+  const loadExport = () => exportModule ??= import('./ui/ExportPanel.svelte');
   const stored = loadStoredConfiguration(
     typeof window === 'undefined' ? null : window.localStorage,
     initialConfig,
@@ -159,6 +162,13 @@
   };
 </script>
 
+{#snippet viewLoadError()}
+  <div role="alert">
+    <p class="help">This view could not load. Reload the application to try again.</p>
+    <button class="secondary-button" onclick={() => window.location.reload()}>Reload application</button>
+  </div>
+{/snippet}
+
 <a class="skip-link" href="#workspace">Skip to workspace</a>
 <header class="app-header">
   <div class="brand-name">Semantic Color System Generator</div>
@@ -214,21 +224,39 @@
           <h2>Color roles</h2>
           <p>Compare colors across families. Select a color to see its uses and contrast checks.</p>
         </div>
-        <Matrix
-          {system}
-          {modes}
-          {selected}
-          onSelect={(next) => { selected = next; }}
-        />
+        {#await loadMatrix()}
+          <p class="help" role="status">Loading color roles…</p>
+        {:then { default: Matrix }}
+          <Matrix
+            {system}
+            {modes}
+            {selected}
+            onSelect={(next) => { selected = next; }}
+          />
+        {:catch}
+          {@render viewLoadError()}
+        {/await}
       {:else if tab === 'Color palette'}
-        <Primitives {system} />
+        {#await loadPrimitives()}
+          <p class="help" role="status">Loading color palette…</p>
+        {:then { default: Primitives }}
+          <Primitives {system} />
+        {:catch}
+          {@render viewLoadError()}
+        {/await}
       {:else if tab === 'Export'}
-        <ExportPanel
-          {system}
-          prefix={draft.prefix}
-          onPrefixChange={(prefix) => updateConfiguration({ ...draft, prefix })}
-          onImport={importConfiguration}
-        />
+        {#await loadExport()}
+          <p class="help" role="status">Loading export…</p>
+        {:then { default: ExportPanel }}
+          <ExportPanel
+            {system}
+            prefix={draft.prefix}
+            onPrefixChange={(prefix) => updateConfiguration({ ...draft, prefix })}
+            onImport={importConfiguration}
+          />
+        {:catch}
+          {@render viewLoadError()}
+        {/await}
       {/if}
       {#if tab !== 'Color roles'}<NeutralRoleMap {system} {modes} />{/if}
       {#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}

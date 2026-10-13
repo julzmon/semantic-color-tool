@@ -25,6 +25,12 @@ it('renders aligned light and dark maps with accessible stop buttons', () => {
   expect(markup).toContain('aria-labelledby="neutral-color-detail-title"');
   expect(markup.match(/aria-haspopup="dialog"/g)).toHaveLength(buildNeutralRoleMap(system).stops.length * 2);
   expect(markup).toContain('>Close</button>');
+  for (const stop of buildNeutralRoleMap(system).stops) {
+    const ordinal = stop.primitive.split('-').at(-1);
+    expect(markup).toContain(`<code>${stop.color.hex} </code><small>${ordinal}</small>`);
+  }
+  expect(markup).toContain('<span class="sr-only">Light neutral color </span>');
+  expect(markup).toContain('<span class="sr-only">Dark neutral color </span>');
 });
 
 it('orders actual neutral primitives and preserves shared role stacks', () => {

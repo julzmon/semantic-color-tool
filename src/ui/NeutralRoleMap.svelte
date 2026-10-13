@@ -65,12 +65,11 @@
               class="role-map-stop"
               class:selected={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-pressed={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
-              aria-label={`${modeNames[mode]} ${shortToken(stop.primitive)} ${stop.color.hex}`}
               aria-haspopup="dialog"
               aria-controls="neutral-color-details"
               title={neutralNote(stop.color)}
               onclick={() => void inspectStop(stop.primitive)}
-              ><span class="role-map-swatch" style:background={stop.color.css}></span><code>{stop.color.hex}</code><small>{shortToken(stop.primitive)}</small></button
+              ><span class="sr-only">{modeNames[mode]} neutral color{' '} </span><span class="role-map-swatch" style:background={stop.color.css}></span><code>{stop.color.hex}{' '}</code><small>{shortToken(stop.primitive)}</small></button
             >{/each}
           {#each groups.filter((group) => group.position === 'below') as group (group.id)}<div class="role-map-group-label">{group.label}</div>
             {#each model.stops as stop (stop.primitive)}<div class="role-map-annotation" style={`--role-map-slots: ${model.rowSlots[group.id]}`}>
