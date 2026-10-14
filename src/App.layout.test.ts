@@ -14,6 +14,8 @@ it('keeps workspace navigation inside the preview content and shows both themes 
   expect(markup).not.toContain('class="mode-switch');
   expect(workspace).toContain('Light theme');
   expect(workspace).toContain('Dark theme');
+  expect(workspace).not.toContain('Color roles');
+  expect(workspace).toContain('Color palette');
   expect(markup).not.toContain('brand-mark');
 });
 
@@ -29,4 +31,12 @@ it('does not render the redundant workspace intro above the previews', () => {
   const markup = render(App).body;
   expect(markup).not.toContain('Build your color system');
   expect(markup).not.toContain('Adjust your colors and preview them in light and dark themes.');
+  expect(markup).not.toContain('Surface layout');
+  expect(markup).not.toContain('>Flat<');
+  expect(markup).not.toContain('Colors in use');
+  expect(markup).not.toContain('semantic tokens covered');
+  expect(markup).not.toContain('aria-label="Preview section"');
+  expect(markup).not.toContain('aria-label="Preview controls"');
+  expect(markup).not.toContain('>Family<select');
+  expect(markup).not.toContain('Select a sample to inspect its token and contrast checks.');
 });

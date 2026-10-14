@@ -4,7 +4,8 @@
   import ModelNotes from './ui/ModelNotes.svelte';
   import ContrastTable from './ui/ContrastTable.svelte';
   import NeutralRoleMap from './ui/NeutralRoleMap.svelte';
-  import StateOverview from './ui/StateOverview.svelte';
+  import Inspector from './ui/Inspector.svelte';
+  import { lightDismiss } from './ui/lightDismiss';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
   import { adjustedControlKeys } from './ui/controlValues';
@@ -21,12 +22,10 @@
   import PwaStatus from './ui/PwaStatus.svelte';
   import ThemePreview from './ui/ThemePreview.svelte';
   const initialConfig = configFromReference(reference);
-  const tabs = ['Overview', 'Color roles', 'Color palette', 'Export'] as const;
+  const tabs = ['Overview', 'Color palette', 'Export'] as const;
   type Tab = (typeof tabs)[number];
-  let matrixModule: Promise<typeof import('./ui/Matrix.svelte')> | undefined;
   let primitivesModule: Promise<typeof import('./ui/Primitives.svelte')> | undefined;
   let exportModule: Promise<typeof import('./ui/ExportPanel.svelte')> | undefined;
-  const loadMatrix = () => matrixModule ??= import('./ui/Matrix.svelte');
   const loadPrimitives = () => primitivesModule ??= import('./ui/Primitives.svelte');
   const loadExport = () => exportModule ??= import('./ui/ExportPanel.svelte');
   const stored = loadStoredConfiguration(
@@ -59,7 +58,13 @@
     restored.message || stored.error || (stored.restored ? 'Your saved colors are restored.' : ''),
   );
   let tab = $state<Tab>('Overview');
-  let selected = $state<Selection>({ mode: 'light', family: 'brand', role: 'emphasis.base' });
+  let previewSelection = $state<Selection | null>(null);
+  let previewInspector = $state<HTMLDialogElement>();
+  const inspectPreview = async (mode: Mode, token: string) => {
+    previewSelection = { mode, token };
+    await tick();
+    previewInspector?.showModal();
+  };
   let settingsOpen = $state(false);
   let settingsToggle = $state<HTMLButtonElement | undefined>(undefined);
   const openSettings = async () => {
@@ -98,10 +103,6 @@
       configurationStatus = 'Changes could not be saved in this browser.';
   });
   const modes: Mode[] = ['light', 'dark'];
-  const select = (selection: Selection) => {
-    selected = selection;
-    tab = 'Color roles';
-  };
   const reset = () => {
     editVersion++;
     checking = false;
@@ -216,26 +217,12 @@
       {/if}
       {#if tab === 'Overview'}
         <div class="preview-grid">
-          {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} />{/each}
+          {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} onInspect={token => void inspectPreview(previewMode, token)} />{/each}
         </div>
-        <StateOverview {system} mode="light" onSelect={select} />
-      {:else if tab === 'Color roles'}
-        <div class="view-intro">
-          <h2>Color roles</h2>
-          <p>Compare colors across families. Select a color to see its uses and contrast checks.</p>
-        </div>
-        {#await loadMatrix()}
-          <p class="help" role="status">Loading color roles…</p>
-        {:then { default: Matrix }}
-          <Matrix
-            {system}
-            {modes}
-            {selected}
-            onSelect={(next) => { selected = next; }}
-          />
-        {:catch}
-          {@render viewLoadError()}
-        {/await}
+        <dialog class="role-map-dialog preview-inspector-dialog" closedby="any" use:lightDismiss bind:this={previewInspector} aria-labelledby="preview-inspector-title">
+          <div class="role-map-dialog-heading"><h3 id="preview-inspector-title">Token details</h3><button class="secondary-button" onclick={() => previewInspector?.close()}>Close</button></div>
+          {#if previewSelection}<Inspector {system} selected={previewSelection} />{/if}
+        </dialog>
       {:else if tab === 'Color palette'}
         {#await loadPrimitives()}
           <p class="help" role="status">Loading color palette…</p>
@@ -258,7 +245,7 @@
           {@render viewLoadError()}
         {/await}
       {/if}
-      {#if tab !== 'Color roles'}<NeutralRoleMap {system} {modes} />{/if}
+      <NeutralRoleMap {system} {modes} />
       {#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}
       <ModelNotes />
       </main>

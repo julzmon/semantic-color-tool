@@ -20,7 +20,7 @@ The builder uses shared semantic lightness positions across families, checks con
 
 ## Operating Context
 
-An interactive Svelte 5 and TypeScript browser application. Users adjust system structure, surfaces and neutrals, semantic colors, muted fills, and interaction states; compare light, dark, and split previews; inspect roles and primitives; then export tokens or configurations for downstream use.
+An interactive Svelte 5 and TypeScript browser application. Users adjust system structure, surfaces and neutrals, semantic colors, muted fills, and interaction states; compare paired light and dark previews; inspect roles and primitives; then export tokens or configurations for downstream use.
 
 Calculations and configuration import/export run locally. Valid configurations persist in browser storage for the current origin. Production builds support installation and offline use after caching; development builds do not run a service worker. Configuration files provide portable backups across origins.
 

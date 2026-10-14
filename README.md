@@ -47,7 +47,7 @@ pnpm run verify:pwa
 - Fixed contrast requirements: normal text **4.5:1**, large text **3:1**, and UI boundaries **3:1**.
 - Shared lightness positions for corresponding roles across every family, with contextual contrast checks for each emitted relationship.
 - Shared primitive reuse where it preserves contrast, gamut, state separation, and exact locks.
-- Light, dark, and split previews; a semantic matrix; primitive inspection; CSS, DTCG, and configuration exports.
+- Paired light/dark previews with all families and states shown together, nested surfaces, complete semantic token coverage, and sample inspection; primitive inspection; CSS, DTCG, and configuration exports.
 - Native CSS `light-dark()` output with no legacy fallback.
 
 This is a generated color-token scope, not a replacement for the complete KDS API. Non-color tokens and transparent overlay tokens are outside the builder.

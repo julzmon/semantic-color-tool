@@ -18,7 +18,9 @@
       "vite/client",
       "node",
       "svelte"
-    ]
+    ],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": [
     "src",

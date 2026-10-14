@@ -4,7 +4,7 @@ import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
 import { reuseGrayPositions } from './reuse';
 import type {
   BuilderConfig, ColorAnchor, ColorValue, ContrastCheck, FamilyConfig, FamilyId, FamilyRole,
-  GeneratedFamily, GeneratedRole, GeneratedSystem, Mode, ModeTheme, OklchColor, Primitive, SemanticToken, State,
+  GeneratedFamily, GeneratedRole, GeneratedSystem, Mode, ModeTheme, Primitive, SemanticToken, State,
 } from './types';
 
 const modes: Mode[] = ['light', 'dark'];

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
   import { parseLockedColor } from '../engine/color';
-  import type { ColorAnchor, Mode, OklchColor } from '../engine/types';
+  import type { ColorAnchor, OklchColor } from '../engine/types';
   import { serializeOklch } from './brandAnchor';
   import { inkFor } from './presentation';
   type Draft = Record<keyof OklchColor, string>;

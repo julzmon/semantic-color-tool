@@ -1,4 +1,3 @@
-import type { FamilyId, FamilyRole, Mode } from '../engine/types';
+import type { Mode } from '../engine/types';
 
-export type PreviewMode = Mode | 'split';
-export type Selection = { mode: Mode; family: FamilyId; role: FamilyRole };
+export type Selection = { mode: Mode; token: string };
