@@ -30,6 +30,7 @@
 body {
   margin: 0;
   min-inline-size: 0;
+  overflow-x: clip;
 }
 
 button, input, select, textarea {
@@ -1155,6 +1156,7 @@ summary {
 }
 
 .role-map-scroll {
+  max-inline-size: 100%;
   overflow-x: auto;
   padding: 4px 0 12px;
   &:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -1204,7 +1206,6 @@ summary {
   gap: 4px;
   justify-content: center;
   & span {
-    align-self: center;
     max-inline-size: 100%;
     padding: 2px 6px;
     border-radius: 999px;
@@ -1968,6 +1969,9 @@ summary {
   .preview-heading {
     padding-inline: 12px;
   }
+  .preview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 620px) {
@@ -2198,6 +2202,7 @@ summary {
 
 .workspace-shell {
   min-inline-size: 0;
+  background: var(--workspace-surface);
 }
 
 .preview-heading, .neutral-role-map, .contrast-section, .model-notes, .primitive-grid, .export-panel {
@@ -2399,7 +2404,7 @@ summary {
 
 .app-layout {
   display: grid;
-  grid-template-columns: minmax(270px, 1fr) minmax(0, 3fr);
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
   align-items: start;
 }
 
@@ -2431,6 +2436,7 @@ summary {
 .app-layout > .workspace {
   max-inline-size: 1500px;
   inline-size: 100%;
+  margin-inline: 0;
   min-block-size: calc(100dvh - 58px);
   background: var(--workspace-surface);
 }
