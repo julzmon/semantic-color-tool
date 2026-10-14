@@ -60,3 +60,16 @@ it.each(['light', 'dark'] as const)('keeps contextual alerts and an editable inp
   expect(markup).toContain(`id="project-${mode}"`);
   expect(markup).toContain('Project name');
 });
+it.each(['light', 'dark'] as const)('uses matching family foreground states inside border examples in %s mode', mode => {
+  const markup = render(ThemePreview, { props: { system: defaultSystem, mode } }).body;
+  for (const family of defaultSystem.config.families) {
+    for (const kind of ['muted', 'emphasis'] as const) {
+      for (const state of ['base', 'hover'] as const) {
+        const token = defaultSystem.modes[mode].families[family.id].roles[`border.${kind}.${state}`]!;
+        const foreground = defaultSystem.modes[mode].families[family.id].roles[`foreground.${state}`]!;
+        const button = markup.match(new RegExp(`<button[^>]*data-token="${token.semantic}"[^>]*>`))?.[0];
+        expect(button).toContain(`; color: ${foreground.color.css}`);
+      }
+    }
+  }
+});

@@ -54,14 +54,14 @@
 <section class="neutral-role-map" aria-labelledby="neutral-role-map-title">
   <div class="subsection-title">
     <div>
-      <h3 id="neutral-role-map-title">Neutral colors and their uses</h3>
+      <h3 id="neutral-role-map-title">Role mapping</h3>
     </div>
-    <span class="mini-tag">{model.stops.length} generated stops</span>
+    <span class="mini-tag">{model.stops.length} colors</span>
   </div>
-  <p class="section-description">Select a color to see its uses. Colors run from light to dark; labels stack when uses share a color.</p>
+  <p class="section-description">Select a color to inspect its roles.</p>
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus lets users access the horizontal map scroll region.) -->
   <div class="role-map-scroll" role="region" tabindex="0" aria-label="Neutral role map. Scroll horizontally to view all generated stops.">
-    {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style={`--role-map-surface: ${surfaceBase(mode)}`} style:color={inkFor(surfaceBase(mode))}>
+    {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style={`--role-map-surface: ${surfaceBase(mode)}; --role-map-label-background: ${system.modes[mode].families.neutral.roles['muted.base']!.color.css}; --role-map-label-foreground: ${system.modes[mode].families.neutral.roles['foreground.base']!.color.css}`} style:color={inkFor(surfaceBase(mode))}>
         <h4>{modeNames[mode]} neutral roles</h4>
         <div class="role-map-grid" style={`--role-map-columns: ${model.stops.length}`}>
           {#each groups.filter((group) => group.position === 'above') as group (group.id)}<div class="role-map-group-label">{group.label}</div>

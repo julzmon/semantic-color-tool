@@ -13,7 +13,10 @@
     const color = `var(${token.role.semantic})`;
     if (token.kind === 'muted') return `background: ${color}; color: ${theme.families[token.family!].roles['foreground.base']!.color.css}`;
     if (token.kind === 'emphasis') return `background: ${color}; color: ${theme.foreground.onEmphasis.color.css}`;
-    if (token.kind.startsWith('border-')) return `border-color: ${color}; background: ${theme.surfaces[0].color.css}; color: ${theme.foreground.base.color.css}`;
+    if (token.kind.startsWith('border-')) {
+      const foreground = theme.families[token.family!].roles[token.state === 'hover' ? 'foreground.hover' : 'foreground.base']!;
+      return `border-color: ${color}; background: ${theme.surfaces[0].color.css}; color: ${foreground.color.css}`;
+    }
     return `color: ${color}; background: ${token.role.semantic.endsWith('fg-on-emphasis') ? theme.families.brand.roles['emphasis.base']!.color.css : theme.surfaces[0].color.css}`;
   };
 </script>
