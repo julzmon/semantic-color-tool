@@ -85,3 +85,11 @@ it('shows state spacing as light/dark Brand bands and respects reversed dark emp
   expect(muted[muted.length / 2 - 1].color.l).toBeLessThan(muted[0].color.l);
   expect(muted.at(-1)!.color.l).toBeGreaterThan(muted[muted.length / 2].color.l);
 });
+
+it('previews stronger muted borders independently in light and dark mode', () => {
+  const light = track(defaults, 'Muted border strength', 0).stops;
+  const dark = track(defaults, 'Muted border strength', 1).stops;
+  expect(light.at(-1)!.color.l).toBeLessThan(light[0].color.l);
+  expect(dark.at(-1)!.color.l).toBeGreaterThan(dark[0].color.l);
+  for (const stop of [...light, ...dark]) expect(stop.color.h).toBeCloseTo(defaults.families.find(family => family.id === 'brand')!.hue, 5);
+});

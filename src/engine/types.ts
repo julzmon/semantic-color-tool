@@ -28,7 +28,7 @@ export interface BuilderConfig {
   prefix: string;
   surfaces: { light: { l: number }; dark: { l: number }; levels: number; step: number | Record<Mode, number> };
   families: FamilyConfig[];
-  muted: { distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number> };
+  muted: { distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number>; borderStrength?: Record<Mode, number> };
   emphasis: {
     separation: number;
     selected: boolean;

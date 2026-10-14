@@ -1,9 +1,9 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import Slider from './Slider.svelte';
-  import { mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
+  import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
   import type { BuilderConfig, FamilyId, GeneratedSystem, Mode } from '../engine/types';
-  import { familyControlColor, familyTrackStyle, mutedTrackStyle, stateTrackStyle, surfaceTrackStyle } from './controlTracks';
+  import { familyControlColor, familyTrackStyle, mutedBorderTrackStyle, mutedTrackStyle, stateTrackStyle, surfaceTrackStyle } from './controlTracks';
   import BrandAnchors from './BrandAnchors.svelte';
   let { config, system, adjusted = [], checking = false, canUndo = false, settingsOpen = false, onKeydown, onClose, onChange, onReset, onUndo }: {
     config: BuilderConfig; system: GeneratedSystem; adjusted?: string[]; checking?: boolean; canUndo?: boolean; settingsOpen?: boolean;
@@ -14,6 +14,9 @@
   const updateStep = (mode: Mode, value: number) => onChange({ ...config, surfaces: { ...config.surfaces, step: { light: surfaceStep(config, 'light'), dark: surfaceStep(config, 'dark'), [mode]: value } } });
   const updateDistance = (mode: Mode, value: number) => onChange({ ...config, muted: { ...config.muted, distance: { light: mutedDistance(config, 'light'), dark: mutedDistance(config, 'dark'), [mode]: value } } });
   const updateChroma = (mode: Mode, value: number) => onChange({ ...config, muted: { ...config.muted, chromaScale: { light: mutedChromaScale(config, 'light'), dark: mutedChromaScale(config, 'dark'), [mode]: value / 100 } } });
+  const updateBorder = (mode: Mode, value: number) => onChange({ ...config, muted: { ...config.muted, borderStrength: {
+    light: mutedBorderStrength(config, 'light'), dark: mutedBorderStrength(config, 'dark'), [mode]: Number((value / 100 * MAX_MUTED_BORDER_STRENGTH).toFixed(6)),
+  } } });
 </script>
 
 <aside id="settings-panel" class="controls settings-sidebar" class:settings-open={settingsOpen} role={settingsOpen ? 'dialog' : undefined} aria-modal={settingsOpen ? 'true' : undefined} aria-label="Color system configuration" onkeydown={onKeydown}>
@@ -76,9 +79,11 @@
         <p class="help">{theme === 'light' ? 'Higher values make muted fills darker.' : 'Higher values make muted fills lighter.'}</p>
         <Slider label="Muted distance" min={-0.08} max={theme === 'dark' ? 0.5 : 0.16} step={0.005} value={mutedDistance(config, theme)} adjusted={adjusted.includes(`muted.${theme}.distance`)} rangeClass="muted-distance-range" rangeStyle={mutedTrackStyle(config, theme, 'distance')} onChange={value => updateDistance(theme, value)} />
         <Slider label="Muted chroma" min={0} max={200} step={1} unit="%" value={mutedChromaScale(config, theme) * 100} adjusted={adjusted.includes(`muted.${theme}.chroma`)} rangeClass="muted-chroma-range" rangeStyle={mutedTrackStyle(config, theme, 'chroma')} onChange={value => updateChroma(theme, value)} />
+        <Slider label="Muted border strength" min={0} max={100} step={1} unit="%" value={mutedBorderStrength(config, theme) / MAX_MUTED_BORDER_STRENGTH * 100} adjusted={adjusted.includes(`muted.${theme}.border`)} rangeStyle={mutedBorderTrackStyle(config, theme)} onChange={value => updateBorder(theme, value)} />
+        <p class="help">Subtle → Strong. {theme === 'light' ? 'Stronger borders are darker.' : 'Stronger borders are lighter.'} Fills and text stay the same.</p>
       </fieldset>
     {/each}
-    <p class="help">Tracks preview the Brand muted base fill in each theme.</p>
+    <p class="help">Tracks preview Brand muted fills and borders in each theme.</p>
     <div class="advanced-controls"><strong>Muted color limits</strong><p class="help">100% uses the family chroma; 0% removes color. Higher values add color where the sRGB range allows it. Muted borders are decorative; their text is checked for contrast.</p></div>
   </details>
 

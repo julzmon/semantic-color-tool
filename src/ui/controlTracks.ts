@@ -1,6 +1,6 @@
 import { toColor } from '../engine/color';
-import { mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
-import { generateStates, mutedGeneration, surfaceGeneration } from '../engine/generate';
+import { MAX_MUTED_BORDER_STRENGTH, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
+import { adjustMutedBorders, generateStates, mutedGeneration, surfaceGeneration } from '../engine/generate';
 import type { BuilderConfig, ColorValue, FamilyConfig, GeneratedSystem, Mode } from '../engine/types';
 
 // Sample the engine's sRGB output so gamut limits and lightness bounds match
@@ -42,6 +42,14 @@ export function mutedTrackStyle(config: BuilderConfig, mode: Mode, component: 'd
         : { ...config.muted, chromaScale: { light: mutedChromaScale(config, 'light'), dark: mutedChromaScale(config, 'dark'), [mode]: value / 100 } };
       return mutedGeneration({ ...config, muted }, mode, brand).colors[0];
     })}`;
+}
+
+export function mutedBorderTrackStyle(config: BuilderConfig, mode: Mode): string {
+  const brand = config.families.find(family => family.id === 'brand')!;
+  const colors = mutedGeneration(config, mode, brand).colors;
+  return `--range-track: ${gradient(0, MAX_MUTED_BORDER_STRENGTH, strength => adjustMutedBorders({ ...config,
+    muted: { ...config.muted, borderStrength: { light: strength, dark: strength } },
+  }, mode, brand, colors[1], colors[2])[0])}`;
 }
 
 export function stateTrackStyle(config: BuilderConfig, system: GeneratedSystem, kind: 'muted' | 'emphasis'): string {

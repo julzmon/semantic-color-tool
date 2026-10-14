@@ -68,11 +68,17 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
   result = tryConfig(candidate);
   if (result) return finish(result);
 
+  // Decorative border strength has no contrast target and must survive unrelated limiting.
   // Anchors/targets/state direction/state inclusion are hard requests, never interpolated away.
-  const hard = (config: BuilderConfig) => ({ ...structuredClone(config), prefix: requested.prefix,
-    targets: structuredClone(requested.targets), anchors: structuredClone(requested.anchors),
-    emphasis: { ...config.emphasis, strategy: requested.emphasis.strategy, selected: requested.emphasis.selected,
-      reverseDarkStates: requested.emphasis.reverseDarkStates } });
+  const hard = (config: BuilderConfig): BuilderConfig => {
+    const next = { ...structuredClone(config), prefix: requested.prefix,
+      targets: structuredClone(requested.targets), anchors: structuredClone(requested.anchors),
+      emphasis: { ...config.emphasis, strategy: requested.emphasis.strategy, selected: requested.emphasis.selected,
+        reverseDarkStates: requested.emphasis.reverseDarkStates } };
+    if (requested.muted.borderStrength === undefined) delete next.muted.borderStrength;
+    else next.muted.borderStrength = structuredClone(requested.muted.borderStrength);
+    return next;
+  };
   const start = hard(previous);
   let best = tryConfig(start);
   if (!best) throw new Error('No passing contrast configuration was found with these targets and locked colors. The previous settings were kept.');

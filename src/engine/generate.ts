@@ -1,5 +1,5 @@
 import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
-import { mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
+import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
 import { reuseGrayPositions } from './reuse';
 import type {
@@ -34,6 +34,9 @@ export function validateConfig(config: BuilderConfig): void {
   if (!Number.isInteger(config.surfaces.levels) || config.surfaces.levels < 1 || config.surfaces.levels > 32) throw new Error('Surface count must be an integer from 1 to 32.');
   for (const mode of modes) finite(surfaceStep(config, mode), `${mode} surface step`);
   for (const mode of modes) {
+    const strength = mutedBorderStrength(config, mode);
+    finite(strength, `${mode} muted border strength`);
+    if (strength > MAX_MUTED_BORDER_STRENGTH) throw new Error(`${mode} muted border strength must be within 0–${MAX_MUTED_BORDER_STRENGTH}.`);
     const scale = mutedChromaScale(config, mode);
     finite(scale, `${mode} muted chroma scale`);
     if (scale > 2) throw new Error(`${mode} muted chroma scale must be within 0–2.`);
@@ -111,6 +114,16 @@ export function mutedGeneration(config: BuilderConfig, mode: Mode, family: Famil
     result.diagnostics.unshift(`${mode} ${family.id}: muted distance and full state separation are infeasible together; the group shifts toward the available range.`);
   }
   return result;
+}
+
+/** Move only decorative borders; translate the pair together to preserve state spacing. */
+export function adjustMutedBorders(config: BuilderConfig, mode: Mode, family: FamilyConfig, base: ColorValue, hover: ColorValue): [ColorValue, ColorValue] {
+  const strength = mutedBorderStrength(config, mode);
+  if (strength === 0) return [base, hover];
+  const available = mode === 'light' ? Math.min(base.l, hover.l) : 1 - Math.max(base.l, hover.l);
+  const delta = direction(mode) * Math.min(strength, Math.max(0, available));
+  const color = (source: ColorValue) => toColor({ l: clamp(source.l + delta), c: mutedFamilyChroma(config, mode, family), h: family.hue });
+  return [color(base), color(hover)];
 }
 
 function createFactory(family: FamilyConfig): ColorFactory {
@@ -494,6 +507,12 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
   const originalChecks = contextualChecks(config, themes);
   const reused = reuseGrayPositions(config, themes, (candidate) => contextualChecks(config, candidate)
     .every((check, index) => check.pass === originalChecks[index].pass));
+  for (const mode of modes) for (const family of config.families) {
+    const roles = reused[mode].families[family.id].roles;
+    const [base, hover] = adjustMutedBorders(config, mode, family, roles['border.muted.base']!.color, roles['border.muted.hover']!.color);
+    roles['border.muted.base']!.color = base;
+    roles['border.muted.hover']!.color = hover;
+  }
   const deduplicated = deduplication(reused, config.prefix);
   const checks = contextualChecks(config, deduplicated.modes);
   for (const mode of modes) {

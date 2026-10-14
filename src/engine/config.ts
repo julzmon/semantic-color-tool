@@ -3,6 +3,7 @@ import { FAMILY_DEFINITIONS } from './families';
 import type { BuilderConfig, FamilyConfig, KdsReference, Mode, OklchColor } from './types';
 
 export const DEFAULT_TOKEN_PREFIX = 'kds';
+export const MAX_MUTED_BORDER_STRENGTH = 0.3;
 
 const toOklch = converter('oklch');
 
@@ -53,6 +54,12 @@ export function mutedDistance(config: BuilderConfig, mode: Mode): number {
 export function mutedChromaScale(config: BuilderConfig, mode: Mode): number {
   const scale = config.muted?.chromaScale;
   return scale === undefined ? 1 : scale?.[mode] ?? NaN;
+}
+
+/** Absent controls preserve the existing muted-state aliases exactly. */
+export function mutedBorderStrength(config: BuilderConfig, mode: Mode): number {
+  const strength = config.muted?.borderStrength;
+  return strength === undefined ? 0 : strength?.[mode] ?? NaN;
 }
 
 /** Neutral roles share one global chroma; muted scaling affects colored families. */

@@ -67,7 +67,9 @@ function normalizeMuted(value: unknown): RecordValue {
   const scale = muted.chromaScale === undefined
     ? { light: 1, dark: 1 }
     : record(muted.chromaScale, 'Configuration muted.chromaScale');
-  return { distance, separation: muted.separation, chromaScale: { light: scale.light, dark: scale.dark } };
+  const border = muted.borderStrength === undefined ? undefined : record(muted.borderStrength, 'Configuration muted.borderStrength');
+  return { distance, separation: muted.separation, chromaScale: { light: scale.light, dark: scale.dark },
+    ...(border ? { borderStrength: { light: border.light, dark: border.dark } } : {}) };
 }
 
 function sourceConfig(value: unknown): RecordValue {

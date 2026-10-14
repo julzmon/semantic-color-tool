@@ -1,4 +1,4 @@
-import { mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
+import { mutedBorderStrength, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
 import type { BuilderConfig, Mode } from '../engine/types';
 export function normalizeNumericControl(value: number, min: number, max: number, step: number): number | undefined {
   if (!Number.isFinite(value)) return undefined;
@@ -13,6 +13,7 @@ export function adjustedControlKeys(requested: BuilderConfig, accepted: BuilderC
     compare(`surfaces.${mode}.step`, surfaceStep(requested, mode), surfaceStep(accepted, mode));
     compare(`muted.${mode}.distance`, mutedDistance(requested, mode), mutedDistance(accepted, mode));
     compare(`muted.${mode}.chroma`, mutedChromaScale(requested, mode), mutedChromaScale(accepted, mode));
+    compare(`muted.${mode}.border`, mutedBorderStrength(requested, mode), mutedBorderStrength(accepted, mode));
   }
   compare('surfaces.levels', requested.surfaces.levels, accepted.surfaces.levels);
   compare('muted.separation', requested.muted.separation, accepted.muted.separation);
