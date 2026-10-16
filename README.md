@@ -43,7 +43,7 @@ pnpm run verify:pwa
 ## Builder scope
 
 - Six generated semantic families: Neutral, Brand, Info, Positive, Negative, and Warning.
-- Light and dark surface controls, independent light and dark muted-distance controls, generated gray levels, muted and emphasis states, semantic foregrounds, and borders. Default emphasis fills stay shared across themes; dark hover, pressed, and selected fills can reverse direction while contrast protection remains enabled.
+- Light and dark surface controls, independent light and dark muted-distance controls, generated gray levels, muted states, shared emphasis mixing strengths, semantic foregrounds, and borders. Default emphasis fills stay shared across themes; dark hover, pressed, and selected fills can reverse direction while contrast protection remains enabled.
 - Fixed contrast requirements: normal text **4.5:1**, large text **3:1**, and UI boundaries **3:1**.
 - Shared lightness positions for corresponding roles across every family, with contextual contrast checks for each emitted relationship.
 - Shared primitive reuse where it preserves contrast, gamut, state separation, and exact locks.
@@ -81,7 +81,7 @@ Enter L, C, and H directly in OKLCH. The anchor starts unlocked, so the solver m
 
 An exact lock constrains the same semantic lightness position across families. The builder rejects a lock when it cannot find a passing configuration without changing that source. The engine API retains raw failed checks and diagnostics for consumers that need to inspect infeasible configurations.
 
-Contrast protection is always on in the builder. Controls, imports and restored configurations are accepted only when every checked relationship passes, with targets of at least 4.5:1 for normal text and 3:1 for large text and UI boundaries. The builder first reduces unedited state and surface spacing and, when moving a surface, tries preserving its previous muted lightness. If necessary, a bounded search limits numeric changes to a verified passing configuration. Targets and anchors are never weakened to make a request pass. Adjustment messages identify the changed controls; impossible hard constraints are rejected. This protects the modeled color relationships, not the accessibility of an entire interface.
+Contrast protection is always on in the builder. Controls, imports and restored configurations are accepted only when every checked relationship passes, with targets of at least 4.5:1 for normal text and 3:1 for large text and UI boundaries. The builder first reduces unedited emphasis strengths and state/surface spacing and, when moving a surface, tries preserving its previous muted lightness. If necessary, a bounded search limits numeric changes to a verified passing configuration. Targets and anchors are never weakened to make a request pass. Adjustment messages identify the changed controls; impossible hard constraints are rejected. This protects the modeled color relationships, not the accessibility of an entire interface.
 
 Dark muted distance ranges up to 0.5, allowing brighter fills above a black base. The passing limit depends on surface levels, state spacing, family colors, and locks.
 
@@ -89,7 +89,7 @@ Dark muted distance ranges up to 0.5, allowing brighter fills above a black base
 
 Every valid change is saved locally in the browser. Reloading restores that configuration; **Reset** clears it and restores the KDS defaults.
 
-Use **Export → Configuration** to download the current configuration and validation results. The same tab imports a local JSON configuration after normalizing and validating it before it replaces the current workspace. Version-1 configurations are migrated to the version-2 shape: missing family defaults are added and an old numeric surface step becomes matching light and dark steps. Existing version-2 configurations with one numeric muted distance retain it for both modes; new defaults use `0.055` for light and `0.160` for dark. Muted chroma defaults to 100% in both modes when older configurations omit it.
+Use **Export → Configuration** to download the current configuration and validation results. The same tab imports a local JSON configuration after normalizing and validating it before it replaces the current workspace. Version-1 configurations are migrated to the version-2 shape: missing family defaults are added and an old numeric surface step becomes matching light and dark steps. Existing version-2 configurations with one numeric muted distance retain it for both modes; new defaults use `0.055` for light and `0.160` for dark. Muted chroma defaults to 100% in both modes when older configurations omit it. Missing `emphasis.mixWeights` values migrate from legacy spacing to proportional weights using a reference lightness of 0.5: `1 - separation × stateIndex / 0.5`, bounded to 0–1. A former spacing of 0.045 becomes weights of 91%, 82%, and 73%. This changes the generation model; it does not promise identical old state colors. Existing explicit weights round-trip unchanged. Direct engine callers that omit weights retain the legacy additive model.
 
 ## Architecture
 
@@ -100,6 +100,7 @@ Use **Export → Configuration** to download the current configuration and valid
 | `src/engine/reference.ts` | Parse KDS CSS and resolve aliases/partial dark overrides at build time |
 | `src/engine/config.ts` | Derive version-2 defaults from the parsed reference |
 | `src/engine/color.ts` | Culori conversion, sRGB gamut mapping, contrast, and exact anchors |
+| `src/engine/emphasis.ts` | Shared opaque OKLCH emphasis recipes, weights, and legacy weight conversion |
 | `src/engine/generate.ts` | Surface/state generation, joint constraint solving, shared primitives, and semantic mapping |
 | `src/engine/reuse.ts` | Bounded gray reuse that preserves contextual contrast, state spacing, and locks |
 | `src/engine/export.ts` and `src/engine/tokens.ts` | CSS, configuration, and DTCG serialization |
@@ -111,11 +112,11 @@ See [the completed builder plan](docs/superpowers/plans/2026-10-06-complete-core
 
 ## Color generation and limits
 
-Generated colors are opaque sRGB. Requested chroma is reduced to retain the requested hue and lightness inside the target gamut. Exact locked colors retain their literal source; an out-of-gamut lock is reported as uncertified for sRGB contrast.
+Generated colors are opaque sRGB. Requested chroma is reduced to retain the requested hue and lightness inside the target gamut. Emphasis interaction fills mix their resolved base toward opaque black or white; mixed states are never independently gamut-mapped. The solver rejects out-of-gamut candidates and validates the mix itself. Exact locked colors retain their literal source; an out-of-gamut lock is reported as uncertified for sRGB contrast.
 
 The solver searches lightness in 0.001 increments. A failed search is not a proof that no mathematical solution exists; narrow feasible intervals can be missed. Every emitted color is checked and failed relationships remain visible. Contrast status uses unrounded serialized-color values, never a rounded label or HEX approximation.
 
-Muted fills and emphasis fills do not have a UI-boundary target by themselves; content placed on those fills is checked. Emphasis borders retain the `3:1` UI-boundary requirement. Muted distance from the surface is independently adjustable by mode. Raising the dark value gives dark semantic fills more lightness and therefore more available sRGB chroma. Surface positions are fixed during reuse. State groups reuse tones within their current mode; Text Base may reference a suitable existing neutral tone from either mode without moving its source role. The **Light muted chroma** and **Dark muted chroma** sliders scale colored families’ requested muted chroma from 0–200%. At 100%, the family chroma is retained; 0% removes chroma from their muted fills and derived borders. Neutral fills and borders always use global Neutral chroma, independently of these percentages. Each state is independently gamut-mapped to sRGB. All unlocked interior gray roles use global Neutral hue and chroma, subject to each tone’s sRGB limit. Pure white/black remain untinted; exact neutral locks and their derived state groups retain their locked color model. The neutral map reports requested versus rendered chroma for gamut-limited tones. Foregrounds are still solved against the adjusted muted fills. Configuration exports store these percentages as `muted.chromaScale` factors from 0 to 2.
+Muted fills and emphasis fills do not have a UI-boundary target by themselves; content placed on those fills is checked. Emphasis borders retain the `3:1` UI-boundary requirement. Muted distance from the surface is independently adjustable by mode. Raising the dark value gives dark semantic fills more lightness and therefore more available sRGB chroma. Surface positions are fixed during reuse. Additive state groups reuse tones within their current mode; mixed emphasis groups remain fixed to preserve their recipes. Text Base may reference a suitable existing neutral tone from either mode without moving its source role. The **Light muted chroma** and **Dark muted chroma** sliders scale colored families’ requested muted chroma from 0–200%. At 100%, the family chroma is retained; 0% removes chroma from their muted fills and derived borders. Neutral muted fills and borders use global Neutral chroma independently of these percentages. Muted states are independently gamut-mapped to sRGB. Emphasis bases use the family hue/chroma subject to sRGB limits; emphasis state chroma scales with the shared base-retention weight. Other unlocked interior gray roles use global Neutral hue and chroma, subject to each tone’s sRGB limit. Pure white/black remain untinted; exact neutral locks and their derived state groups retain their locked color model. The neutral map reports requested versus rendered chroma for gamut-limited tones. Foregrounds are still solved against the adjusted muted fills. Configuration exports store these percentages as `muted.chromaScale` factors from 0 to 2.
 
 Nearby Neutral positions may be reused only when the change reduces gray count, retains every contrast result, stays in sRGB, and preserves the relevant state spacing. This is a bounded deterministic optimization, not a proof of the smallest possible palette.
 
@@ -125,16 +126,64 @@ Browser support follows modern Baseline Widely Available features. Exported CSS 
 
 ## CSS themes and DTCG
 
-CSS exports shared `--kds-lightness-*`, family `--kds-hue-*`, and per-tone `--kds-chroma-*` components, then composed primitives and public semantic tokens. Generated primitive ordinals identify shared lightness positions and can change when the configuration or constraints change. Because those ordinals are assigned from both modes together, a dark-only edit can rename light-mode primitive references even when the resolved light colors stay unchanged.
+CSS exports all public semantic roles, shared L/C/H components, and global emphasis mixing settings. The default system has **80 color roles, 79 component tokens, and 3 mix settings** (162 distinct custom properties); **12 emphasis state roles** are derived with `color-mix(in oklch, ...)`. Enabling selected states adds a shared selected weight and the corresponding semantic roles. CSS and previews use the same recipes. DTCG materializes those recipes into opaque numeric colors using the same serialized bases and weights.
+
+The shared settings are base-retention percentages: hover defaults to 92%, pressed to 85%, and selected to 80%. The controls display the complementary **strengths**: 8%, 15%, and 20%. Strength 0% leaves the base unchanged. Increasing strength moves farther toward the endpoint and reduces chroma. Shared bases have the same lightness across families, so shared weights also give corresponding mixed states the same lightness; contrast is still checked per family.
+
+```css
+:root {
+  --kds-lightness-1300: 0.555;
+  --kds-chroma-red-1300: 0.22305;
+  --kds-hue-red: 27.47;
+  --kds-emphasis-hover-weight: 92%;
+  --kds-emphasis-active-weight: 85%;
+  --kds-emphasis-state-target: oklch(0 0 none);
+  --kds-bg-negative-emphasis-base:
+    oklch(var(--kds-lightness-1300)
+          var(--kds-chroma-red-1300)
+          var(--kds-hue-red));
+  --kds-bg-negative-emphasis-active:
+    color-mix(in oklch,
+      var(--kds-bg-negative-emphasis-base) var(--kds-emphasis-active-weight),
+      var(--kds-emphasis-state-target));
+}
+```
+
+Every family uses the same weights. Reversed dark mode uses `light-dark(oklch(0 0 none), oklch(1 0 none))` as the endpoint. Explicit achromatic endpoints avoid small browser conversion differences from named white. All component tokens, mix settings, and semantic recipes are declared once on `:root`. Customize these settings globally on `:root`; inherited recipes do not recompute when a descendant changes a numeric token. Theme boundaries change only `color-scheme` and apply surface/text colors. Unregistered `light-dark()` expressions remain responsive to nested schemes. Editing exported values does not run contrast protection: regenerate through the tool to validate new settings.
+
+Foregrounds, functional borders, and muted fills retain their independently validated generation rules. Identical direct light/dark colors collapse to one value, and identical direct color pairs share aliases. Derived states are excluded as alias sources to avoid cycles through their base token.
+
+CSS restores only referenced shared lightness positions, family hues, and per-tone chroma values. Equal chroma values within a family share one component token; distinct gamut-limited values stay separate. Exact locks keep their literal colors. The intermediate primitive palette remains available in DTCG and the palette inspector. Component ordinals identify generated positions and can change when the configuration or constraints change. Use semantic names in application CSS. Generate a new export after changing the configuration: editing a CSS variable downstream does not run the solver or revalidate its dependents.
+
+Muted fills remain opaque and retain the configured chroma, distance, and border strength. A universal translucent overlay changes with its backdrop and cannot reproduce independently solved and gamut-mapped state colors. The CSS export reduces internal token layers and derives emphasis states with opaque mixes while retaining every semantic state name. It uses native `light-dark()` and does not require relative-color syntax, CSS `if()`, or runtime JavaScript.
 
 `color-scheme: light dark` follows the system preference. Use `data-mode="light"`, `data-mode="dark"`, or `data-mode="auto"` on a region. The export applies both background and foreground at a nested mode boundary so inherited resolved colors do not leak across schemes.
 
 In **Export → DTCG JSON**, choose:
 
 - `foundation/colors.tokens.json`: shared numeric L/C/H tokens and composed OKLCH colors with component JSON Pointers.
-- `semantic/light.tokens.json` and `semantic/dark.tokens.json`: semantic paths with whole-token aliases.
+- `semantic/light.tokens.json` and `semantic/dark.tokens.json`: semantic paths with whole-token aliases and materialized numeric emphasis state colors.
 - `kds.resolver.json`: a source-file resolver; retain the folders above.
 - `kds.bundle.resolver.json`: a portable single-file resolver for Terrazzo, with numeric OKLCH components materialized for compatibility.
+
+Apply state roles directly; no extra overlay element or opacity layer is required:
+
+```css
+.action {
+  color: var(--kds-fg-on-emphasis);
+  background-color: var(--kds-bg-brand-emphasis-base);
+  border: 1px solid var(--kds-border-brand-emphasis-base);
+}
+.action:hover {
+  background-color: var(--kds-bg-brand-emphasis-hover);
+  border-color: var(--kds-border-brand-emphasis-hover);
+}
+.action:active { background-color: var(--kds-bg-brand-emphasis-active); }
+/* Include only when selected-state generation is enabled; selection wins here. */
+.action[aria-pressed="true"] { background-color: var(--kds-bg-brand-emphasis-selected); }
+```
+
+For muted components, use the matching family foreground and muted background roles. Foreground and border hover roles remain available. Focus indicators and disabled behavior belong to the consuming component; the generator does not define those states.
 
 The resolver’s `light` default is a build default. It is independent of CSS system preference. Configuration and validation results remain in the separate Configuration export.
 
@@ -158,6 +207,6 @@ References: [the theming discussion](https://chatgpt.com/share/6ac306ac-7990-83e
 
 ### Control workflow
 
-The builder starts with **System structure** (surface count and selected state), followed by **Surfaces & neutrals**, **Semantic colors**, **Muted fills**, and **Interaction states**. Light and dark settings are grouped within surfaces and muted fills. Brand anchors and emphasis strategy are expandable; token prefix is in **Export settings**. Contrast protection remains visible above the controls.
+The builder starts with **System structure** (surface count and selected state), followed by **Surfaces & neutrals**, **Semantic colors**, **Muted fills**, and **Interaction states**. Light and dark settings are grouped within surfaces and muted fills. Brand anchors and emphasis strategy are expandable; shared emphasis strengths are in Interaction states; token prefix is in **Export settings**. Contrast protection remains visible above the controls.
 
 Each slider has a numeric field: Enter or blur commits a value within its range and step; Escape cancels editing. Automatically adjusted controls are marked inline. **Undo last adjusted change** restores the entire previous verified configuration, including the initiating edit, rather than trying to keep an infeasible request.

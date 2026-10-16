@@ -158,15 +158,6 @@ summary {
   gap: 24px;
 }
 
-.status-dot {
-  display: inline-block;
-  flex: 0 0 6px;
-  inline-size: 6px;
-  block-size: 6px;
-  border-radius: 50%;
-  background: #6a8468;
-}
-
 .primary-button, .secondary-button {
   display: inline-flex;
   justify-content: center;
@@ -289,11 +280,6 @@ summary {
   margin-block-end: 12px;
 }
 
-.section-number {
-  color: #828c83;
-  font: 10px var(--mono);
-}
-
 .mini-tag {
   display: inline-block;
   padding: 3px 6px;
@@ -317,61 +303,6 @@ summary {
   line-height: 1.6;
 }
 
-.surface-control {
-  margin-block: 17px 20px;
-  & > label {
-    display: block;
-    margin-block-end: 8px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-}
-
-.color-input {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-block-size: 38px;
-  padding: 5px 8px;
-  border: 1px solid #cdd5ce;
-  border-radius: 5px;
-  background: white;
-  &:focus-within {
-    border-color: var(--accent);
-  }
-  &.invalid {
-    border-color: #b53932;
-  }
-  & input[type="color"] {
-    flex: 0 0 23px;
-    inline-size: 23px;
-    block-size: 24px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-  }
-  & input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 1px;
-  }
-  & input[type="color"]::-webkit-color-swatch {
-    border: 1px solid #b9c2ba;
-    border-radius: 3px;
-  }
-  & input[type="color"]::-moz-color-swatch {
-    border: 1px solid #b9c2ba;
-    border-radius: 3px;
-  }
-  & input:not([type="color"]) {
-    flex: 1;
-    inline-size: 100%;
-    padding: 3px 0;
-    border: 0;
-    background: transparent;
-    font: 11px/1.5 var(--mono);
-  }
-}
-
 .field-error {
   margin-block-start: 7px;
   font-size: 11px;
@@ -381,10 +312,6 @@ summary {
 
 .slider-control {
   margin-block-start: 15px;
-}
-
-.surface-control .slider-control {
-  margin-block-start: 10px;
 }
 
 .control-label {
@@ -471,7 +398,7 @@ summary {
   border-block-start: 1px solid var(--line-soft);
 }
 
-.advanced-controls summary, .protection-summary summary {
+.advanced-controls summary {
   cursor: pointer;
   color: #344a3e;
   font-weight: 600;
@@ -542,30 +469,6 @@ summary {
 
 .slider-control .field-error {
   display: block;
-}
-
-.protection-summary {
-  padding: 12px 0;
-  background: var(--panel);
-  border-block-start: 1px solid var(--line-soft);
-  & .status-dot {
-    display: inline-block;
-    margin-inline: 5px;
-  }
-  & .contrast-requirements {
-    margin-block: 14px 8px;
-  }
-  & .text-button {
-    margin-block-start: 8px;
-  }
-  & .control-check-status {
-    min-block-size: 1.5em;
-    margin-block: 8px 0;
-  }
-  & .text-button:disabled {
-    opacity: .45;
-    cursor: default;
-  }
 }
 
 .export-settings {
@@ -770,26 +673,6 @@ summary {
   font: 12px var(--mono);
 }
 
-.scope-note {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 15px 12px;
-  border: 1px solid #e0e5d9;
-  border-radius: 5px;
-  background: #f6f8f1;
-  & strong {
-    font-size: 11px;
-    font-weight: 550;
-  }
-  & p {
-    margin-block-start: 5px;
-    color: #66725f;
-    font-size: 10px;
-    line-height: 1.6;
-  }
-}
-
 .workspace {
   min-inline-size: 0;
   inline-size: 100%;
@@ -872,7 +755,7 @@ summary {
   }
 }
 
-.error-banner, .diagnostics {
+.diagnostics {
   margin-block: 14px 22px;
   padding: 14px 16px;
   border: 1px solid #e5c9ac;
@@ -881,12 +764,6 @@ summary {
   color: #86552a;
   font-size: 12px;
   line-height: 1.6;
-}
-
-.error-banner {
-  background: #fff2ef;
-  border-color: #ebc5be;
-  color: #982e29;
 }
 
 .diagnostics {
@@ -1655,7 +1532,7 @@ summary {
   }
 }
 
-.primitive-grid > button, .reference-grid > div {
+.primitive-grid > button {
   display: block;
   min-inline-size: 0;
   padding: 4px;
@@ -1665,7 +1542,7 @@ summary {
   text-align: start;
 }
 
-.primitive-grid > button > span, .reference-grid > div > span {
+.primitive-grid > button > span {
   display: flex;
   align-items: flex-end;
   inline-size: 100%;
@@ -1681,31 +1558,6 @@ summary {
   font-size: 9px;
   color: #667561;
   white-space: nowrap;
-}
-
-.reference-comparison {
-  margin-block-start: 22px;
-  & summary {
-    color: #697660;
-    font-size: 11px;
-    min-block-size: 30px;
-    line-height: 1.5;
-  }
-  & .help {
-    margin-block: 7px 14px;
-  }
-}
-
-.reference-grid {
-  & > div > span {
-    block-size: 55px;
-  }
-  & code {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    line-height: 1.4;
-    font-size: 8px;
-  }
 }
 
 .primitive-detail {
@@ -1743,38 +1595,6 @@ summary {
   block-size: 42px;
   border: 1px solid #d8dfd4;
   border-radius: 4px;
-}
-
-.export-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-block: 4px 22px;
-  padding: 18px;
-  background: #edf3e7;
-  border: 1px solid #dce6d3;
-  border-radius: 5px;
-  color: #405538;
-  & > span {
-    display: grid;
-    place-items: center;
-    flex: 0 0 27px;
-    block-size: 27px;
-    border: 1px solid #becfb0;
-    border-radius: 4px;
-    font-size: 18px;
-  }
-  & strong {
-    font-size: 13px;
-    font-weight: 550;
-  }
-  & p {
-    max-inline-size: 650px;
-    margin-block-start: 6px;
-    color: #697c5c;
-    font-size: 11px;
-    line-height: 1.6;
-  }
 }
 
 .export-toolbar {
@@ -1931,16 +1751,6 @@ summary {
   }
 }
 
-.workspace-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
-  padding-block: 0 24px;
-  color: #889280;
-  font: 9px/1.6 var(--mono);
-}
-
 @media (max-width: 1280px) {
   .inspector {
     display: grid;
@@ -2003,12 +1813,6 @@ summary {
   }
   .help {
     font-size: 12px;
-  }
-  .scope-note {
-    margin-block-start: 0;
-    & p {
-      font-size: 11px;
-    }
   }
   .eyebrow {
     font-size: 10px;
@@ -2108,12 +1912,6 @@ summary {
     flex-basis: 32px;
     block-size: 32px;
   }
-  .export-note {
-    padding: 15px;
-    & p {
-      font-size: 12px;
-    }
-  }
   .export-toolbar {
     align-items: stretch;
     & > .segmented {
@@ -2154,9 +1952,6 @@ summary {
       font-size: 12px;
     }
   }
-  .workspace-footer {
-    font-size: 9px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2177,7 +1972,7 @@ summary {
   font-size: 13px;
 }
 
-.surface-control > label, .surface-count legend, .theme-controls legend {
+.surface-count legend, .theme-controls legend {
   font-size: 14px;
 }
 
@@ -2227,7 +2022,7 @@ summary {
   border-inline-end: 1px solid var(--line);
   background: #fff;
   scrollbar-width: thin;
-  & :is(.control-label label, .control-label output, .numeric-value, .help, .scope-note p, .section-number, .text-button) {
+  & :is(.control-label label, .control-label output, .numeric-value, .help, .text-button) {
     color: #333;
   }
   & .control-section p.help, & .brand-anchor-heading p {
@@ -2314,7 +2109,7 @@ summary {
     background: #111;
     color: #fff;
   }
-  & .advanced-controls summary, & .protection-summary summary {
+  & .advanced-controls summary {
     color: #222;
   }
   & input[type="checkbox"] {

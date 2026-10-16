@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { converter } from 'culori';
 import { readFileSync } from 'node:fs';
 import { contrast, toColor } from './color';
+import { exportCss } from './export';
 import { generateSystem } from './generate';
 import { configFromReference, parseKdsTokens } from './reference';
 import type { BuilderConfig, FamilyRole, Mode, OklchColor } from './types';
@@ -354,4 +355,25 @@ describe('semantic generation', () => {
       { family: 'info', mode: 'light', role: 'emphasis.base', color: '#000', locked: true },
     ] })).toThrow();
   });
+});
+
+it.each([
+  { mixed: false, reversed: false }, { mixed: false, reversed: true },
+  { mixed: true, reversed: false }, { mixed: true, reversed: true },
+])('preserves each equivalent per-mode lock source (%j)', ({ mixed, reversed }) => {
+  const input = config();
+  input.emphasis.reverseDarkStates = reversed;
+  if (mixed) input.emphasis.mixWeights = { hover: 0.92, active: 0.85, selected: 0.8 };
+  input.anchors = [
+    { family: 'brand', mode: 'light', role: 'emphasis.base', color: 'oklch(0.45 0.12 29)', locked: true },
+    { family: 'brand', mode: 'dark', role: 'emphasis.base', color: 'oklch(0.450 0.120 29)', locked: true },
+  ];
+  const result = generateSystem(input);
+  for (const anchor of input.anchors) {
+    const role = result.modes[anchor.mode as Mode].families.brand.roles['emphasis.base']!;
+    expect(role.color.source).toBe(anchor.color);
+    expect(role.color.css).toBe(anchor.color);
+    expect(result.primitives.find(primitive => primitive.name === role.primitive)!.color.source).toBe(anchor.color);
+    expect(exportCss(result)).toContain(anchor.color);
+  }
 });

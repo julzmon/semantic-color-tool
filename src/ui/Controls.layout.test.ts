@@ -77,3 +77,14 @@ it('gives every color-adjusting slider an explanatory track and square black-bor
   expect(styles).toMatch(/::-moz-range-thumb\s*\{[^}]*border:\s*2px solid #111/s);
   expect(styles).toMatch(/::-moz-range-thumb\s*\{[^}]*background:\s*transparent/s);
 });
+
+it('keeps generated CSS implementation details out of the controls sidebar', () => {
+  const markup = render(Controls, { props }).body;
+  expect(markup).not.toContain('--kds-opacity-');
+  expect(markup).not.toContain('--kds-state-');
+  expect(markup).not.toContain('Universal state layer tokens');
+  expect(markup).toContain('Muted color limits');
+  expect(markup).toContain('Muted chroma');
+  expect(markup).toContain('Hover emphasis strength');
+  expect(markup).toContain('Pressed emphasis strength');
+});

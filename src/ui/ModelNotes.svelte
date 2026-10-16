@@ -15,7 +15,8 @@
       <h3>Light and dark themes</h3>
       <p>
         Both themes use one color palette and the same default emphasis fills. In Interaction states,
-        you can reverse dark emphasis states so hover, pressed, and selected fills become lighter.
+        shared strengths mix emphasis bases with black. Reverse dark emphasis states to mix with white instead.
+        The app checks these mixed colors before accepting settings.
       </p>
     </div>
     <div>

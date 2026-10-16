@@ -32,9 +32,9 @@ Calculations and configuration import/export run locally. Valid configurations p
 - Support independent light/dark surfaces, tonal spacing, muted distance and chroma, interaction states, foregrounds, and borders.
 - Share emphasis fills across themes by default, with adaptive per-theme emphasis available.
 - Support OKLCH Brand anchors, including exact locks. Out-of-gamut exact sources remain uncertified for sRGB contrast.
-- Generate opaque sRGB colors; gamut-map unlocked colors by reducing chroma while retaining requested hue and lightness.
+- Generate opaque sRGB colors. Gamut-map unlocked bases by reducing chroma while retaining requested hue and lightness. Derive emphasis interaction fills with shared opaque OKLCH mixing weights; validate those mixed results without independent gamut mapping. Foregrounds, functional borders, and muted fills retain their independent rules.
 - Use a bounded solver and primitive-reuse search. Failure does not prove mathematical infeasibility, and reuse does not prove a globally minimal palette.
-- Export CSS, DTCG tokens/resolvers, and importable configuration JSON. Preserve documented migration and validation behavior.
+- Export semantic CSS with global shared L/C/H components and emphasis mixing settings, DTCG tokens/resolvers, and importable configuration JSON. CSS and previews share verified opaque color expressions; DTCG retains the full foundation and resolves to the same colors. Keep every public interaction state and omit intermediate primitive palette CSS declarations; declare components and recipes only on :root. Preserve documented migration and validation behavior.
 - Export native CSS `light-dark()` without a legacy fallback. Browser support follows modern Baseline Widely Available features, with this explicit exported-CSS requirement.
 - Preserve the configurable token prefix and KDS reference defaults. Generated primitive ordinals may change with configuration changes and are not stable semantic identifiers.
 - Scope the product to generated color tokens. Non-color tokens and transparent overlays are outside the builder; it does not replace the full KDS API.

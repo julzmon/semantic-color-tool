@@ -1,5 +1,5 @@
 {
-  "$description": "KDS Neutral + Brand + Info + Positive + Negative + Warning foundation. Shared lightness; family hue and gamut-mapped chroma. Generated ordinals may change when constraints change.",
+  "$description": "Semantic Color System Generator Neutral + Brand + Info + Positive + Negative + Warning foundation. Shared lightness; family hue and gamut-mapped chroma. Generated ordinals may change when constraints change.",
   "color": {
     "lightness": {
       "100": {
@@ -16,75 +16,79 @@
       },
       "400": {
         "$type": "number",
-        "$value": 0.94
+        "$value": 0.93
       },
       "500": {
         "$type": "number",
-        "$value": 0.93
+        "$value": 0.905
       },
       "600": {
         "$type": "number",
-        "$value": 0.905
+        "$value": 0.833
       },
       "700": {
         "$type": "number",
-        "$value": 0.877
+        "$value": 0.799
       },
       "800": {
         "$type": "number",
-        "$value": 0.832
+        "$value": 0.788
       },
       "900": {
         "$type": "number",
-        "$value": 0.799
+        "$value": 0.733
       },
       "1000": {
         "$type": "number",
-        "$value": 0.787
+        "$value": 0.688
       },
       "1100": {
         "$type": "number",
-        "$value": 0.488
+        "$value": 0.604
       },
       "1200": {
         "$type": "number",
-        "$value": 0.443
+        "$value": 0.559
       },
       "1300": {
         "$type": "number",
-        "$value": 0.4095
+        "$value": 0.555
       },
       "1400": {
         "$type": "number",
-        "$value": 0.398
+        "$value": 0.5106
       },
       "1500": {
         "$type": "number",
-        "$value": 0.3845
+        "$value": 0.49
       },
       "1600": {
         "$type": "number",
-        "$value": 0.3595
+        "$value": 0.4718
       },
       "1700": {
         "$type": "number",
-        "$value": 0.2695
+        "$value": 0.445
       },
       "1800": {
         "$type": "number",
-        "$value": 0.2345
+        "$value": 0.3995
       },
       "1900": {
         "$type": "number",
-        "$value": 0.2
+        "$value": 0.3745
       },
       "2000": {
         "$type": "number",
-        "$value": 0.1995
+        "$value": 0.3495
       },
       "2100": {
         "$type": "number",
-        "$value": 0
+        "$value": 0.2995
+      },
+      "2200": {
+        "$type": "number",
+        "$value": 0.1995
       }
     },
     "hue": {
@@ -169,7 +173,7 @@
         },
         "1400": {
           "$type": "number",
-          "$value": 0.00742
+          "$value": 0.00683
         },
         "1500": {
           "$type": "number",
@@ -177,7 +181,7 @@
         },
         "1600": {
           "$type": "number",
-          "$value": 0.00742
+          "$value": 0.00631
         },
         "1700": {
           "$type": "number",
@@ -197,7 +201,11 @@
         },
         "2100": {
           "$type": "number",
-          "$value": 0
+          "$value": 0.00742
+        },
+        "2200": {
+          "$type": "number",
+          "$value": 0.00742
         }
       },
       "brand": {
@@ -205,49 +213,69 @@
           "$type": "number",
           "$value": 0.02238
         },
-        "500": {
+        "400": {
           "$type": "number",
           "$value": 0.03557
         },
-        "600": {
+        "500": {
           "$type": "number",
           "$value": 0.04937
         },
-        "700": {
+        "600": {
           "$type": "number",
-          "$value": 0.06556
+          "$value": 0.09276
         },
         "800": {
           "$type": "number",
-          "$value": 0.09342
+          "$value": 0.12312
+        },
+        "900": {
+          "$type": "number",
+          "$value": 0.16425
         },
         "1000": {
           "$type": "number",
-          "$value": 0.12384
+          "$value": 0.20163
         },
         "1100": {
           "$type": "number",
-          "$value": 0.20022
+          "$value": 0.21779
         },
         "1200": {
           "$type": "number",
-          "$value": 0.18177
+          "$value": 0.21779
         },
         "1300": {
           "$type": "number",
-          "$value": 0.16802
+          "$value": 0.21779
         },
         "1400": {
           "$type": "number",
-          "$value": 0.16329
+          "$value": 0.20037
         },
         "1500": {
           "$type": "number",
-          "$value": 0.15776
+          "$value": 0.20104
         },
         "1600": {
           "$type": "number",
-          "$value": 0.1475
+          "$value": 0.18512
+        },
+        "1700": {
+          "$type": "number",
+          "$value": 0.18259
+        },
+        "1800": {
+          "$type": "number",
+          "$value": 0.16393
+        },
+        "1900": {
+          "$type": "number",
+          "$value": 0.15367
+        },
+        "2000": {
+          "$type": "number",
+          "$value": 0.1434
         }
       },
       "blue": {
@@ -255,21 +283,25 @@
           "$type": "number",
           "$value": 0.02742
         },
-        "500": {
+        "400": {
           "$type": "number",
           "$value": 0.04305
         },
-        "600": {
+        "500": {
           "$type": "number",
           "$value": 0.05898
         },
-        "700": {
+        "600": {
           "$type": "number",
-          "$value": 0.07715
+          "$value": 0.10645
         },
         "800": {
           "$type": "number",
-          "$value": 0.10712
+          "$value": 0.10961
+        },
+        "900": {
+          "$type": "number",
+          "$value": 0.10961
         },
         "1000": {
           "$type": "number",
@@ -277,27 +309,43 @@
         },
         "1100": {
           "$type": "number",
-          "$value": 0.09542
+          "$value": 0.10961
         },
         "1200": {
           "$type": "number",
-          "$value": 0.08665
+          "$value": 0.10931
         },
         "1300": {
           "$type": "number",
-          "$value": 0.08009
+          "$value": 0.10854
         },
         "1400": {
           "$type": "number",
-          "$value": 0.07784
+          "$value": 0.09985
         },
         "1500": {
           "$type": "number",
-          "$value": 0.07519
+          "$value": 0.09583
         },
         "1600": {
           "$type": "number",
-          "$value": 0.0703
+          "$value": 0.09226
+        },
+        "1700": {
+          "$type": "number",
+          "$value": 0.08702
+        },
+        "1800": {
+          "$type": "number",
+          "$value": 0.07814
+        },
+        "1900": {
+          "$type": "number",
+          "$value": 0.07324
+        },
+        "2000": {
+          "$type": "number",
+          "$value": 0.06834
         }
       },
       "green": {
@@ -305,6 +353,10 @@
           "$type": "number",
           "$value": 0.08579
         },
+        "400": {
+          "$type": "number",
+          "$value": 0.13906
+        },
         "500": {
           "$type": "number",
           "$value": 0.13906
@@ -313,11 +365,11 @@
           "$type": "number",
           "$value": 0.13906
         },
-        "700": {
+        "800": {
           "$type": "number",
           "$value": 0.13906
         },
-        "800": {
+        "900": {
           "$type": "number",
           "$value": 0.13906
         },
@@ -335,19 +387,35 @@
         },
         "1300": {
           "$type": "number",
-          "$value": 0.13077
+          "$value": 0.13906
         },
         "1400": {
           "$type": "number",
-          "$value": 0.1271
+          "$value": 0.12793
         },
         "1500": {
           "$type": "number",
-          "$value": 0.12279
+          "$value": 0.13906
         },
         "1600": {
           "$type": "number",
-          "$value": 0.11481
+          "$value": 0.1182
+        },
+        "1700": {
+          "$type": "number",
+          "$value": 0.13906
+        },
+        "1800": {
+          "$type": "number",
+          "$value": 0.12758
+        },
+        "1900": {
+          "$type": "number",
+          "$value": 0.1196
+        },
+        "2000": {
+          "$type": "number",
+          "$value": 0.11159
         }
       },
       "red": {
@@ -355,49 +423,69 @@
           "$type": "number",
           "$value": 0.02232
         },
-        "500": {
+        "400": {
           "$type": "number",
           "$value": 0.03547
         },
-        "600": {
+        "500": {
           "$type": "number",
           "$value": 0.04922
         },
-        "700": {
+        "600": {
           "$type": "number",
-          "$value": 0.06537
+          "$value": 0.09254
         },
         "800": {
           "$type": "number",
-          "$value": 0.09317
+          "$value": 0.12285
+        },
+        "900": {
+          "$type": "number",
+          "$value": 0.16393
         },
         "1000": {
           "$type": "number",
-          "$value": 0.12356
+          "$value": 0.20132
         },
         "1100": {
           "$type": "number",
-          "$value": 0.19914
+          "$value": 0.22305
         },
         "1200": {
           "$type": "number",
-          "$value": 0.18076
+          "$value": 0.22305
         },
         "1300": {
           "$type": "number",
-          "$value": 0.16709
+          "$value": 0.22305
         },
         "1400": {
           "$type": "number",
-          "$value": 0.16241
+          "$value": 0.2052
         },
         "1500": {
           "$type": "number",
-          "$value": 0.15688
+          "$value": 0.19996
         },
         "1600": {
           "$type": "number",
-          "$value": 0.1467
+          "$value": 0.18959
+        },
+        "1700": {
+          "$type": "number",
+          "$value": 0.18158
+        },
+        "1800": {
+          "$type": "number",
+          "$value": 0.16301
+        },
+        "1900": {
+          "$type": "number",
+          "$value": 0.1528
+        },
+        "2000": {
+          "$type": "number",
+          "$value": 0.14261
         }
       },
       "yellow": {
@@ -405,6 +493,10 @@
           "$type": "number",
           "$value": 0.1192
         },
+        "400": {
+          "$type": "number",
+          "$value": 0.1192
+        },
         "500": {
           "$type": "number",
           "$value": 0.1192
@@ -413,11 +505,11 @@
           "$type": "number",
           "$value": 0.1192
         },
-        "700": {
+        "800": {
           "$type": "number",
           "$value": 0.1192
         },
-        "800": {
+        "900": {
           "$type": "number",
           "$value": 0.1192
         },
@@ -427,27 +519,43 @@
         },
         "1100": {
           "$type": "number",
-          "$value": 0.10351
+          "$value": 0.1192
         },
         "1200": {
           "$type": "number",
-          "$value": 0.09397
+          "$value": 0.11856
         },
         "1300": {
           "$type": "number",
-          "$value": 0.08684
+          "$value": 0.11771
         },
         "1400": {
           "$type": "number",
-          "$value": 0.08442
+          "$value": 0.1083
         },
         "1500": {
           "$type": "number",
-          "$value": 0.08154
+          "$value": 0.10392
         },
         "1600": {
           "$type": "number",
-          "$value": 0.07624
+          "$value": 0.10006
+        },
+        "1700": {
+          "$type": "number",
+          "$value": 0.09437
+        },
+        "1800": {
+          "$type": "number",
+          "$value": 0.08471
+        },
+        "1900": {
+          "$type": "number",
+          "$value": 0.07942
+        },
+        "2000": {
+          "$type": "number",
+          "$value": 0.07412
         }
       }
     },
@@ -830,6 +938,24 @@
             ],
             "alpha": 1
           }
+        },
+        "2200": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/2200/$value"
+              },
+              {
+                "$ref": "#/color/chroma/gray/2200/$value"
+              },
+              {
+                "$ref": "#/color/hue/gray/$value"
+              }
+            ],
+            "alpha": 1
+          }
         }
       },
       "brand": {
@@ -843,6 +969,24 @@
               },
               {
                 "$ref": "#/color/chroma/brand/300/$value"
+              },
+              {
+                "$ref": "#/color/hue/brand/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/400/$value"
+              },
+              {
+                "$ref": "#/color/chroma/brand/400/$value"
               },
               {
                 "$ref": "#/color/hue/brand/$value"
@@ -887,24 +1031,6 @@
             "alpha": 1
           }
         },
-        "700": {
-          "$type": "color",
-          "$value": {
-            "colorSpace": "oklch",
-            "components": [
-              {
-                "$ref": "#/color/lightness/700/$value"
-              },
-              {
-                "$ref": "#/color/chroma/brand/700/$value"
-              },
-              {
-                "$ref": "#/color/hue/brand/$value"
-              }
-            ],
-            "alpha": 1
-          }
-        },
         "800": {
           "$type": "color",
           "$value": {
@@ -915,6 +1041,24 @@
               },
               {
                 "$ref": "#/color/chroma/brand/800/$value"
+              },
+              {
+                "$ref": "#/color/hue/brand/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/brand/900/$value"
               },
               {
                 "$ref": "#/color/hue/brand/$value"
@@ -1048,6 +1192,78 @@
             ],
             "alpha": 1
           }
+        },
+        "1700": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1700/$value"
+              },
+              {
+                "$ref": "#/color/chroma/brand/1700/$value"
+              },
+              {
+                "$ref": "#/color/hue/brand/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1800": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1800/$value"
+              },
+              {
+                "$ref": "#/color/chroma/brand/1800/$value"
+              },
+              {
+                "$ref": "#/color/hue/brand/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/brand/1900/$value"
+              },
+              {
+                "$ref": "#/color/hue/brand/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "2000": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/2000/$value"
+              },
+              {
+                "$ref": "#/color/chroma/brand/2000/$value"
+              },
+              {
+                "$ref": "#/color/hue/brand/$value"
+              }
+            ],
+            "alpha": 1
+          }
         }
       },
       "blue": {
@@ -1061,6 +1277,24 @@
               },
               {
                 "$ref": "#/color/chroma/blue/300/$value"
+              },
+              {
+                "$ref": "#/color/hue/blue/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/400/$value"
+              },
+              {
+                "$ref": "#/color/chroma/blue/400/$value"
               },
               {
                 "$ref": "#/color/hue/blue/$value"
@@ -1105,24 +1339,6 @@
             "alpha": 1
           }
         },
-        "700": {
-          "$type": "color",
-          "$value": {
-            "colorSpace": "oklch",
-            "components": [
-              {
-                "$ref": "#/color/lightness/700/$value"
-              },
-              {
-                "$ref": "#/color/chroma/blue/700/$value"
-              },
-              {
-                "$ref": "#/color/hue/blue/$value"
-              }
-            ],
-            "alpha": 1
-          }
-        },
         "800": {
           "$type": "color",
           "$value": {
@@ -1133,6 +1349,24 @@
               },
               {
                 "$ref": "#/color/chroma/blue/800/$value"
+              },
+              {
+                "$ref": "#/color/hue/blue/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/blue/900/$value"
               },
               {
                 "$ref": "#/color/hue/blue/$value"
@@ -1266,6 +1500,78 @@
             ],
             "alpha": 1
           }
+        },
+        "1700": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1700/$value"
+              },
+              {
+                "$ref": "#/color/chroma/blue/1700/$value"
+              },
+              {
+                "$ref": "#/color/hue/blue/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1800": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1800/$value"
+              },
+              {
+                "$ref": "#/color/chroma/blue/1800/$value"
+              },
+              {
+                "$ref": "#/color/hue/blue/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/blue/1900/$value"
+              },
+              {
+                "$ref": "#/color/hue/blue/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "2000": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/2000/$value"
+              },
+              {
+                "$ref": "#/color/chroma/blue/2000/$value"
+              },
+              {
+                "$ref": "#/color/hue/blue/$value"
+              }
+            ],
+            "alpha": 1
+          }
         }
       },
       "green": {
@@ -1279,6 +1585,24 @@
               },
               {
                 "$ref": "#/color/chroma/green/300/$value"
+              },
+              {
+                "$ref": "#/color/hue/green/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/400/$value"
+              },
+              {
+                "$ref": "#/color/chroma/green/400/$value"
               },
               {
                 "$ref": "#/color/hue/green/$value"
@@ -1323,24 +1647,6 @@
             "alpha": 1
           }
         },
-        "700": {
-          "$type": "color",
-          "$value": {
-            "colorSpace": "oklch",
-            "components": [
-              {
-                "$ref": "#/color/lightness/700/$value"
-              },
-              {
-                "$ref": "#/color/chroma/green/700/$value"
-              },
-              {
-                "$ref": "#/color/hue/green/$value"
-              }
-            ],
-            "alpha": 1
-          }
-        },
         "800": {
           "$type": "color",
           "$value": {
@@ -1351,6 +1657,24 @@
               },
               {
                 "$ref": "#/color/chroma/green/800/$value"
+              },
+              {
+                "$ref": "#/color/hue/green/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/green/900/$value"
               },
               {
                 "$ref": "#/color/hue/green/$value"
@@ -1484,6 +1808,78 @@
             ],
             "alpha": 1
           }
+        },
+        "1700": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1700/$value"
+              },
+              {
+                "$ref": "#/color/chroma/green/1700/$value"
+              },
+              {
+                "$ref": "#/color/hue/green/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1800": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1800/$value"
+              },
+              {
+                "$ref": "#/color/chroma/green/1800/$value"
+              },
+              {
+                "$ref": "#/color/hue/green/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/green/1900/$value"
+              },
+              {
+                "$ref": "#/color/hue/green/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "2000": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/2000/$value"
+              },
+              {
+                "$ref": "#/color/chroma/green/2000/$value"
+              },
+              {
+                "$ref": "#/color/hue/green/$value"
+              }
+            ],
+            "alpha": 1
+          }
         }
       },
       "red": {
@@ -1497,6 +1893,24 @@
               },
               {
                 "$ref": "#/color/chroma/red/300/$value"
+              },
+              {
+                "$ref": "#/color/hue/red/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/400/$value"
+              },
+              {
+                "$ref": "#/color/chroma/red/400/$value"
               },
               {
                 "$ref": "#/color/hue/red/$value"
@@ -1541,24 +1955,6 @@
             "alpha": 1
           }
         },
-        "700": {
-          "$type": "color",
-          "$value": {
-            "colorSpace": "oklch",
-            "components": [
-              {
-                "$ref": "#/color/lightness/700/$value"
-              },
-              {
-                "$ref": "#/color/chroma/red/700/$value"
-              },
-              {
-                "$ref": "#/color/hue/red/$value"
-              }
-            ],
-            "alpha": 1
-          }
-        },
         "800": {
           "$type": "color",
           "$value": {
@@ -1569,6 +1965,24 @@
               },
               {
                 "$ref": "#/color/chroma/red/800/$value"
+              },
+              {
+                "$ref": "#/color/hue/red/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/red/900/$value"
               },
               {
                 "$ref": "#/color/hue/red/$value"
@@ -1702,6 +2116,78 @@
             ],
             "alpha": 1
           }
+        },
+        "1700": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1700/$value"
+              },
+              {
+                "$ref": "#/color/chroma/red/1700/$value"
+              },
+              {
+                "$ref": "#/color/hue/red/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1800": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1800/$value"
+              },
+              {
+                "$ref": "#/color/chroma/red/1800/$value"
+              },
+              {
+                "$ref": "#/color/hue/red/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/red/1900/$value"
+              },
+              {
+                "$ref": "#/color/hue/red/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "2000": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/2000/$value"
+              },
+              {
+                "$ref": "#/color/chroma/red/2000/$value"
+              },
+              {
+                "$ref": "#/color/hue/red/$value"
+              }
+            ],
+            "alpha": 1
+          }
         }
       },
       "yellow": {
@@ -1715,6 +2201,24 @@
               },
               {
                 "$ref": "#/color/chroma/yellow/300/$value"
+              },
+              {
+                "$ref": "#/color/hue/yellow/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "400": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/400/$value"
+              },
+              {
+                "$ref": "#/color/chroma/yellow/400/$value"
               },
               {
                 "$ref": "#/color/hue/yellow/$value"
@@ -1759,24 +2263,6 @@
             "alpha": 1
           }
         },
-        "700": {
-          "$type": "color",
-          "$value": {
-            "colorSpace": "oklch",
-            "components": [
-              {
-                "$ref": "#/color/lightness/700/$value"
-              },
-              {
-                "$ref": "#/color/chroma/yellow/700/$value"
-              },
-              {
-                "$ref": "#/color/hue/yellow/$value"
-              }
-            ],
-            "alpha": 1
-          }
-        },
         "800": {
           "$type": "color",
           "$value": {
@@ -1787,6 +2273,24 @@
               },
               {
                 "$ref": "#/color/chroma/yellow/800/$value"
+              },
+              {
+                "$ref": "#/color/hue/yellow/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/yellow/900/$value"
               },
               {
                 "$ref": "#/color/hue/yellow/$value"
@@ -1913,6 +2417,78 @@
               },
               {
                 "$ref": "#/color/chroma/yellow/1600/$value"
+              },
+              {
+                "$ref": "#/color/hue/yellow/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1700": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1700/$value"
+              },
+              {
+                "$ref": "#/color/chroma/yellow/1700/$value"
+              },
+              {
+                "$ref": "#/color/hue/yellow/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1800": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1800/$value"
+              },
+              {
+                "$ref": "#/color/chroma/yellow/1800/$value"
+              },
+              {
+                "$ref": "#/color/hue/yellow/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "1900": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/1900/$value"
+              },
+              {
+                "$ref": "#/color/chroma/yellow/1900/$value"
+              },
+              {
+                "$ref": "#/color/hue/yellow/$value"
+              }
+            ],
+            "alpha": 1
+          }
+        },
+        "2000": {
+          "$type": "color",
+          "$value": {
+            "colorSpace": "oklch",
+            "components": [
+              {
+                "$ref": "#/color/lightness/2000/$value"
+              },
+              {
+                "$ref": "#/color/chroma/yellow/2000/$value"
               },
               {
                 "$ref": "#/color/hue/yellow/$value"

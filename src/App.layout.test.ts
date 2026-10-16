@@ -1,5 +1,5 @@
 import { render } from 'svelte/server';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import App from './App.svelte';
 
 it('keeps workspace navigation inside the preview content and shows both themes without a mode selector', () => {
@@ -39,4 +39,15 @@ it('does not render the redundant workspace intro above the previews', () => {
   expect(markup).not.toContain('aria-label="Preview controls"');
   expect(markup).not.toContain('>Family<select');
   expect(markup).not.toContain('Select a sample to inspect its token and contrast checks.');
+});
+
+
+it('renders when browser policy denies the localStorage getter', () => {
+  const blocked = Object.defineProperty({}, 'localStorage', { get() { throw new Error('Storage access denied'); } });
+  vi.stubGlobal('window', blocked);
+  try {
+    expect(render(App).body).toContain('Semantic Color System Generator');
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

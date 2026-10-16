@@ -1,4 +1,4 @@
-import { isSrgb } from '../engine/color';
+import { isSrgb, parseLockedColor } from '../engine/color';
 import type { ColorAnchor, FamilyConfig, OklchColor } from '../engine/types';
 
 const precision = (value: number, digits: number) => Number(value.toFixed(digits)).toString();
@@ -15,12 +15,28 @@ function format(value: OklchColor, digits: number): string {
   return `oklch(${precision(value.l, digits)} ${precision(value.c, digits)} ${precision(value.h, digits)})`;
 }
 
-/** Serializes the only editable Brand input format. */
-export function serializeOklch(value: OklchColor): string {
+function normalizeCoordinates(value: OklchColor): OklchColor {
   if (!Number.isFinite(value.l) || value.l < 0 || value.l > 1) throw new Error('Lightness must be a number from 0 to 1.');
   if (!Number.isFinite(value.c) || value.c < 0) throw new Error('Chroma must be a nonnegative number.');
   if (!Number.isFinite(value.h)) throw new Error('Hue must be a finite number.');
-  const normalized = { ...value, h: ((value.h % 360) + 360) % 360 };
+  return { ...value, h: ((value.h % 360) + 360) % 360 };
+}
+
+/** Apply only edited coordinates; untouched exact sources retain their precision. */
+export function editAnchorColor(source: string, edits: Partial<Record<keyof OklchColor, string>>): string | undefined {
+  const original = parseLockedColor(source);
+  const values = Object.fromEntries(Object.entries(edits).map(([key, value]) => {
+    if (!value.trim()) throw new Error('Enter valid OKLCH coordinates.');
+    return [key, Number(value)];
+  }));
+  const next = normalizeCoordinates({ l: original.l, c: original.c, h: original.h, ...values });
+  if (next.l === original.l && next.c === original.c && next.h === original.h) return;
+  return `oklch(${next.l} ${next.c} ${next.h})`;
+}
+
+/** Serializes a generated initial Brand input compactly without losing gamut membership. */
+export function serializeOklch(value: OklchColor): string {
+  const normalized = normalizeCoordinates(value);
   // Six decimals keep ordinary inputs compact. At the sRGB edge, retain only
   // the extra digits needed to keep an already-renderable lock renderable.
   for (let digits = 6; digits <= 10; digits++) {

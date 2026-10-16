@@ -7,7 +7,12 @@ import { reuseGrayPositions } from './reuse';
 import { configFromReference, parseKdsTokens } from './reference';
 import type { FamilyRole, ModeTheme } from './types';
 
-const config = () => configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
+// Preserve the additive-group fixtures; mixed-group invariants are tested in emphasis-mix.test.ts.
+const config = () => {
+  const config = configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
+  delete config.emphasis.mixWeights;
+  return config;
+};
 
 describe('constrained gray reuse', () => {
   it('prefers a closer opposite-theme Base stop over a local alias with the same gray count', () => {

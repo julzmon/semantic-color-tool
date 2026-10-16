@@ -1,5 +1,17 @@
 import { mutedBorderStrength, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
-import type { BuilderConfig, Mode } from '../engine/types';
+import type { BuilderConfig, EmphasisMixWeights, Mode } from '../engine/types';
+import { emphasisStates } from '../engine/emphasis';
+
+/** Keep the edited weight and move neighbors only when needed to retain state ordering. */
+export function setEmphasisWeight(weights: EmphasisMixWeights, state: keyof EmphasisMixWeights, weight: number): EmphasisMixWeights {
+  const next = { ...weights, [state]: weight };
+  const position = emphasisStates.indexOf(state);
+  emphasisStates.forEach((key, index) => {
+    if (index < position) next[key] = Math.max(next[key], weight);
+    if (index > position) next[key] = Math.min(next[key], weight);
+  });
+  return next;
+}
 export function normalizeNumericControl(value: number, min: number, max: number, step: number): number | undefined {
   if (!Number.isFinite(value)) return undefined;
   const bounded = Math.max(min, Math.min(max, value));
@@ -18,6 +30,8 @@ export function adjustedControlKeys(requested: BuilderConfig, accepted: BuilderC
   compare('surfaces.levels', requested.surfaces.levels, accepted.surfaces.levels);
   compare('muted.separation', requested.muted.separation, accepted.muted.separation);
   compare('emphasis.separation', requested.emphasis.separation, accepted.emphasis.separation);
+  if (requested.emphasis.mixWeights && accepted.emphasis.mixWeights) for (const state of emphasisStates)
+    compare(`emphasis.${state}`, requested.emphasis.mixWeights[state], accepted.emphasis.mixWeights[state]);
   for (const family of requested.families) {
     const next = accepted.families.find(item => item.id === family.id);
     if (next) for (const component of ['hue', 'chroma'] as const) compare(`families.${family.id}.${component}`, family[component], next[component]);

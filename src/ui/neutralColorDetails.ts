@@ -17,7 +17,7 @@ export function describeNeutralRole(semantic: string, prefix: string): string {
   return `${capitalize(context ? `${context} ${role}` : role)} · ${state}`;
 }
 
-export type ContrastRelationship = Pick<ContrastCheck, 'mode' | 'foreground' | 'background' | 'ratio'> & {
+type ContrastRelationship = Pick<ContrastCheck, 'mode' | 'foreground' | 'background' | 'ratio'> & {
   id: string;
   checks: ContrastCheck[];
 };

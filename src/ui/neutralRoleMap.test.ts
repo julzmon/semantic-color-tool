@@ -82,7 +82,7 @@ it('identifies neutral states derived from an exact lock instead of claiming glo
     for (const state of ['hover', 'active'] as const) {
       const color = locked.modes[mode].families.neutral.roles[`emphasis.${state}`]!.color;
       expect(color.h).toBe(120);
-      expect(color.c).toBe(0.0074);
+      expect(color.c).toBeCloseTo(0.0074 * input.emphasis.mixWeights![state], 9);
     }
   }
   const markup = render(NeutralRoleMap, { props: { system: locked, modes: ['light', 'dark'] } }).body;

@@ -7,11 +7,10 @@ import { parseKdsTokens } from './reference';
 const reference = parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8'));
 
 describe('Brand controls', () => {
-  it('generates across every reachable Brand hue and chroma control endpoint', () => {
-    const hues = [0, 1, 29, 120, 240, 359, 360];
+  it.each([0, 1, 29, 120, 240, 359, 360])('generates across Brand chroma endpoints at hue %s', hue => {
     const chromas = [0, 0.001, 0.05, 0.15, 0.3];
 
-    for (const hue of hues) for (const chroma of chromas) {
+    for (const chroma of chromas) {
       const config = configFromReference(reference);
       const brand = config.families.find((family) => family.id === 'brand')!;
       brand.hue = hue;

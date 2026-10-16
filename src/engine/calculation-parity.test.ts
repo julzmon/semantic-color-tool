@@ -5,7 +5,12 @@ import { configFromReference, parseKdsTokens } from './reference';
 import * as generator from './generate';
 import { balanceConfiguration } from './balance';
 import type { BuilderConfig } from './types';
-const defaults = () => configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
+// These fingerprints preserve the legacy engine contract; mixing has independent invariant tests.
+const defaults = () => {
+  const config = configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
+  delete config.emphasis.mixWeights;
+  return config;
+};
 const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 // Reviewed after Text Base cross-theme reuse; other role colors and check results
 // retain their published values. Primitive aliases and Text Base ratios may change.

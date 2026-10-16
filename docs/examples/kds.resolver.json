@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
-  "name": "KDS Neutral + Brand + Info + Positive + Negative + Warning",
+  "name": "Semantic Color System Generator Neutral + Brand + Info + Positive + Negative + Warning",
   "version": "2025.10",
   "description": "Shared OKLCH foundation for Neutral + Brand + Info + Positive + Negative + Warning with light/dark semantic contexts.",
   "sets": {

@@ -7,12 +7,12 @@ import { tokenFoundation } from './tokens';
 import { contrast, toColor } from './color';
 import type { GeneratedSystem } from './types';
 
-it('emits shorter coordinates with passing contrast and one shared family hue', () => {
+it('emits shorter verified coordinates through shared hue custom properties', () => {
   const config = configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
   const system = generateSystem(config);
   expect(system.checks.every((check) => check.pass)).toBe(true);
   expect(exportCss(system)).toContain('--kds-hue-gray: 208.77;');
-  expect(exportCss(system)).not.toMatch(/--kds-hue-gray-\d+:/);
+  expect(exportCss(system)).toContain('var(--kds-hue-gray)');
   const foundation = tokenFoundation(system);
   expect(Object.values(foundation.chroma).filter((value) => value.toString().length <= 7).length).toBeGreaterThan(system.primitives.length / 2);
 });

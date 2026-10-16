@@ -4,6 +4,7 @@ export type { FamilyId, PaletteKey } from './families';
 
 export type Mode = 'light' | 'dark';
 export type State = 'base' | 'hover' | 'active' | 'selected';
+export type EmphasisMixWeights = Record<Exclude<State, 'base'>, number>;
 export type FamilyRole = `muted.${State}` | `emphasis.${State}` | 'foreground.base' | 'foreground.hover' | 'border.muted.base' | 'border.muted.hover' | 'border.emphasis.base' | 'border.emphasis.hover';
 
 export interface OklchColor { l: number; c: number; h: number }
@@ -30,6 +31,8 @@ export interface BuilderConfig {
   families: FamilyConfig[];
   muted: { distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number>; borderStrength?: Record<Mode, number> };
   emphasis: {
+    /** Base retention factors for opaque OKLCH state mixes; omitted by legacy engine callers. */
+    mixWeights?: EmphasisMixWeights;
     separation: number;
     selected: boolean;
     reverseDarkStates?: boolean;

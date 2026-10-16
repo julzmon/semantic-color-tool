@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { exportCss, exportDtcg, exportDtcgFiles, exportJson } from '../engine/export';
+  import { cssTokenModel } from '../engine/tokens';
   import type { GeneratedSystem } from '../engine/types';
   type Format = 'css' | 'dtcg' | 'json';
   let { system, prefix, onPrefixChange, onImport }: {
@@ -11,13 +12,22 @@
   let editingPrefix = $state(false);
   let prefixRevision = 0;
   let prefixError = $state('');
+  let pendingPrefix: Promise<boolean | undefined> | undefined;
   $effect(() => { if (!editingPrefix) prefixDraft = prefix; });
   const commitPrefix = async (input: HTMLInputElement) => {
     const revision = prefixRevision;
     const next = input.value.trim().toLowerCase();
     editingPrefix = false;
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(next)) prefixError = 'Start with a letter; use letters, numbers and single hyphens.';
-    else { prefixError = ''; if (next !== prefix) await onPrefixChange(next); }
+    else {
+      prefixError = '';
+      if (next !== prefix) {
+        const request = onPrefixChange(next).catch(() => false);
+        pendingPrefix = request;
+        await request;
+        if (pendingPrefix === request) pendingPrefix = undefined;
+      }
+    }
     await tick();
     if (!editingPrefix && revision === prefixRevision) prefixDraft = prefix;
   };
@@ -29,6 +39,7 @@
     ...exportDtcgFiles(system),
   }));
   let file = $derived(selectedFile in files ? selectedFile : `${system.config.prefix}.bundle.resolver.json`);
+  let cssStats = $derived.by(() => cssTokenModel(system).stats);
   let output = $derived.by(() =>
     format === 'css' ? exportCss(system) : format === 'dtcg' ? files[file] : exportJson(system),
   );
@@ -41,17 +52,30 @@
   );
   let textarea: HTMLTextAreaElement | undefined = $state();
   let fileInput: HTMLInputElement | undefined = $state();
+  const exportReady = async () => {
+    while (pendingPrefix) {
+      if (await pendingPrefix !== true) {
+        message = 'Prefix change was not accepted. Review the settings before exporting.';
+        return false;
+      }
+    }
+    await tick();
+    return true;
+  };
   const copy = async () => {
+    if (!await exportReady()) return;
+    const exportedName = filename;
     try {
       await navigator.clipboard.writeText(output);
-      message = `${filename} copied to clipboard.`;
+      message = `${exportedName} copied to clipboard.`;
     } catch {
       textarea?.focus();
       textarea?.select();
       message = 'Clipboard unavailable. Output selected; press ⌘C or Ctrl+C.';
     }
   };
-  const download = () => {
+  const download = async () => {
+    if (!await exportReady()) return;
     const url = URL.createObjectURL(
       new Blob([output], { type: format === 'css' ? 'text/css' : 'application/json' }),
     );
@@ -112,7 +136,7 @@
       ><button class="primary-button" onclick={copy}>Copy {format === 'css' ? 'CSS' : 'JSON'}</button>
     </div>
   </div>
-  <p class="section-description">{format === 'css' ? 'Use these CSS variables in your app. Includes light and dark themes.' : format === 'dtcg' ? 'Design tokens in DTCG JSON format for compatible tools.' : 'Save your settings as JSON, or import a saved configuration.'}</p>
+  <p class="section-description">{format === 'css' ? 'Global lightness, chroma, hue, and mix settings compose every semantic color role. Light and dark themes use the same token names.' : format === 'dtcg' ? 'Design tokens in DTCG JSON format for compatible tools.' : 'Save your settings as JSON, or import a saved configuration.'}</p>
   {#if format === 'dtcg'}<div class="export-file-picker">
       <label for="dtcg-file">DTCG 2025.10 document</label><select
         id="dtcg-file"
@@ -139,6 +163,8 @@
     value={output}></textarea>
   <p class="export-status" role="status">
     {message ||
-      `${system.primitives.length} palette colors · ${system.semantics.length} color roles · both themes`}
+      (format === 'css'
+        ? `${cssStats.roles} color roles · ${cssStats.derivedStates} mixed states · ${cssStats.components} L/C/H tokens · ${cssStats.settings} mix settings · both themes`
+        : `${system.primitives.length} palette colors · ${system.semantics.length} color roles · both themes`)}
   </p>
 </section>

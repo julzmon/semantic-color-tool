@@ -10,6 +10,8 @@ const referencePath = fileURLToPath(new URL('./src/reference/kds-tokens.css', im
 // Parse the immutable source at build time, keeping PostCSS's Node dependencies
 // out of the browser. The same pure importer is tested against the real fixture.
 export default defineConfig({
+  // Mounted component tests need Svelte's browser lifecycle APIs.
+  resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
   // Relative production paths support the repository's GitHub Pages project URL.
   base: './',
   plugins: [svelte(), VitePWA({

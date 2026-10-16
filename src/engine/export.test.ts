@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exportCss, exportDtcg, exportJson } from './export';
+import { cssTokenModel, tokenFoundation } from './tokens';
 import type { GeneratedSystem } from './types';
 
 const sample = {
@@ -41,15 +42,17 @@ const configurablePaletteSample = {
 } as unknown as GeneratedSystem;
 
 describe('exports', () => {
-  it('exports one primitive set and preserves semantic names with light-dark references', () => {
+  it('composes verified colors from shared numeric components with light-dark', () => {
     const css = exportCss(sample);
-    expect(css).toContain('--kds-lightness-100: 0.8;');
-    expect(css).toContain('--kds-key-blue-100: oklch(var(--kds-lightness-100) var(--kds-chroma-blue-100) var(--kds-hue-blue));');
-    expect(css).toContain('--kds-bg-info-emphasis-base: light-dark(var(--kds-key-blue-200), var(--kds-key-blue-100));');
+    expect(css).toContain('--kds-lightness-200: 0.4;');
+    expect(css).toContain('--kds-hue-blue: 220;');
+    expect(css).toContain('--kds-chroma-blue-200: 0.1;');
+    expect(css).toContain('--kds-bg-info-emphasis-base: light-dark(oklch(var(--kds-lightness-200) var(--kds-chroma-blue-200) var(--kds-hue-blue)), oklch(var(--kds-lightness-100) var(--kds-chroma-blue-200) var(--kds-hue-blue)));');
+    expect(css).not.toMatch(/--kds-key-/);
     expect(css).toContain('color-scheme: light dark;');
     expect(css).toContain('[data-mode="light"]');
     expect(css).toContain('[data-mode="dark"]');
-    expect(css.match(/--kds-key-blue-100:/g)).toHaveLength(1);
+    expect(css.match(/--kds-bg-info-emphasis-base:/g)).toHaveLength(1);
   });
 
   it('labels the configured scope and keeps validation failures visible in the export', () => {
@@ -79,8 +82,8 @@ describe('exports', () => {
   it('serializes every configured family and palette key', () => {
     const css = exportCss(configurablePaletteSample);
     expect(css).toContain('Brand + Negative');
-    expect(css).toContain('--kds-key-brand-100: oklch(var(--kds-lightness-100) var(--kds-chroma-brand-100) var(--kds-hue-brand));');
-    expect(css).toContain('--kds-key-red-100: oklch(var(--kds-lightness-100) var(--kds-chroma-red-100) var(--kds-hue-red));');
+    expect(css).toContain('--kds-bg-brand-emphasis-base: oklch(var(--kds-lightness-100) var(--kds-chroma-brand-100) var(--kds-hue-brand));');
+    expect(css).toContain('--kds-bg-negative-emphasis-base: oklch(var(--kds-lightness-100) var(--kds-chroma-red-100) var(--kds-hue-red));');
 
     const bundle = JSON.parse(exportDtcg(configurablePaletteSample));
     expect(bundle.sets.foundation.sources[0].color.palette.brand['100']).toMatchObject({ $type: 'color' });
@@ -89,5 +92,19 @@ describe('exports', () => {
     expect(bundle.modifiers.mode.contexts.light[0].color.background.negative.emphasis.base.$value).toBe('{color.palette.red.100}');
 
     expect(JSON.parse(exportJson(configurablePaletteSample)).scope).toEqual(['brand', 'negative']);
+  });
+
+  it('aliases identical role colors without adding palette or state helper declarations', () => {
+    const original = configurablePaletteSample.semantics[0];
+    const system = {
+      ...configurablePaletteSample,
+      semantics: [original, { ...original, name: '--kds-fg-brand-base' }],
+    };
+    const model = cssTokenModel(system);
+    expect(exportCss(system)).toContain('--kds-fg-brand-base: var(--kds-bg-brand-emphasis-base);');
+    expect(model.stats).toMatchObject({ tokens: 5, components: 3, aliases: 1 });
+    const foundation = tokenFoundation(system);
+    expect(model.stats.omittedFoundationTokens).toBe(foundation.palette.length
+      + Object.keys(foundation.lightness).length + Object.keys(foundation.chroma).length + Object.keys(foundation.hue).length - model.stats.components);
   });
 });

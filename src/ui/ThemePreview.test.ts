@@ -22,9 +22,11 @@ it.each(['light', 'dark'] as const)('renders family hooks in %s mode', (mode) =>
 it('keeps semantic CSS variables available to nested mode boundaries', () => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode: 'light' } }).body;
   for (const token of defaultSystem.semantics) {
-    expect(markup).toContain(`${token.name}: light-dark(var(${token.light}), var(${token.dark}))`);
+    expect(markup).toContain(`${token.name}: `);
   }
   expect(markup).toContain('data-mode="dark"');
+  expect(markup).toContain('light-dark(oklch(');
+  expect(markup).not.toContain('--kds-key-');
 });
 
 it.each(['light', 'dark'] as const)('provides inspectable demonstrations of every semantic in %s mode', mode => {
@@ -68,7 +70,7 @@ it.each(['light', 'dark'] as const)('uses matching family foreground states insi
         const token = defaultSystem.modes[mode].families[family.id].roles[`border.${kind}.${state}`]!;
         const foreground = defaultSystem.modes[mode].families[family.id].roles[`foreground.${state}`]!;
         const button = markup.match(new RegExp(`<button[^>]*data-token="${token.semantic}"[^>]*>`))?.[0];
-        expect(button).toContain(`; color: ${foreground.color.css}`);
+        expect(button).toContain(`; color: var(${foreground.semantic})`);
       }
     }
   }

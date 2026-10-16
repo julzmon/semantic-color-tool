@@ -14,20 +14,23 @@ it.each([false, true])('reverses dark emphasis states while preserving shared ba
     const light = system.modes.light.families[family.id].roles;
     const dark = system.modes.dark.families[family.id].roles;
     expect(dark['emphasis.base']!.color).toEqual(light['emphasis.base']!.color);
-    for (const [index, state] of (selected ? ['hover', 'active', 'selected'] as const : ['hover', 'active'] as const).entries()) {
-      expect(light[`emphasis.${state}`]!.color.l).toBeCloseTo(light['emphasis.base']!.color.l - input.emphasis.separation * (index + 1), 9);
-      expect(dark[`emphasis.${state}`]!.color.l).toBeCloseTo(dark['emphasis.base']!.color.l + input.emphasis.separation * (index + 1), 9);
+    for (const state of (selected ? ['hover', 'active', 'selected'] as const : ['hover', 'active'] as const)) {
+      const weight = input.emphasis.mixWeights![state];
+      expect(light[`emphasis.${state}`]!.color.l).toBeCloseTo(light['emphasis.base']!.color.l * weight, 9);
+      expect(dark[`emphasis.${state}`]!.color.l).toBeCloseTo(dark['emphasis.base']!.color.l * weight + 1 - weight, 9);
     }
   }
 });
 
-it('retains reversal when contrast protection limits an unsafe spacing', () => {
+it('retains reversal when contrast protection limits unsafe shared strengths', () => {
   const previous = defaults();
-  const requested = { ...previous, emphasis: { ...previous.emphasis, reverseDarkStates: true } };
+  const requested = { ...previous, anchors: [{ family: 'brand' as const, mode: 'both' as const, role: 'emphasis.base' as const, color: 'oklch(0.45 0.12 29)', locked: true }],
+    emphasis: { ...previous.emphasis, reverseDarkStates: true, mixWeights: { hover: 0.6, active: 0.5, selected: 0.4 } } };
   const accepted = balanceConfiguration(previous, requested);
   expect(accepted.config.emphasis.reverseDarkStates).toBe(true);
   expect(accepted.system.checks.every(check => check.pass)).toBe(true);
-  expect(accepted.config.emphasis.separation).toBeLessThan(requested.emphasis.separation);
+  expect(accepted.config.emphasis.mixWeights!.active).toBeGreaterThan(requested.emphasis.mixWeights.active);
+  expect(accepted.message).toContain('shared emphasis strengths');
   for (const family of previous.families) {
     const light = accepted.system.modes.light.families[family.id].roles;
     const dark = accepted.system.modes.dark.families[family.id].roles;

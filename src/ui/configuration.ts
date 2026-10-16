@@ -1,21 +1,28 @@
 import { validateConfig } from '../engine/generate';
 import { DEFAULT_TOKEN_PREFIX } from '../engine/config';
+import { legacyEmphasisWeights } from '../engine/emphasis';
 import type { BuilderConfig } from '../engine/types';
 
 type RecordValue = Record<string, unknown>;
 
-export interface StorageLike {
+interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 }
 
-export interface StoredConfiguration {
+interface StoredConfiguration {
   config: BuilderConfig;
   restored: boolean;
   error?: string;
 }
 
 export const CONFIGURATION_STORAGE_KEY = 'kds-color-system-builder/configuration';
+
+/** Storage access itself can throw before getItem/setItem are called. */
+export function browserStorage(): Storage | null {
+  try { return typeof window === 'undefined' ? null : window.localStorage; }
+  catch { return null; }
+}
 
 function isRecord(value: unknown): value is RecordValue {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -84,7 +91,7 @@ function sourceConfig(value: unknown): RecordValue {
  * shape. Version 1 values receive the missing version-2 defaults, while
  * explicitly supplied values remain intact.
  */
-export function normalizeConfiguration(value: unknown, defaults: BuilderConfig): BuilderConfig {
+function normalizeConfiguration(value: unknown, defaults: BuilderConfig): BuilderConfig {
   const source = sourceConfig(value);
   const sourceVersion = source.version;
   const defaultVersion = defaults.version;
@@ -98,6 +105,8 @@ export function normalizeConfiguration(value: unknown, defaults: BuilderConfig):
   const emphasis = record(source.emphasis, 'Configuration emphasis');
   if (emphasis.strategy !== undefined && emphasis.strategy !== 'shared' && emphasis.strategy !== 'adaptive') throw new Error('Emphasis strategy must be shared or adaptive.');
   normalized.emphasis = { ...emphasis, strategy: 'shared',
+    mixWeights: emphasis.mixWeights === undefined ? legacyEmphasisWeights(emphasis.separation as number)
+      : { ...record(emphasis.mixWeights, 'Configuration emphasis.mixWeights') },
     reverseDarkStates: emphasis.reverseDarkStates === undefined ? emphasis.strategy === 'adaptive' : emphasis.reverseDarkStates };
   normalized.targets = { ...record(source.targets, 'Configuration targets') };
   normalized.anchors = list(source.anchors, 'Configuration anchors').map((anchor, index) => copyAnchor(anchor, `Configuration anchors[${index}]`));

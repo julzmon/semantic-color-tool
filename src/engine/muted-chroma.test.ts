@@ -29,7 +29,7 @@ describe('muted chroma adjustment', () => {
     }
   });
 
-  it('uses global neutral hue and chroma for every unlocked interior gray after tone reuse', () => {
+  it('uses global neutral hue and chroma for unlocked interior gray roles except shared emphasis mixes', () => {
     const input = config({ light: 0, dark: 2 });
     const neutral = input.families.find(family => family.id === 'neutral')!;
     neutral.hue = 215;
@@ -38,7 +38,9 @@ describe('muted chroma adjustment', () => {
     const result = generateSystem(input);
     for (const primitive of result.primitives.filter(p => p.family === 'gray')) {
       const color = primitive.color;
-      if (color.source || color.l === 0 || color.l === 1) continue;
+      const mixed = (['light', 'dark'] as const).some(mode => (['hover', 'active', 'selected'] as const)
+        .some(state => result.modes[mode].families.neutral.roles[`emphasis.${state}`]?.primitive === primitive.name));
+      if (mixed || color.source || color.l === 0 || color.l === 1) continue;
       const expected = toColor({ l: color.l, c: neutral.chroma, h: neutral.hue });
       expect(color.c).toBeCloseTo(expected.c, 8);
       expect(color.h).toBeCloseTo(neutral.hue, 8);

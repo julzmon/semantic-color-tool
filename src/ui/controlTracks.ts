@@ -1,6 +1,7 @@
 import { toColor } from '../engine/color';
 import { MAX_MUTED_BORDER_STRENGTH, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
 import { adjustMutedBorders, generateStates, mutedGeneration, surfaceGeneration } from '../engine/generate';
+import { emphasisTarget, mixEmphasis } from '../engine/emphasis';
 import type { BuilderConfig, ColorValue, FamilyConfig, GeneratedSystem, Mode } from '../engine/types';
 
 // Sample the engine's sRGB output so gamut limits and lightness bounds match
@@ -55,13 +56,15 @@ export function mutedBorderTrackStyle(config: BuilderConfig, mode: Mode): string
 export function stateTrackStyle(config: BuilderConfig, system: GeneratedSystem, kind: 'muted' | 'emphasis'): string {
   const brand = config.families.find(family => family.id === 'brand')!;
   const count = config.emphasis.selected ? 4 : 3;
-  const tracks = (['light', 'dark'] as const).map(mode => gradient(kind === 'muted' ? 0.005 : 0.01,
-    kind === 'muted' ? 0.07 : 0.1, separation => {
+  const mixed = kind === 'emphasis' && !!config.emphasis.mixWeights;
+  const tracks = (['light', 'dark'] as const).map(mode => gradient(mixed ? 0 : kind === 'muted' ? 0.005 : 0.01,
+    mixed ? 100 : kind === 'muted' ? 0.07 : 0.1, separation => {
       if (kind === 'muted') return mutedGeneration({ ...config, muted: { ...config.muted, separation } }, mode, brand).colors.at(-1)!;
       // Hold the accepted emphasis base fixed; contrast protection can move it
       // after an edit. Shared emphasis uses light-mode direction in both modes.
       const shared = config.emphasis.reverseDarkStates || config.emphasis.strategy !== 'adaptive';
       const base = system.modes[shared ? 'light' : mode].families.brand.roles['emphasis.base']!.color;
+      if (mixed) return mixEmphasis(base, 1 - separation / 100, emphasisTarget(config, mode));
       const direction = mode === 'dark' && (config.emphasis.reverseDarkStates || !shared) ? 'dark' : 'light';
       return generateStates(base, direction, separation, count).colors.at(-1)!;
     }));

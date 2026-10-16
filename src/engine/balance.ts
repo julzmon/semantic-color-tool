@@ -1,5 +1,6 @@
 import { generateSystem } from './generate';
 import { mutedDistance, surfaceStep } from './config';
+import { emphasisStates, legacyEmphasisWeights } from './emphasis';
 import type { BuilderConfig, GeneratedSystem, Mode } from './types';
 
 export interface BalancedConfiguration {
@@ -38,6 +39,7 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
     }
     if (system.config.muted.separation !== requested.muted.separation) changes.push('muted state separation');
     if (system.config.emphasis.separation !== requested.emphasis.separation) changes.push('emphasis state separation');
+    if (!equal(system.config.emphasis.mixWeights, requested.emphasis.mixWeights)) changes.push('shared emphasis strengths');
     if (!equal(system.config.families, requested.families)) changes.push('family color settings');
     if (!equal(system.config.muted.chromaScale, requested.muted.chromaScale) && requested.muted.chromaScale) changes.push('muted chroma');
     if (system.config.surfaces.levels !== requested.surfaces.levels) changes.push('surface levels');
@@ -48,6 +50,9 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
   if (direct.checks.length && direct.checks.every(check => check.pass)) return finish(direct);
   const failingModes = new Set(direct.checks.filter(check => !check.pass).map(check => check.mode));
   const candidate = structuredClone(requested);
+  if (candidate.emphasis.mixWeights && equal(candidate.emphasis.mixWeights, previous.emphasis.mixWeights)) {
+    for (const state of emphasisStates) candidate.emphasis.mixWeights[state] = Number((1 - (1 - candidate.emphasis.mixWeights[state]) * 0.1).toFixed(6));
+  }
   // Reduce only spacing the user did not edit, staying inside the controls' ranges.
   if (candidate.emphasis.separation === previous.emphasis.separation) candidate.emphasis.separation = 0.01;
   let result = tryConfig(candidate);
@@ -77,6 +82,8 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
         reverseDarkStates: requested.emphasis.reverseDarkStates } };
     if (requested.muted.borderStrength === undefined) delete next.muted.borderStrength;
     else next.muted.borderStrength = structuredClone(requested.muted.borderStrength);
+    if (!requested.emphasis.mixWeights) delete next.emphasis.mixWeights;
+    else next.emphasis.mixWeights = { ...(config.emphasis.mixWeights ?? legacyEmphasisWeights(config.emphasis.separation)) };
     return next;
   };
   const start = hard(previous);
@@ -91,6 +98,11 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
     next.muted.distance = Object.fromEntries(modes.map(mode => [mode, mix(mutedDistance(previous, mode), mutedDistance(candidate, mode), 0.005)])) as Record<Mode, number>;
     next.muted.separation = mix(previous.muted.separation, candidate.muted.separation, 0.005);
     next.emphasis.separation = mix(previous.emphasis.separation, candidate.emphasis.separation, 0.005);
+    if (candidate.emphasis.mixWeights) {
+      const before = previous.emphasis.mixWeights ?? legacyEmphasisWeights(previous.emphasis.separation);
+      next.emphasis.mixWeights = { ...candidate.emphasis.mixWeights };
+      for (const state of emphasisStates) next.emphasis.mixWeights[state] = mix(before[state], candidate.emphasis.mixWeights[state]);
+    }
     next.muted.chromaScale = Object.fromEntries(modes.map(mode => [mode, mix(previous.muted.chromaScale?.[mode] ?? 1, candidate.muted.chromaScale?.[mode] ?? 1)])) as Record<Mode, number>;
     next.families = candidate.families.map(family => {
       const before = previous.families.find(item => item.id === family.id)!;

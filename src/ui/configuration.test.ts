@@ -44,6 +44,20 @@ class MemoryStorage {
 }
 
 describe('configuration lifecycle', () => {
+  it('migrates old spacing into shared proportional emphasis weights', () => {
+    const input = defaults();
+    const result = parseConfigurationJson(JSON.stringify(input), defaults());
+    expect(result.emphasis.mixWeights).toEqual({ hover: 0.91, active: 0.82, selected: 0.73 });
+    expect(input.emphasis.mixWeights).toBeUndefined();
+  });
+
+  it('round-trips explicit emphasis weights and rejects invalid ones', () => {
+    const input = defaults();
+    input.emphasis.mixWeights = { hover: 0.96, active: 0.88, selected: 0.75 };
+    expect(parseConfigurationJson(JSON.stringify(input), defaults()).emphasis.mixWeights).toEqual(input.emphasis.mixWeights);
+    input.emphasis.mixWeights.active = 1;
+    expect(() => parseConfigurationJson(JSON.stringify(input), defaults())).toThrow(/weight/i);
+  });
   it('uses kds when a legacy configuration has no prefix', () => {
     const input = defaults();
     delete (input as Partial<BuilderConfig>).prefix;

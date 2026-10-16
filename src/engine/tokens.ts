@@ -1,7 +1,8 @@
-import type { GeneratedSystem, Mode, Primitive } from './types';
+import type { ColorValue, GeneratedSystem, Mode, Primitive } from './types';
 import { contrast, isSrgb } from './color';
+import { emphasisRecipe, emphasisStates, emphasisTarget, mixEmphasis } from './emphasis';
 
-export interface FoundationColor {
+interface FoundationColor {
   primitive: Primitive;
   step: string;
   lightness: string;
@@ -16,6 +17,26 @@ export function configuredFamilyScope(system: GeneratedSystem): { ids: string[];
     label: family.label || family.id || family.key,
   }));
   return { ids: families.map((family) => family.id), label: families.map((family) => family.label).join(' + ') || 'Color' };
+}
+
+/** Resolve serialized state recipes from serialized bases, never independently rounded stops. */
+function semanticResolver(system: GeneratedSystem, colors: Map<string, ColorValue>) {
+  const roles = new Map(system.semantics.map(token => [token.name, token]));
+  const resolve = (name: string, mode: Mode, seen = new Set<string>()): ColorValue | undefined => {
+    if (!name) return;
+    if (seen.has(name)) throw new Error(`Circular color alias: ${name}.`);
+    seen.add(name);
+    const recipe = emphasisRecipe(system, name);
+    if (recipe) {
+      const base = resolve(recipe.base, mode, seen);
+      return base ? mixEmphasis(base, system.config.emphasis.mixWeights![recipe.state], emphasisTarget(system.config, mode)) : undefined;
+    }
+    const color = colors.get(name);
+    if (color) return color;
+    const token = roles.get(name);
+    return token ? resolve(token[mode], mode, seen) : undefined;
+  };
+  return resolve;
 }
 
 /** One component model feeds CSS and DTCG without recalculating colors. */
@@ -36,7 +57,6 @@ export function tokenFoundation(system: GeneratedSystem) {
     chroma[chromaKey] = primitive.color.c;
     return { primitive, step, lightness: tone, hue: hueKey, chroma: chromaKey };
   });
-  const semantic = new Map(system.semantics.map((token) => [token.name, token]));
   const valid = () => {
     const colors = new Map(palette.map((item) => {
       const original = item.primitive.color;
@@ -44,12 +64,7 @@ export function tokenFoundation(system: GeneratedSystem) {
       return [item.primitive.name, original.source ? original : { ...original, l, c, h, css: `oklch(${l} ${c} ${h})` }];
     }));
     if (palette.some((item) => isSrgb(item.primitive.color) && !isSrgb(colors.get(item.primitive.name)!))) return false;
-    const resolve = (name: string, mode: Mode): typeof palette[number]['primitive']['color'] | undefined => {
-      const color = colors.get(name);
-      if (color) return color;
-      const token = semantic.get(name);
-      return token ? resolve(token[mode], mode) : undefined;
-    };
+    const resolve = semanticResolver(system, colors);
     return system.checks.every((check) => {
       const foreground = resolve(check.foreground, check.mode), background = resolve(check.background, check.mode);
       if (!foreground || !background) return true;
@@ -70,6 +85,108 @@ export function tokenFoundation(system: GeneratedSystem) {
     }
   }
   return { lightness, hue, chroma, palette };
+}
+
+/** Reconstruct the shared foundation after verified coordinate shortening. */
+function foundationColors(foundation: ReturnType<typeof tokenFoundation>): Map<string, ColorValue> {
+  return new Map(foundation.palette.map(({ primitive, lightness, chroma, hue }) => {
+    const l = foundation.lightness[lightness], c = foundation.chroma[chroma], h = foundation.hue[hue];
+    return [primitive.name, primitive.color.source ? primitive.color
+      : { ...primitive.color, l, c, h, css: `oklch(${l} ${c} ${h})` }];
+  }));
+}
+
+function buildCssTokenModel(system: GeneratedSystem) {
+  const foundation = tokenFoundation(system);
+  const colors = foundationColors(foundation);
+  const resolve = semanticResolver(system, colors);
+  const prefix = system.config.prefix ?? 'kds';
+  const weights = system.config.emphasis?.mixWeights;
+  const settings = weights ? [
+    ...emphasisStates.slice(0, system.config.emphasis.selected ? 3 : 2).map(state => ({
+      name: `--${prefix}-emphasis-${state}-weight`, value: `${weights[state] * 100}%`,
+    })),
+    { name: `--${prefix}-emphasis-state-target`, value: emphasisTarget(system.config, 'dark') === 'white'
+      ? 'light-dark(oklch(0 0 none), oklch(1 0 none))' : 'oklch(0 0 none)' },
+  ] : [];
+  const components = new Map<string, string>();
+  const chromaNames = new Map<string, string>();
+  const palette = new Map(foundation.palette.map(item => [item.primitive.name, item]));
+  const roles = new Map(system.semantics.map(token => [token.name, token]));
+  const component = (kind: string, key: string, value: number) => {
+    const name = `--${prefix}-${kind}-${key}`;
+    components.set(name, String(value));
+    return `var(${name})`;
+  };
+  const expression = (name: string, mode: Mode): string => {
+    const item = palette.get(name);
+    if (!item) {
+      const role = roles.get(name);
+      if (!role) throw new Error(`Missing color for CSS role ${name}.`);
+      return expression(role[mode], mode);
+    }
+    // Exact anchors retain their original source syntax and precision.
+    if (item.primitive.color.source) return item.primitive.color.css;
+    const l = component('lightness', item.lightness, foundation.lightness[item.lightness]);
+    const chroma = foundation.chroma[item.chroma];
+    const chromaIdentity = `${item.primitive.family}:${chroma}`;
+    const chromaKey = chromaNames.get(chromaIdentity) ?? item.chroma;
+    chromaNames.set(chromaIdentity, chromaKey);
+    const c = component('chroma', chromaKey, chroma);
+    const h = component('hue', item.hue, foundation.hue[item.hue]);
+    return `oklch(${l} ${c} ${h})`;
+  };
+  const canonical = new Map<string, string>();
+  let aliases = 0;
+  const semantics = system.semantics.map(token => {
+    const recipe = emphasisRecipe(system, token.name);
+    if (recipe) return { name: token.name,
+      value: `color-mix(in oklch, var(${recipe.base}) var(--${prefix}-emphasis-${recipe.state}-weight), var(--${prefix}-emphasis-state-target))` };
+    const light = resolve(token.name, 'light'), dark = resolve(token.name, 'dark');
+    if (!light || !dark) throw new Error(`Missing color for CSS role ${token.name}.`);
+    // Equal rendered colors do not make an exact lock an editable component recipe.
+    const identity = JSON.stringify([light.css, dark.css, light.source ?? null, dark.source ?? null]);
+    const shared = light.css === dark.css && light.source === dark.source;
+    const existing = canonical.get(identity);
+    if (existing) {
+      aliases++;
+      return { name: token.name, value: `var(${existing})` };
+    }
+    canonical.set(identity, token.name);
+    const lightExpression = expression(token.light, 'light');
+    const darkExpression = shared ? lightExpression : expression(token.dark, 'dark');
+    return { name: token.name, value: shared ? lightExpression
+      : `light-dark(${lightExpression}, ${darkExpression})` };
+  });
+  const recipes = semantics.filter(token => emphasisRecipe(system, token.name));
+  return Object.freeze({
+    components: Object.freeze([...components].sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true })).map(([name, value]) => Object.freeze({ name, value }))),
+    settings: Object.freeze(settings.map(item => Object.freeze(item))),
+    semantics: Object.freeze(semantics.map(item => Object.freeze(item))),
+    stats: Object.freeze({
+      tokens: semantics.length + settings.length + components.size,
+      components: components.size,
+      roles: semantics.length,
+      derivedStates: recipes.length,
+      settings: settings.length,
+      aliases,
+      omittedFoundationTokens: foundation.palette.length + Object.keys(foundation.lightness).length
+        + Object.keys(foundation.chroma).length + Object.keys(foundation.hue).length - components.size,
+    }),
+  });
+}
+
+const cssModels = new WeakMap<GeneratedSystem, { signature: string; model: ReturnType<typeof buildCssTokenModel> }>();
+
+/** Share expensive verified serialization across previews and exports; tolerate mutable API inputs. */
+export function cssTokenModel(system: GeneratedSystem) {
+  const signature = JSON.stringify([system.config, system.primitives, system.semantics,
+    system.checks.map(check => [check.mode, check.foreground, check.background, check.target, check.pass])]);
+  const cached = cssModels.get(system);
+  if (cached?.signature === signature) return cached.model;
+  const model = buildCssTokenModel(system);
+  cssModels.set(system, { signature, model });
+  return model;
 }
 
 type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
@@ -129,9 +246,15 @@ export function dtcgDocuments(system: GeneratedSystem) {
       ...(primitive.color.source ? { $description: `Exact source anchor: ${primitive.color.source}` } : {}),
     });
   }
+  const resolve = semanticResolver(system, foundationColors(foundation));
   const semantic = (mode: Mode): JsonObject => {
     const document: JsonObject = { $description: `${mode} semantic context. Merge with the shared foundation through ${prefix}.resolver.json.` };
-    for (const token of system.semantics) setToken(document, tokenPath(token.name, prefix), { $type: 'color', $value: `{${tokenPath(token[mode], prefix).join('.')}}` });
+    for (const token of system.semantics) {
+      const color = emphasisRecipe(system, token.name) ? resolve(token.name, mode) : undefined;
+      setToken(document, tokenPath(token.name, prefix), { $type: 'color', $value: color
+        ? { colorSpace: 'oklch', components: [color.l, color.c, color.h], alpha: 1 }
+        : `{${tokenPath(token[mode], prefix).join('.')}}` });
+    }
     return document;
   };
   const light = semantic('light');

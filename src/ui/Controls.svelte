@@ -5,11 +5,18 @@
   import type { BuilderConfig, FamilyId, GeneratedSystem, Mode } from '../engine/types';
   import { familyControlColor, familyTrackStyle, mutedBorderTrackStyle, mutedTrackStyle, stateTrackStyle, surfaceTrackStyle } from './controlTracks';
   import BrandAnchors from './BrandAnchors.svelte';
+  import { emphasisStates, legacyEmphasisWeights } from '../engine/emphasis';
+  import { setEmphasisWeight } from './controlValues';
   let { config, system, adjusted = [], checking = false, canUndo = false, settingsOpen = false, onKeydown, onClose, onChange, onReset, onUndo }: {
     config: BuilderConfig; system: GeneratedSystem; adjusted?: string[]; checking?: boolean; canUndo?: boolean; settingsOpen?: boolean;
     onKeydown: (event: KeyboardEvent) => void; onClose: () => void;
     onChange: (config: BuilderConfig) => Promise<boolean | undefined>; onReset: () => void; onUndo: () => void;
   } = $props();
+  const strengthLabels = { hover: 'Hover', active: 'Pressed', selected: 'Selected' };
+  let weights = $derived(config.emphasis.mixWeights ?? legacyEmphasisWeights(config.emphasis.separation));
+  const updateStrength = (state: keyof typeof weights, strength: number) => onChange({ ...config,
+    emphasis: { ...config.emphasis, mixWeights: setEmphasisWeight(weights, state, Number((1 - strength / 100).toFixed(6))) },
+  });
   const updateFamily = (id: FamilyId, patch: { hue?: number; chroma?: number }) => onChange({ ...config, families: config.families.map(item => item.id === id ? { ...item, ...patch } : item) });
   const updateStep = (mode: Mode, value: number) => onChange({ ...config, surfaces: { ...config.surfaces, step: { light: surfaceStep(config, 'light'), dark: surfaceStep(config, 'dark'), [mode]: value } } });
   const updateDistance = (mode: Mode, value: number) => onChange({ ...config, muted: { ...config.muted, distance: { light: mutedDistance(config, 'light'), dark: mutedDistance(config, 'dark'), [mode]: value } } });
@@ -90,9 +97,12 @@
   <details class="control-section sidebar-section" aria-labelledby="states-heading">
     <summary class="section-heading"><h3 id="states-heading">Interaction states</h3></summary>
     <p class="help">Controls how much colors change on hover, press, and selection in both themes.</p>
-    <p class="help">Tracks preview the last Brand state: light theme above, dark below. Emphasis uses the current base fill; contrast protection may adjust it after an edit.</p>
+    <p class="help">Tracks show Brand colors: light theme above, dark below. Emphasis strengths mix each family’s base with black, or white for reversed dark states. Higher percentages make a stronger change.</p>
     <Slider label="Muted state spacing" min={0.005} max={0.07} step={0.005} value={config.muted.separation} adjusted={adjusted.includes('muted.separation')} rangeClass="state-spacing-range" rangeStyle={stateTrackStyle(config, system, 'muted')} onChange={separation => onChange({ ...config, muted: { ...config.muted, separation } })} />
-    <Slider label="Emphasis state spacing" min={0.01} max={0.1} step={0.005} value={config.emphasis.separation} adjusted={adjusted.includes('emphasis.separation')} rangeClass="state-spacing-range" rangeStyle={stateTrackStyle(config, system, 'emphasis')} onChange={separation => onChange({ ...config, emphasis: { ...config.emphasis, separation } })} />
+    {#each emphasisStates.filter(state => state !== 'selected' || config.emphasis.selected) as state}
+      <Slider label={`${strengthLabels[state]} emphasis strength`} min={0} max={100} step={1} unit="%" value={Number(((1 - weights[state]) * 100).toFixed(6))} adjusted={adjusted.includes(`emphasis.${state}`)} rangeClass="state-spacing-range" rangeStyle={stateTrackStyle({ ...config, emphasis: { ...config.emphasis, mixWeights: weights } }, system, 'emphasis')} onChange={value => updateStrength(state, value)} />
+    {/each}
+    <p class="help">Shared across all color families. Hover stays weaker than pressed and selected; neighboring strengths move together if needed. Contrast protection may limit a strength or adjust the base colors.</p>
     <fieldset class="emphasis-state-options">
       <legend>Emphasis states in dark mode</legend>
       <div class="strategy-options">

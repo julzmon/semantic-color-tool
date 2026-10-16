@@ -1,37 +1,28 @@
 import type { GeneratedSystem } from './types';
-import { configuredFamilyScope, dtcgDocuments, tokenFoundation } from './tokens';
+import { configuredFamilyScope, dtcgDocuments, cssTokenModel } from './tokens';
 import { tokenName } from './generate';
 
 /** A scoped token subset; intentionally does not replace unrelated KDS tokens. */
 export function exportCss(system: GeneratedSystem): string {
   const failures = system.checks.filter((check) => !check.pass).length;
-  const foundation = tokenFoundation(system);
   const scope = configuredFamilyScope(system);
   const prefix = system.config.prefix ?? 'kds';
-  const components = [
-    ...Object.entries(foundation.lightness).map(([key, value]) => `  ${tokenName(prefix, `lightness-${key}`)}: ${value};`),
-    '', '  /* Family hue · only exact anchors may override the family hue */',
-    ...Object.entries(foundation.hue).map(([key, value]) => `  ${tokenName(prefix, `hue-${key}`)}: ${value};`),
-    '', '  /* Chroma per tone · already mapped to the target gamut */',
-    ...Object.entries(foundation.chroma).map(([key, value]) => `  ${tokenName(prefix, `chroma-${key}`)}: ${value};`),
-  ].join('\n');
-  const primitives = foundation.palette.map(({ primitive, lightness, hue, chroma }) =>
-    `  ${primitive.name}: ${primitive.color.source ?? `oklch(var(${tokenName(prefix, `lightness-${lightness}`)}) var(${tokenName(prefix, `chroma-${chroma}`)}) var(${tokenName(prefix, `hue-${hue}`)}))`};`).join('\n');
-  const semantic = system.semantics.map((item) => `  ${item.name}: light-dark(var(${item.light}), var(${item.dark}));`).join('\n');
+  const model = cssTokenModel(system);
+  const settings = model.settings.map(item => `  ${item.name}: ${item.value};`).join('\n');
+  const components = model.components.map(item => `  ${item.name}: ${item.value};`).join('\n');
+  const semantic = model.semantics
+    .map(item => `  ${item.name}: ${item.value};`).join('\n');
   return `/* Semantic Color System Generator · ${scope.label} tokens.
- * One generated primitive palette, shared by light and dark.
+ * Shared L/C/H components and opaque semantic colors for light and dark.
+ * Global settings and recipes; intermediate palette tokens are omitted.
  * Validation: ${failures} failed contrast relationship${failures === 1 ? '' : 's'}.
  */
 :root {
   color-scheme: light dark;
+${components ? `\n  /* Shared OKLCH components · edit globally on :root */\n${components}` : ''}
+${settings ? `\n  /* Shared emphasis mixing settings */\n${settings}` : ''}
 
-  /* Shared lightness positions */
-${components}
-
-  /* Primitives · OKLCH */
-${primitives}
-
-  /* Semantic mappings */
+  /* Semantic roles · identical color pairs use aliases */
 ${semantic}
 }
 

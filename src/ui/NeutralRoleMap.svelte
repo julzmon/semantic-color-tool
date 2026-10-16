@@ -34,6 +34,11 @@
         return 'Uses an exact locked neutral state group; global neutral settings do not override it.';
       }
     }
+    if (system.config.emphasis.mixWeights && modes.some(mode =>
+      Object.entries(system.modes[mode].families.neutral.roles).some(([name, role]) =>
+        name.startsWith('emphasis.') && name !== 'emphasis.base' && role?.color.css === color.css))) {
+      return 'Mixes the Neutral emphasis base with black or white using a shared state strength.';
+    }
     if (color.gamutMapped) return `Chroma limited to fit sRGB: requested ${neutral.chroma.toFixed(4)}, rendered ${color.c.toFixed(4)}. Neutral hue is preserved.`;
     return 'Uses the shared Neutral hue and chroma settings.';
   };

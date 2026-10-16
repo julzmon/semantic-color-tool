@@ -2,7 +2,7 @@
   import { tick, untrack } from 'svelte';
   import { parseLockedColor } from '../engine/color';
   import type { ColorAnchor, OklchColor } from '../engine/types';
-  import { serializeOklch } from './brandAnchor';
+  import { editAnchorColor } from './brandAnchor';
   import { inkFor } from './presentation';
   type Draft = Record<keyof OklchColor, string>;
   const anchorRoles: ColorAnchor['role'][] = ['emphasis.base', 'foreground.base'];
@@ -30,10 +30,19 @@
   const id = $props.id();
   let source = $derived(parseLockedColor(anchor.color));
   let draft = $state<Draft>(untrack(() => formatDraft(source)));
+  const dirty = new Set<keyof OklchColor>();
   let error = $state('');
+  const syncDraft = (color: OklchColor) => {
+    const incoming = formatDraft(color);
+    for (const key of dirty) incoming[key] = draft[key];
+    draft = incoming;
+  };
   $effect(() => {
-    draft = formatDraft(parseLockedColor(anchor.color));
-    error = '';
+    const color = parseLockedColor(anchor.color);
+    untrack(() => {
+      syncDraft(color);
+      if (!dirty.size) error = '';
+    });
   });
   const collides = (next: Pick<ColorAnchor, 'role' | 'mode'>) =>
     allAnchors.some(
@@ -48,14 +57,15 @@
     }
     error = '';
     if (await onChange(next) === false) {
-      draft = formatDraft(source);
+      syncDraft(source);
       error = 'This anchor cannot meet the checked contrast requirements. Previous anchor retained.';
     }
   };
   const commit = async () => {
     try {
-      const next = serializeOklch({ l: Number(draft.l), c: Number(draft.c), h: Number(draft.h) });
-      await update({ color: next });
+      const next = editAnchorColor(anchor.color, Object.fromEntries([...dirty].map(key => [key, draft[key]])));
+      dirty.clear();
+      if (next !== undefined) await update({ color: next });
     } catch (reason) {
       error = reason instanceof Error ? reason.message : 'Enter valid OKLCH coordinates.';
     }
@@ -81,6 +91,8 @@
       aria-describedby={error ? `${id}-error` : undefined}
       oninput={(event) => {
         const nextValue = event.currentTarget.value;
+        dirty.add(key);
+        error = '';
         draft = ((value) => ({ ...value, [key]: nextValue }))(draft);
       }}
       onblur={commit}

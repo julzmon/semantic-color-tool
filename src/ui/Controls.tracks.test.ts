@@ -72,13 +72,13 @@ it('previews muted Brand lightness and chroma independently in each theme', () =
 
 it('shows state spacing as light/dark Brand bands and respects reversed dark emphasis', () => {
   const config = structuredClone(defaults);
-  const matched = track(config, 'Emphasis state spacing');
+  const matched = track(config, 'Pressed emphasis strength');
   const midpoint = matched.stops.length / 2;
   expect(matched.style).toContain('top / 100% 50% no-repeat');
   expect(matched.style).toContain('bottom / 100% 50% no-repeat');
   expect(matched.stops.slice(0, midpoint)).toEqual(matched.stops.slice(midpoint));
   config.emphasis.reverseDarkStates = true;
-  const reversed = track(config, 'Emphasis state spacing').stops;
+  const reversed = track(config, 'Pressed emphasis strength').stops;
   expect(reversed[midpoint - 1].color.l).toBeLessThan(reversed[0].color.l);
   expect(reversed.at(-1)!.color.l).toBeGreaterThan(reversed[midpoint].color.l);
   const muted = track(config, 'Muted state spacing').stops;

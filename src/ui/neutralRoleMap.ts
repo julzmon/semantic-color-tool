@@ -1,14 +1,14 @@
 import type { ContrastCheck, GeneratedRole, GeneratedSystem, Mode } from '../engine/types';
 
 export type RoleGroup = 'text' | 'border' | 'surface' | 'fill';
-export type RoleMapLabel = { semantic: string; label: string; group: RoleGroup; order: number };
-export type RoleMapStop = {
+type RoleMapLabel = { semantic: string; label: string; group: RoleGroup; order: number };
+type RoleMapStop = {
   primitive: string;
   color: GeneratedRole['color'];
   labels: Record<Mode, Record<RoleGroup, RoleMapLabel[]>>;
   checks: Record<Mode, ContrastCheck[]>;
 };
-export type NeutralRoleMapModel = {
+type NeutralRoleMapModel = {
   stops: RoleMapStop[];
   rowSlots: Record<RoleGroup, number>;
 };

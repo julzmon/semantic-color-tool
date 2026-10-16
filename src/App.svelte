@@ -5,6 +5,7 @@
   import ContrastTable from './ui/ContrastTable.svelte';
   import NeutralRoleMap from './ui/NeutralRoleMap.svelte';
   import Inspector from './ui/Inspector.svelte';
+  import { handleModalKeydown } from './ui/settingsKeyboard';
   import { lightDismiss } from './ui/lightDismiss';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
@@ -12,6 +13,7 @@
   import { configFromReference } from './engine/config';
   import {
     CONFIGURATION_STORAGE_KEY,
+    browserStorage,
     loadStoredConfiguration,
     parseConfigurationJson,
     saveStoredConfiguration,
@@ -28,10 +30,8 @@
   let exportModule: Promise<typeof import('./ui/ExportPanel.svelte')> | undefined;
   const loadPrimitives = () => primitivesModule ??= import('./ui/Primitives.svelte');
   const loadExport = () => exportModule ??= import('./ui/ExportPanel.svelte');
-  const stored = loadStoredConfiguration(
-    typeof window === 'undefined' ? null : window.localStorage,
-    initialConfig,
-  );
+  const storage = browserStorage();
+  const stored = loadStoredConfiguration(storage, initialConfig);
   const restored = (() => {
     try {
       return balanceConfiguration(initialConfig, stored.config);
@@ -77,21 +77,8 @@
     await tick();
     settingsToggle?.focus();
   };
-  const handleSettingsKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      void closeSettings();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const panel = event.currentTarget as HTMLElement;
-    const focusable = [...panel.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])')];
-    if (!focusable.length) { event.preventDefault(); return; }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-  };
+  const handleSettingsKeydown = (event: KeyboardEvent) =>
+    handleModalKeydown(event, settingsOpen, () => void closeSettings());
   let skipPersistence = false;
   $effect(() => {
     const currentConfig = config;
@@ -99,7 +86,7 @@
       skipPersistence = false;
       return;
     }
-    if (!saveStoredConfiguration(typeof window === 'undefined' ? null : window.localStorage, currentConfig))
+    if (!saveStoredConfiguration(storage, currentConfig))
       configurationStatus = 'Changes could not be saved in this browser.';
   });
   const modes: Mode[] = ['light', 'dark'];
@@ -110,7 +97,7 @@
     undo = null;
     skipPersistence = true;
     try {
-      window.localStorage.removeItem(CONFIGURATION_STORAGE_KEY);
+      storage?.removeItem(CONFIGURATION_STORAGE_KEY);
     } catch {
       /* Browser storage is optional. */
     }

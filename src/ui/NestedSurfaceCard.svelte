@@ -8,7 +8,7 @@
   let surface = $derived(surfaces[index]!);
 </script>
 
-<article class="surface-nested-card" data-surface={surface.semantic} style:background={surface.color.css}>
+<article class="surface-nested-card" data-surface={surface.semantic} style:background={`var(${surface.semantic})`}>
   <button class="surface-inspect" data-token={surface.semantic} aria-label={`Inspect ${surfaceLabel(index)} surface`} aria-haspopup="dialog" onclick={() => onInspect(surface.semantic)}>{surfaceLabel(index)} surface</button>
   <strong>{index === 0 ? 'Workspace card' : `Nested card ${index}`}</strong>
   {#if index + 1 < surfaces.length}<NestedSurfaceCard {surfaces} index={index + 1} {onInspect} />{:else}<p>

@@ -15,12 +15,25 @@
   .negative { color: var(--kds-fg-negative-base); background: var(--kds-bg-negative-muted-base); }
   .warning { color: var(--kds-fg-warning-base); background: var(--kds-bg-warning-muted-base); }
   .neutral { color: var(--kds-fg-neutral-base); background: var(--kds-bg-neutral-muted-base); }
+  .action {
+    padding: 10px 16px; font: inherit; border-radius: 8px;
+    color: var(--kds-fg-on-emphasis);
+    background-color: var(--kds-bg-brand-emphasis-base);
+    border: 1px solid var(--kds-border-brand-emphasis-base);
+  }
+  .action:hover {
+    background-color: var(--kds-bg-brand-emphasis-hover);
+    border-color: var(--kds-border-brand-emphasis-hover);
+  }
+  .action:active { background-color: var(--kds-bg-brand-emphasis-active); }
+  .action:focus-visible { outline: 2px solid var(--kds-fg-base); outline-offset: 3px; }
 </style>
 <h1>Exported KDS CSS</h1>
 <p>Light page. Each region reuses the same six semantic token families.</p>
 <section data-mode="dark" id="dark-region">
   <h2>Dark region</h2>
   <p>Foreground and background switch together at this boundary.</p>
+  <button type="button" class="action">Hover or press</button>
   <div class="token-grid">
     <p class="intent brand">Brand emphasis base</p>
     <p class="intent info">Info foreground on muted Info</p>
@@ -32,6 +45,7 @@
   <section data-mode="light" id="light-region">
     <h2>Light within dark</h2>
     <p>The inner scheme overrides its parent while retaining the same token names.</p>
+    <button type="button" class="action">Hover or press</button>
     <div class="token-grid">
       <p class="intent brand">Brand emphasis base</p>
       <p class="intent info">Info foreground on muted Info</p>
