@@ -53,6 +53,11 @@ function resolve(values: Map<string, string>, name: string, mode: Mode, seen = n
 
 const cases: [string, (config: BuilderConfig) => void][] = [
   ['defaults', () => {}],
+  ['prefer shared colors', config => { config.solvingStrategy = 'prefer-shared'; }],
+  ['prefer shared colors with reversed selected states and lock', config => {
+    config.solvingStrategy = 'prefer-shared'; config.emphasis.reverseDarkStates = true; config.emphasis.selected = true;
+    config.anchors = [{ family: 'brand', mode: 'dark', role: 'foreground.base', color: '#ffffff', locked: true }];
+  }],
   ['selected and reversed dark states', config => { config.emphasis.selected = true; config.emphasis.reverseDarkStates = true; }],
   ['independent muted controls', config => {
     config.muted.distance = { light: 0.07, dark: 0.3 };

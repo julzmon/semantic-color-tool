@@ -1,7 +1,9 @@
+import { preferSharedColors, separateOnEmphasis } from './feasibility';
 import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
 import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
 import { reuseGrayPositions } from './reuse';
+import { mutedStateColors } from './muted';
 import { emphasisStateColors, emphasisStates } from './emphasis';
 import type {
   BuilderConfig, ColorAnchor, ColorValue, ContrastCheck, FamilyConfig, FamilyId, FamilyRole,
@@ -16,7 +18,7 @@ const clamp = (value: number) => Math.max(0, Math.min(1, value));
 const textTarget = (config: BuilderConfig) => Math.max(config.targets.normalText, config.targets.largeText);
 const emphasisStrategy = (config: BuilderConfig) => config.emphasis.reverseDarkStates ? 'shared' : config.emphasis.strategy ?? 'shared';
 type ColorFactory = (lightness: number) => ColorValue;
-type Constraint = { background: ColorValue; target: number };
+type Constraint = { background: ColorValue; target: number; distinct?: boolean };
 interface ColorGroup { colors: ColorValue[]; diagnostics: string[] }
 interface SolvedGroup extends ColorGroup { feasible: boolean; score: number }
 
@@ -28,6 +30,7 @@ function finite(value: number, name: string, minimum = 0): void {
 export function validateConfig(config: BuilderConfig): void {
   if (!config || config.version !== 2) throw new Error('Unsupported builder configuration version. Import version 1 configurations through the configuration importer first.');
   if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(config.prefix ?? '')) throw new Error('Token prefix must use lowercase letters, numbers, and hyphens.');
+  if (config.solvingStrategy !== undefined && !['standard', 'prefer-shared'].includes(config.solvingStrategy)) throw new Error('Solving strategy must be standard or prefer-shared.');
   for (const mode of modes) {
     finite(config.surfaces?.[mode]?.l, `${mode} surface lightness`);
     if (config.surfaces[mode].l > 1 + 1e-8) throw new Error('Surface lightness must be within 0–1.');
@@ -45,12 +48,13 @@ export function validateConfig(config: BuilderConfig): void {
   }
   finite(config.muted?.separation, 'Muted separation');
   finite(config.emphasis?.separation, 'Emphasis separation');
-  if (config.emphasis.mixWeights !== undefined) {
+  for (const group of ['muted', 'emphasis'] as const) if (config[group].mixWeights !== undefined) {
     let previous = 1;
+    const label = group === 'muted' ? 'Muted' : 'Emphasis';
     for (const state of emphasisStates) {
-      const weight = config.emphasis.mixWeights?.[state];
-      finite(weight, `Emphasis ${state} mix weight`);
-      if (weight > previous) throw new Error('Emphasis mix weights must satisfy 1 ≥ hover ≥ active ≥ selected ≥ 0.');
+      const weight = config[group].mixWeights?.[state];
+      finite(weight, `${label} ${state} mix weight`);
+      if (weight > previous) throw new Error(`${label} mix weights must satisfy 1 ≥ hover ≥ active ≥ selected ≥ 0.`);
       previous = weight;
     }
   }
@@ -112,6 +116,12 @@ export function generateStates(base: ColorValue, mode: Mode, separation: number,
 
 export function mutedGeneration(config: BuilderConfig, mode: Mode, family: FamilyConfig): ColorGroup {
   const count = config.emphasis.selected ? 4 : 3;
+  if (config.muted.mixWeights) {
+    const desired = config.surfaces[mode].l + direction(mode) * mutedDistance(config, mode);
+    const base = toColor({ l: clamp(desired), c: mutedFamilyChroma(config, mode, family), h: family.hue });
+    return { colors: mutedStateColors(config, base, mode), diagnostics: desired < 0 || desired > 1
+      ? [`${mode} ${family.id}: muted distance exceeds available lightness; the default fill is clamped.`] : [] };
+  }
   const span = config.muted.separation * (count - 1);
   const desired = config.surfaces[mode].l + direction(mode) * mutedDistance(config, mode);
   const bounded = mode === 'light' ? Math.max(span, desired) : Math.min(1 - span, desired);
@@ -132,7 +142,7 @@ export function adjustMutedBorders(config: BuilderConfig, mode: Mode, family: Fa
   if (strength === 0) return [base, hover];
   const available = mode === 'light' ? Math.min(base.l, hover.l) : 1 - Math.max(base.l, hover.l);
   const delta = direction(mode) * Math.min(strength, Math.max(0, available));
-  const color = (source: ColorValue) => toColor({ l: clamp(source.l + delta), c: mutedFamilyChroma(config, mode, family), h: family.hue });
+  const color = (source: ColorValue) => toColor({ l: clamp(source.l + delta), c: config.muted.mixWeights ? source.c : mutedFamilyChroma(config, mode, family), h: family.hue });
   return [color(base), color(hover)];
 }
 
@@ -153,8 +163,8 @@ function createFactory(family: FamilyConfig): ColorFactory {
 function contrastScore(color: ColorValue, constraints: Constraint[]): number {
   if (!isSrgb(color)) return 0;
   let score = Infinity;
-  for (const { background, target } of constraints)
-    score = Math.min(score, isSrgb(background) ? contrast(color, background) / target : 0);
+  for (const { background, target, distinct } of constraints)
+    score = Math.min(score, isSrgb(background) && (!distinct || colorIdentity(color) !== colorIdentity(background)) ? contrast(color, background) / target : 0);
   return score;
 }
 
@@ -245,7 +255,7 @@ function solveFamilies(inputs: EmphasisInput[]): EmphasisResult[] {
       ? brandAnchoring(config, mode === 'light' ? 'dark' : 'light', input.family.id, 'emphasis.base') : undefined;
     const anchor = own?.locked ? own : other?.locked ? other : own ?? other;
     return { factory: input.factory ?? createFactory(input.family), fixed: anchor?.locked ? anchor.color : input.sharedBase, preference: anchor?.color,
-      constraints: [{ background: input.onEmphasis, target: textTarget(config) }] };
+      constraints: [{ background: input.onEmphasis, target: textTarget(config), distinct: true }] };
   });
   const foreground = inputs.map((input): JointMember => {
     const anchor = brandAnchoring(config, mode, input.family.id, 'foreground.base');
@@ -369,7 +379,8 @@ function contextualChecks(config: BuilderConfig, themes: Record<Mode, ModeTheme>
       id: `${mode}:${kind}:${foreground.semantic}:${background.semantic}`,
       mode, ...(family ? { family } : {}), foreground: foreground.semantic, background: background.semantic,
       foregroundColor: foreground.color, backgroundColor: background.color, ratio, target,
-      pass: ratio >= target && isSrgb(foreground.color) && isSrgb(background.color), kind,
+      pass: ratio >= target && isSrgb(foreground.color) && isSrgb(background.color)
+        && (foreground.semantic !== tokenName(config.prefix, 'fg-on-emphasis') || colorIdentity(foreground.color) !== colorIdentity(background.color)), kind,
     });
   };
   const text = (mode: Mode, foreground: GeneratedRole, backgrounds: GeneratedRole[], family?: FamilyId) => {
@@ -399,6 +410,7 @@ function contextualChecks(config: BuilderConfig, themes: Record<Mode, ModeTheme>
 export function generateSystem(input: BuilderConfig): GeneratedSystem {
   validateConfig(input);
   const config = structuredClone(input);
+  config.solvingStrategy = input.solvingStrategy ?? 'standard';
   config.surfaces.step = { light: surfaceStep(input, 'light'), dark: surfaceStep(input, 'dark') };
   config.muted.distance = { light: mutedDistance(input, 'light'), dark: mutedDistance(input, 'dark') };
   config.muted.chromaScale = { light: mutedChromaScale(input, 'light'), dark: mutedChromaScale(input, 'dark') };
@@ -450,7 +462,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
     families.forEach((family, index) => {
       const solution = solutions[index];
       diagnostics.push(...solution.diagnostics.map((message) => `${family.id}: ${message}`));
-      if (!solution.shared && !config.emphasis.mixWeights) diagnostics.push(`${mode} ${family.id}: emphasis and foreground use separate colors because their combined constraints cannot be satisfied by one state group.`);
+      if (!solution.shared && !config.emphasis.mixWeights) diagnostics.push(`${mode} ${family.id}: emphasis and foreground use separate colors because no shared state group was verified in the bounded search.`);
       const roles: GeneratedFamily['roles'] = {};
       const put = (path: FamilyRole, color: ColorValue) => { roles[path] = role(color, semanticName(config.prefix, family.id, path)); };
       muted[family.id].forEach((color, state) => put(`muted.${allStates[state]}`, color));
@@ -508,14 +520,27 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
   for (const anchor of config.anchors.filter((anchor) => anchor.locked)) {
     if (!isSrgb(anchor.color)) diagnostics.push(`${anchor.mode} ${anchor.family} ${anchor.role}: locked color is outside the sRGB gamut and is preserved exactly. Ratios use a clipped-sRGB estimate; these checks cannot be certified and remain failed.`);
   }
+  diagnostics.push(...separateOnEmphasis({ config, modes: themes }));
   const originalChecks = contextualChecks(config, themes);
   const reused = reuseGrayPositions(config, themes, (candidate) => contextualChecks(config, candidate)
     .every((check, index) => check.pass === originalChecks[index].pass));
+  if (config.solvingStrategy === 'prefer-shared') preferSharedColors({ config, modes: reused });
+  diagnostics.push(...separateOnEmphasis({ config, modes: reused }));
   for (const mode of modes) for (const family of config.families) {
     const roles = reused[mode].families[family.id].roles;
     const [base, hover] = adjustMutedBorders(config, mode, family, roles['border.muted.base']!.color, roles['border.muted.hover']!.color);
     roles['border.muted.base']!.color = base;
     roles['border.muted.hover']!.color = hover;
+  }
+  for (const mode of modes) {
+    const theme = reused[mode];
+    if (Math.abs(theme.foreground.base.color.l - theme.foreground.muted.color.l) < 1e-9)
+      diagnostics.push(`${mode}: unresolved text hierarchy tradeoff: main and secondary text have equal lightness after contrast solving. Contrast passing does not establish visual hierarchy.`);
+    for (const family of families) for (const group of ['muted', 'emphasis', 'foreground'] as const) {
+      const colors = allStates.flatMap(state => { const item = theme.families[family.id].roles[`${group}.${state}` as FamilyRole]; return item ? [item.color] : []; });
+      if (colors.some((color, i) => i > 0 && Math.abs(color.l - colors[i - 1].l) < 1e-9))
+        diagnostics.push(`${mode} ${family.id}: unresolved ${group} interaction hierarchy: neighboring states have equal lightness under the configured spacing or recipe. No perceptual distinction is certified.`);
+    }
   }
   const deduplicated = deduplication(reused, config.prefix);
   const checks = contextualChecks(config, deduplicated.modes);

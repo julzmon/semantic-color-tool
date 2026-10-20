@@ -8,7 +8,7 @@
 
 <section class="primitive-section">
   <p class="section-description">
-    {system.primitives.length} colors used across both themes. Select a color to see where it is used.
+    {system.primitives.length} colors used across both themes. Select a color to see where it is used. These are complete color aliases; equal lightness alone does not merge colors. Inspect a preview token for verified sharing opportunities.
   </p>
   {#each system.config.families as family}{@const generated = system.primitives.filter(
       (item) => item.family === family.key,

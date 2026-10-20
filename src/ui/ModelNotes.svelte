@@ -15,7 +15,7 @@
       <h3>Light and dark themes</h3>
       <p>
         Both themes use one color palette and the same default emphasis fills. In Interaction states,
-        shared strengths mix emphasis bases with black. Reverse dark emphasis states to mix with white instead.
+        separate muted and emphasis strengths control hover, pressed, and selected fills. Muted states darken in light mode and lighten in dark mode; emphasis states mix toward black. Reverse dark emphasis states to mix with white instead.
         The app checks these mixed colors before accepting settings.
       </p>
     </div>

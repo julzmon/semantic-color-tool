@@ -1,5 +1,7 @@
 import { generateSystem } from './generate';
+import { capEmphasisStrengths, capMutedStrengths, emphasisStrengthLimit, mutedStrengthLimit, MAX_EMPHASIS_LIGHTNESS_CHANGE } from './emphasis-limits';
 import { mutedDistance, surfaceStep } from './config';
+import { legacyMutedWeights, withMutedStateControls } from './muted';
 import { emphasisStates, legacyEmphasisWeights } from './emphasis';
 import type { BuilderConfig, GeneratedSystem, Mode } from './types';
 
@@ -12,17 +14,34 @@ const modes: Mode[] = ['light', 'dark'];
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Try only verified results; the bounded search may stop short of the true feasible limit. */
-export function balanceConfiguration(previous: BuilderConfig, requested: BuilderConfig): BalancedConfiguration {
+export function balanceConfiguration(previous: BuilderConfig, input: BuilderConfig): BalancedConfiguration {
+  const requested = previous.muted.mixWeights ? withMutedStateControls(input) : input;
   if (requested.targets.normalText < 4.5 || requested.targets.largeText < 3 || requested.targets.ui < 3)
     throw new Error('Contrast protection requires at least 4.5:1 normal text, 3:1 large text and 3:1 UI boundaries.');
   // Candidate rounding and unchanged settings can revisit the same request.
   // Keep this cache local: failures are cached too, and no result outlives the edit.
   const evaluated = new Map<string, GeneratedSystem>();
+  const generated = new Map<string, GeneratedSystem>();
+  const generate = (config: BuilderConfig) => {
+    const key = JSON.stringify(config);
+    let system = generated.get(key);
+    if (!system) { system = generateSystem(config); generated.set(key, system); }
+    return system;
+  };
   const evaluate = (config: BuilderConfig) => {
     const key = JSON.stringify(config);
     const cached = evaluated.get(key);
     if (cached) return cached;
-    const system = generateSystem(config);
+    let system = generate(config);
+    for (let iteration = 0; iteration < 8; iteration++) {
+      const emphasisCapped = capEmphasisStrengths(system);
+      const capped = capMutedStrengths({ ...system, config: emphasisCapped });
+      if (capped === system.config) { evaluated.set(key, system); return system; }
+      system = generate(capped);
+    }
+    // If changing strengths keeps moving solved bases, 12% is safe for every
+    // possible base in L=0..1, regardless of black/white mixing direction.
+    system = generate(capMutedStrengths({ ...system, config: capEmphasisStrengths(system, MAX_EMPHASIS_LIGHTNESS_CHANGE) }, MAX_EMPHASIS_LIGHTNESS_CHANGE));
     evaluated.set(key, system);
     return system;
   };
@@ -39,12 +58,16 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
     }
     if (system.config.muted.separation !== requested.muted.separation) changes.push('muted state separation');
     if (system.config.emphasis.separation !== requested.emphasis.separation) changes.push('emphasis state separation');
+    if (!equal(system.config.muted.mixWeights, requested.muted.mixWeights)) changes.push('shared muted strengths');
     if (!equal(system.config.emphasis.mixWeights, requested.emphasis.mixWeights)) changes.push('shared emphasis strengths');
     if (!equal(system.config.families, requested.families)) changes.push('family color settings');
     if (!equal(system.config.muted.chromaScale, requested.muted.chromaScale) && requested.muted.chromaScale) changes.push('muted chroma');
     if (system.config.surfaces.levels !== requested.surfaces.levels) changes.push('surface levels');
-    return { config: system.config, system, message: changes.length
-      ? `${limited ? 'Limited the requested change and adjusted' : 'Adjusted'} ${changes.join(', ')} to keep all checked contrast relationships passing.` : '' };
+    const visualLimit = (['muted','emphasis'] as const).some(group => requested[group].mixWeights && emphasisStates.some(state => 1 - requested[group].mixWeights![state] > (group === 'muted' ? mutedStrengthLimit(system) : emphasisStrengthLimit(system)) + 1e-9))
+      ? 'State changes are limited to 0.12 OKLCH lightness and 25% mix strength.' : '';
+    const message = changes.length
+      ? `${limited ? 'Limited the requested change and adjusted' : 'Adjusted'} ${changes.join(', ')} ${visualLimit ? 'to preserve contrast and state limits.' : 'to keep all checked contrast relationships passing.'}` : '';
+    return { config: system.config, system, message: [message, visualLimit].filter(Boolean).join(' ') };
   };
   const direct = evaluate(requested);
   if (direct.checks.length && direct.checks.every(check => check.pass)) return finish(direct);
@@ -57,7 +80,9 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
   if (candidate.emphasis.separation === previous.emphasis.separation) candidate.emphasis.separation = 0.01;
   let result = tryConfig(candidate);
   if (result) return finish(result);
-  if (candidate.muted.separation === previous.muted.separation) candidate.muted.separation = 0.005;
+  if (candidate.muted.mixWeights && equal(candidate.muted.mixWeights, previous.muted.mixWeights)) {
+    for (const state of emphasisStates) candidate.muted.mixWeights[state] = Number((1 - (1 - candidate.muted.mixWeights[state]) * 0.1).toFixed(6));
+  } else if (!candidate.muted.mixWeights && candidate.muted.separation === previous.muted.separation) candidate.muted.separation = 0.005;
   result = tryConfig(candidate);
   if (result) return finish(result);
   candidate.surfaces.step = Object.fromEntries(modes.map(mode => [mode,
@@ -76,12 +101,14 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
   // Decorative border strength has no contrast target and must survive unrelated limiting.
   // Anchors/targets/state direction/state inclusion are hard requests, never interpolated away.
   const hard = (config: BuilderConfig): BuilderConfig => {
-    const next = { ...structuredClone(config), prefix: requested.prefix,
+    const next = { ...structuredClone(config), prefix: requested.prefix, solvingStrategy: requested.solvingStrategy,
       targets: structuredClone(requested.targets), anchors: structuredClone(requested.anchors),
       emphasis: { ...config.emphasis, strategy: requested.emphasis.strategy, selected: requested.emphasis.selected,
         reverseDarkStates: requested.emphasis.reverseDarkStates } };
     if (requested.muted.borderStrength === undefined) delete next.muted.borderStrength;
     else next.muted.borderStrength = structuredClone(requested.muted.borderStrength);
+    if (!requested.muted.mixWeights) delete next.muted.mixWeights;
+    else next.muted.mixWeights = { ...(config.muted.mixWeights ?? legacyMutedWeights(config.muted.separation)) };
     if (!requested.emphasis.mixWeights) delete next.emphasis.mixWeights;
     else next.emphasis.mixWeights = { ...(config.emphasis.mixWeights ?? legacyEmphasisWeights(config.emphasis.separation)) };
     return next;
@@ -98,6 +125,11 @@ export function balanceConfiguration(previous: BuilderConfig, requested: Builder
     next.muted.distance = Object.fromEntries(modes.map(mode => [mode, mix(mutedDistance(previous, mode), mutedDistance(candidate, mode), 0.005)])) as Record<Mode, number>;
     next.muted.separation = mix(previous.muted.separation, candidate.muted.separation, 0.005);
     next.emphasis.separation = mix(previous.emphasis.separation, candidate.emphasis.separation, 0.005);
+    if (candidate.muted.mixWeights) {
+      const before = previous.muted.mixWeights ?? legacyMutedWeights(previous.muted.separation);
+      next.muted.mixWeights = { ...candidate.muted.mixWeights };
+      for (const state of emphasisStates) next.muted.mixWeights[state] = mix(before[state], candidate.muted.mixWeights[state]);
+    }
     if (candidate.emphasis.mixWeights) {
       const before = previous.emphasis.mixWeights ?? legacyEmphasisWeights(previous.emphasis.separation);
       next.emphasis.mixWeights = { ...candidate.emphasis.mixWeights };

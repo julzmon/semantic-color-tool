@@ -27,9 +27,11 @@ export interface BuilderConfig {
   /** Version 1 configurations remain readable while the generator migrates them. */
   version: 1 | 2;
   prefix: string;
+  /** Absent in older configurations: retain standard solving. */
+  solvingStrategy?: 'standard' | 'prefer-shared';
   surfaces: { light: { l: number }; dark: { l: number }; levels: number; step: number | Record<Mode, number> };
   families: FamilyConfig[];
-  muted: { distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number>; borderStrength?: Record<Mode, number> };
+  muted: { mixWeights?: EmphasisMixWeights; distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number>; borderStrength?: Record<Mode, number> };
   emphasis: {
     /** Base retention factors for opaque OKLCH state mixes; omitted by legacy engine callers. */
     mixWeights?: EmphasisMixWeights;

@@ -81,7 +81,7 @@ it('shows state spacing as light/dark Brand bands and respects reversed dark emp
   const reversed = track(config, 'Pressed emphasis strength').stops;
   expect(reversed[midpoint - 1].color.l).toBeLessThan(reversed[0].color.l);
   expect(reversed.at(-1)!.color.l).toBeGreaterThan(reversed[midpoint].color.l);
-  const muted = track(config, 'Muted state spacing').stops;
+  const muted = track(config, 'Pressed muted strength').stops;
   expect(muted[muted.length / 2 - 1].color.l).toBeLessThan(muted[0].color.l);
   expect(muted.at(-1)!.color.l).toBeGreaterThan(muted[muted.length / 2].color.l);
 });
@@ -92,4 +92,22 @@ it('previews stronger muted borders independently in light and dark mode', () =>
   expect(light.at(-1)!.color.l).toBeLessThan(light[0].color.l);
   expect(dark.at(-1)!.color.l).toBeGreaterThan(dark[0].color.l);
   for (const stop of [...light, ...dark]) expect(stop.color.h).toBeCloseTo(defaults.families.find(family => family.id === 'brand')!.hue, 5);
+});
+
+it('samples bounded emphasis tracks across the complete width', async () => {
+  const { stateTrackStyle } = await import('./controlTracks');
+  const { emphasisTarget, mixEmphasis } = await import('../engine/emphasis');
+  const config = structuredClone(defaults);
+  config.emphasis.reverseDarkStates = true;
+  const bounds = { min: 2.5, max: 18 };
+  const style = stateTrackStyle(config, system, 'emphasis', bounds);
+  const stops = [...style.matchAll(/(oklch\([^)]+\)) ([\d.]+)%/g)].map(match => ({ color: oklch(match[1])!, position: Number(match[2]) }));
+  const count = stops.length / 2;
+  for (const [index, mode] of ['light', 'dark'].entries()) {
+    const base = system.modes.light.families.brand.roles['emphasis.base']!.color;
+    const first = stops[index * count], last = stops[(index + 1) * count - 1];
+    expect(first.position).toBe(0); expect(last.position).toBe(100);
+    expect(first.color.l).toBeCloseTo(mixEmphasis(base, 1 - bounds.min / 100, emphasisTarget(config, mode as Mode)).l, 9);
+    expect(last.color.l).toBeCloseTo(mixEmphasis(base, 1 - bounds.max / 100, emphasisTarget(config, mode as Mode)).l, 9);
+  }
 });

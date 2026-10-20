@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, untrack } from 'svelte';
+  import { onDestroy, tick, untrack } from 'svelte';
   import { parseLockedColor } from '../engine/color';
   import type { ColorAnchor, OklchColor } from '../engine/types';
   import { editAnchorColor } from './brandAnchor';
@@ -32,6 +32,10 @@
   let draft = $state<Draft>(untrack(() => formatDraft(source)));
   const dirty = new Set<keyof OklchColor>();
   let error = $state('');
+  let editTimer: ReturnType<typeof setTimeout> | undefined;
+  let editRevision = 0;
+  const clearEditTimer = () => { if (editTimer !== undefined) clearTimeout(editTimer); editTimer = undefined; };
+  onDestroy(clearEditTimer);
   const syncDraft = (color: OklchColor) => {
     const incoming = formatDraft(color);
     for (const key of dirty) incoming[key] = draft[key];
@@ -49,25 +53,29 @@
       (other, otherIndex) =>
         otherIndex !== index && other.role === next.role && overlaps(other.mode, next.mode),
     );
-  const update = async (patch: Partial<ColorAnchor>) => {
+  const update = async (patch: Partial<ColorAnchor>, revision = editRevision) => {
     const next = { ...anchor, ...patch };
     if (collides(next)) {
       error = 'That semantic role and mode already have a Brand anchor.';
       return;
     }
     error = '';
-    if (await onChange(next) === false) {
+    if (await onChange(next) === false && revision === editRevision) {
       syncDraft(source);
       error = 'This anchor cannot meet the checked contrast requirements. Previous anchor retained.';
     }
   };
-  const commit = async () => {
+  const commit = async (finalize = true) => {
+    clearEditTimer();
+    if (!dirty.size) return;
+    if (!finalize && [...dirty].some(key => draft[key].trim() === '' || !Number.isFinite(Number(draft[key])))) return;
+    const revision = editRevision;
     try {
       const next = editAnchorColor(anchor.color, Object.fromEntries([...dirty].map(key => [key, draft[key]])));
       dirty.clear();
-      if (next !== undefined) await update({ color: next });
+      if (next !== undefined) await update({ color: next }, revision);
     } catch (reason) {
-      error = reason instanceof Error ? reason.message : 'Enter valid OKLCH coordinates.';
+      if (revision === editRevision) error = reason instanceof Error ? reason.message : 'Enter valid OKLCH coordinates.';
     }
   };
 </script>
@@ -91,13 +99,16 @@
       aria-describedby={error ? `${id}-error` : undefined}
       oninput={(event) => {
         const nextValue = event.currentTarget.value;
+        editRevision++;
         dirty.add(key);
         error = '';
         draft = ((value) => ({ ...value, [key]: nextValue }))(draft);
+        clearEditTimer(); editTimer = setTimeout(() => { void commit(false); }, 300);
       }}
-      onblur={commit}
+      onblur={() => commit()}
       onkeydown={(event) => {
-        if (event.key === 'Enter') event.currentTarget.blur();
+        if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); }
+        if (event.key === 'Escape') { clearEditTimer(); editRevision++; dirty.clear(); error = ''; draft = formatDraft(source); event.currentTarget.value = draft[key]; event.currentTarget.blur(); }
       }}
     />
   </div>{/snippet}

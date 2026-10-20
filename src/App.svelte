@@ -7,6 +7,7 @@
   import Inspector from './ui/Inspector.svelte';
   import { handleModalKeydown } from './ui/settingsKeyboard';
   import { lightDismiss } from './ui/lightDismiss';
+  import { withMutedStateControls } from './engine/muted';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
   import { adjustedControlKeys } from './ui/controlValues';
@@ -23,7 +24,7 @@
   import Controls from './ui/Controls.svelte';
   import PwaStatus from './ui/PwaStatus.svelte';
   import ThemePreview from './ui/ThemePreview.svelte';
-  const initialConfig = configFromReference(reference);
+  const initialConfig = withMutedStateControls(configFromReference(reference));
   const tabs = ['Overview', 'Color palette', 'Export'] as const;
   type Tab = (typeof tabs)[number];
   let primitivesModule: Promise<typeof import('./ui/Primitives.svelte')> | undefined;

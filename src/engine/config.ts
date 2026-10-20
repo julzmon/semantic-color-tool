@@ -23,6 +23,7 @@ export function configFromReference(reference: KdsReference): BuilderConfig {
   return {
     version: 2,
     prefix: DEFAULT_TOKEN_PREFIX,
+    solvingStrategy: 'standard',
     surfaces: {
       light: { l: requiredColor('light', '--kds-bg-surface-base').l },
       dark: { l: requiredColor('dark', '--kds-bg-surface-base').l },

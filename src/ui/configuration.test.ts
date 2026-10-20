@@ -154,3 +154,14 @@ it.each([null, 1, {}, { light: 1 }, { light: -1, dark: 1 }, { light: 1, dark: 3 
   const input = { ...defaults(), muted: { ...defaults().muted, chromaScale } };
   expect(() => parseConfigurationJson(JSON.stringify(input), defaults())).toThrow(/chroma/i);
 });
+
+it('migrates absent solving strategy to standard and persists an explicit sharing preference', () => {
+  const input = defaults();
+  expect(parseConfigurationJson(JSON.stringify(input), { ...defaults(), solvingStrategy: 'prefer-shared' }).solvingStrategy).toBe('standard');
+  expect(parseConfigurationJson(JSON.stringify(legacyV1()), defaults()).solvingStrategy).toBe('standard');
+  input.solvingStrategy = 'prefer-shared';
+  const storage = new MemoryStorage();
+  expect(saveStoredConfiguration(storage, input)).toBe(true);
+  expect(loadStoredConfiguration(storage, defaults()).config.solvingStrategy).toBe('prefer-shared');
+  expect(() => parseConfigurationJson(JSON.stringify({ ...input, solvingStrategy: 'unknown' }), defaults())).toThrow(/Solving strategy/);
+});

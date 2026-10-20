@@ -455,18 +455,6 @@ summary {
   margin-block-start: 8px;
 }
 
-.adjustment-note {
-  display: block;
-  margin-block-start: 5px;
-  color: #006169;
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.reserved-feedback {
-  display: none;
-}
-
 .slider-control .field-error {
   display: block;
 }
@@ -1980,7 +1968,7 @@ summary {
   font-size: 13px;
 }
 
-.adjustment-note, .field-error {
+.field-error {
   font-size: 12px;
 }
 
@@ -2131,32 +2119,32 @@ summary {
   & .slider-control input[type="range"] {
     appearance: none;
     -webkit-appearance: none;
-    block-size: 24px;
+    block-size: 32px;
     background: transparent;
     accent-color: #111;
   }
   & .slider-control input[type="range"]::-webkit-slider-runnable-track {
-    block-size: 10px;
+    block-size: 20px;
     border: 1px solid #c8c8c8;
     background: var(--range-track, linear-gradient(90deg, #dedede, #777));
   }
   & .slider-control input[type="range"]::-moz-range-track {
-    block-size: 10px;
+    block-size: 20px;
     border: 1px solid #c8c8c8;
     background: var(--range-track, linear-gradient(90deg, #dedede, #777));
   }
   & .slider-control input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     inline-size: 16px;
-    block-size: 16px;
-    margin-block-start: -3px;
+    block-size: 28px;
+    margin-block-start: -5px;
     border: 2px solid #111;
     border-radius: 0;
     background: transparent;
   }
   & .slider-control input[type="range"]::-moz-range-thumb {
     inline-size: 12px;
-    block-size: 12px;
+    block-size: 22px;
     border: 2px solid #111;
     border-radius: 0;
     background: transparent;

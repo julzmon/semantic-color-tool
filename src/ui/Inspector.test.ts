@@ -13,3 +13,9 @@ it('identifies both sides of a contrast relationship without truncating the role
   const markup = render(Inspector, { props: { system, selected: { mode: 'dark', token: '--kds-bg-brand-emphasis-hover' } } }).body;
   expect(markup).toContain('fg on emphasis → bg brand emphasis hover');
 });
+it('offers sampled lightness inspection without presenting a continuous range', () => {
+  const markup = render(Inspector, { props: { system, selected: { mode: 'light', token: '--kds-fg-brand-base' } } }).body;
+  expect(markup).toContain('Allowed lightness and sharing');
+  expect(markup).toContain('Chosen lightness');
+  expect(markup).toContain('Shared complete color');
+});

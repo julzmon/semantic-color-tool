@@ -30,6 +30,8 @@ export function adjustedControlKeys(requested: BuilderConfig, accepted: BuilderC
   compare('surfaces.levels', requested.surfaces.levels, accepted.surfaces.levels);
   compare('muted.separation', requested.muted.separation, accepted.muted.separation);
   compare('emphasis.separation', requested.emphasis.separation, accepted.emphasis.separation);
+  if (requested.muted.mixWeights && accepted.muted.mixWeights) for (const state of emphasisStates)
+    compare(`muted.${state}`, requested.muted.mixWeights[state], accepted.muted.mixWeights[state]);
   if (requested.emphasis.mixWeights && accepted.emphasis.mixWeights) for (const state of emphasisStates)
     compare(`emphasis.${state}`, requested.emphasis.mixWeights[state], accepted.emphasis.mixWeights[state]);
   for (const family of requested.families) {

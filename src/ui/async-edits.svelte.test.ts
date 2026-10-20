@@ -14,6 +14,7 @@ afterEach(async () => {
   for (const component of mounted.splice(0)) await unmount(component);
   document.body.replaceChildren();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 function deferred<T>() {
@@ -122,4 +123,22 @@ it.each([true, false])('preserves the next anchor coordinate when earlier valida
   await tick();
   expect(changes).toHaveLength(2);
   expect(changes[1].color).toBe(`oklch(${accepted ? '0.51' : '0.5'} 0.13 29)`);
+});
+
+it('checks Brand coordinates after a typing pause while keeping incomplete entries local', async () => {
+  vi.useFakeTimers();
+  const anchor: ColorAnchor = { family: 'brand', mode: 'light', role: 'emphasis.base', color: 'oklch(0.5 0.12 29)', locked: true };
+  const props = $state({ anchor, index: 0, allAnchors: [anchor], onChange: vi.fn(async (next: ColorAnchor) => { props.anchor = next; return true; }), onRemove: () => {} });
+  mounted.push(mount(AnchorCard, { target: document.body, props })); flushSync();
+  edit(input('Lightness'), ''); await vi.advanceTimersByTimeAsync(400);
+  expect(props.onChange).not.toHaveBeenCalled();
+  edit(input('Lightness'), '0.51'); await vi.advanceTimersByTimeAsync(299);
+  expect(props.onChange).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1); flushSync();
+  expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({ color: 'oklch(0.51 0.12 29)', locked: true }));
+  expect(document.activeElement).toBe(input('Lightness'));
+  edit(input('Lightness'), '0.53'); input('Lightness').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  await vi.advanceTimersByTimeAsync(400); flushSync();
+  expect(props.onChange).toHaveBeenCalledTimes(1);
+  expect(input('Lightness').value).toBe('0.51');
 });

@@ -60,7 +60,7 @@ it('places section descriptions before the controls they explain', () => {
   comesBefore('Each added level is darker than the previous one.', 'Base lightness');
   comesBefore('Higher values make muted fills darker.', 'Muted distance');
   comesBefore('Muted chroma controls color intensity for colored families. Neutral colors use Neutral chroma.', 'Muted distance');
-  comesBefore('Controls how much colors change on hover, press, and selection in both themes.', 'Muted state spacing');
+  comesBefore('Controls how much colors change on hover, press, and selection in both themes.', 'Hover muted strength');
 });
 
 it('gives every color-adjusting slider an explanatory track and square black-bordered handle', async () => {
@@ -87,4 +87,20 @@ it('keeps generated CSS implementation details out of the controls sidebar', () 
   expect(markup).toContain('Muted chroma');
   expect(markup).toContain('Hover emphasis strength');
   expect(markup).toContain('Pressed emphasis strength');
+});
+
+
+it('makes the shared-color strategy explicit while keeping the standard default', () => {
+  const markup = render(Controls, { props }).body;
+  expect(markup).toContain('for="solving-strategy">Color solving strategy</label>');
+  expect(markup).toContain('value="prefer-shared">Prefer shared colors when feasible</option>');
+  expect(markup).toContain('Text inside emphasis fills stays separate.');
+});
+it('replaces muted spacing with independent muted state strengths', () => {
+  const markup = render(Controls, { props }).body;
+  expect(markup).not.toContain('Muted state spacing');
+  expect(markup).toContain('Hover muted strength');
+  expect(markup).toContain('Pressed muted strength');
+  expect(markup).toContain('Pressed emphasis strength');
+  expect(markup).toContain('Muted distance');
 });

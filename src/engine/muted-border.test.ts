@@ -22,9 +22,12 @@ it('preserves legacy colors and checks at zero border strength', () => {
 });
 
 it.each(['light', 'dark'] as const)('strengthens only the requested %s borders', mode => {
-  const before = generateSystem(defaults);
-  const input = withStrength(mode === 'light' ? 0.1 : 0, mode === 'dark' ? 0.1 : 0);
-  const result = balanceConfiguration(defaults, input).system;
+  // Establish the accepted design-policy baseline before isolating a border edit.
+  const accepted = balanceConfiguration(defaults, defaults);
+  const before = accepted.system;
+  const input = structuredClone(accepted.config);
+  input.muted.borderStrength = { light: mode === 'light' ? 0.1 : 0, dark: mode === 'dark' ? 0.1 : 0 };
+  const result = balanceConfiguration(accepted.config, input).system;
   for (const current of ['light', 'dark'] as const) {
     expect(result.modes[current].surfaces.map(role => role.color)).toEqual(before.modes[current].surfaces.map(role => role.color));
     expect(Object.values(result.modes[current].foreground).map(role => role.color)).toEqual(Object.values(before.modes[current].foreground).map(role => role.color));

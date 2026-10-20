@@ -50,6 +50,7 @@ export function reuseGrayPositions(config: BuilderConfig, input: Themes, valid: 
 
   for (const mode of modes) {
     for (const group of ['muted', 'emphasis'] as const) {
+      if (group === 'muted' && config.muted.mixWeights) continue;
       // Independent gray reuse must not move the shared emphasis base between themes.
       if (group === 'emphasis' && (config.emphasis.reverseDarkStates || config.emphasis.mixWeights)) continue;
       // Split foreground/border groups move with emphasis too, retaining their offsets.

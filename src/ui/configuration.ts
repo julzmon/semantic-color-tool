@@ -74,8 +74,10 @@ function normalizeMuted(value: unknown): RecordValue {
   const scale = muted.chromaScale === undefined
     ? { light: 1, dark: 1 }
     : record(muted.chromaScale, 'Configuration muted.chromaScale');
+  const weights = muted.mixWeights === undefined ? undefined : record(muted.mixWeights, 'Configuration muted.mixWeights');
   const border = muted.borderStrength === undefined ? undefined : record(muted.borderStrength, 'Configuration muted.borderStrength');
   return { distance, separation: muted.separation, chromaScale: { light: scale.light, dark: scale.dark },
+    ...(weights ? { mixWeights: { hover: weights.hover, active: weights.active, selected: weights.selected } } : {}),
     ...(border ? { borderStrength: { light: border.light, dark: border.dark } } : {}) };
 }
 
@@ -99,6 +101,7 @@ function normalizeConfiguration(value: unknown, defaults: BuilderConfig): Builde
 
   const normalized = structuredClone(defaults) as unknown as RecordValue;
   normalized.version = defaultVersion;
+  normalized.solvingStrategy = source.solvingStrategy ?? 'standard';
   normalized.prefix = typeof source.prefix === 'string' ? source.prefix.trim().toLowerCase() : DEFAULT_TOKEN_PREFIX;
   normalized.surfaces = normalizeSurfaces(source.surfaces);
   normalized.muted = normalizeMuted(source.muted);

@@ -12,19 +12,19 @@ const defaults = () => {
   return config;
 };
 const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-// Reviewed after Text Base cross-theme reuse; other role colors and check results
-// retain their published values. Primitive aliases and Text Base ratios may change.
+// Reviewed against the pre-sharing engine: modes, checks, primitives and semantics
+// are unchanged. Hashes include the explicit standard strategy and bounded-search/hierarchy diagnostics.
 it('matches the reviewed outputs across representative configurations', () => {
   const base = defaults();
   const cases: [BuilderConfig, string][] = [
-    [base, '363d462f13665e20e09e42f858a4f7a54169b24d858b4c4a146a42c951738dde'],
-    [{ ...base, families: base.families.map(f => f.id === 'neutral' ? { ...f, hue: 210 } : f) }, '63423e1c7a1494fc50a01b4a67e6a72bdefe30de8a506a599a14213d5347bc9f'],
-    [{ ...base, families: base.families.map(f => f.id === 'brand' ? { ...f, hue: 240 } : f) }, 'a4295d11b7c51de7335b679b92574de927218ed4378ced3966d1b4f225d79b08'],
-    [{ ...base, muted: { ...base.muted, distance: { light: 0.07, dark: 0.3 } } }, '4e5e27ea5a4c36861d6fe1c0b97ec36b0022ed46ba41b5bd8267c552773f6b0d'],
-    [{ ...base, surfaces: { ...base.surfaces, levels: 6 } }, 'bfac5aeedded216c2e08a6a539863f338a8c72dcbf8184a11bf7d52e9fb2b5cf'],
-    [{ ...base, emphasis: { ...base.emphasis, selected: true } }, '47090b7cb98c6441d8fa7a9bc2eeb421c8f9a0efd0a679937b2cb7347c51bbf0'],
-    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: '#006b75', locked: true }] }, '3f29d5cc4937f3e1fb8b16489068092f6065e78a79e1aa40acf2a549a0840cd4'],
-    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: 'oklch(0.6 0.4 29)', locked: true }] }, '9eccb0b3aca1eeff83a1654a161b1a1250dfd3ca2f9c8af4b6419984b6aab076'],
+    [base, '6f73460809d70118672c6f07877f2efd49edc052d0f3e8d9d2d532a246fae4be'],
+    [{ ...base, families: base.families.map(f => f.id === 'neutral' ? { ...f, hue: 210 } : f) }, '2e1b0d8e9fe5cf76f6acb7f7bf7bb419f3b285e9c7d946116d2fa85c9e3b3a5a'],
+    [{ ...base, families: base.families.map(f => f.id === 'brand' ? { ...f, hue: 240 } : f) }, '865d1ae7115355c691c4c5f4f873b27d54066e7c832cf3d7e49f0728d4f98d19'],
+    [{ ...base, muted: { ...base.muted, distance: { light: 0.07, dark: 0.3 } } }, '9c5c123071c1bc11cf340ed1b6361a509a6009cb9723b985c5cbff2264f8df1b'],
+    [{ ...base, surfaces: { ...base.surfaces, levels: 6 } }, 'f62d35402900ed6c6d749f27132163aa8bf2c8ac9457277e61c69cdae73153ad'],
+    [{ ...base, emphasis: { ...base.emphasis, selected: true } }, '3b1277187e438b6f359c0b8f3645aa9ac3555e9cfb7cd19daedcfedfc55271b7'],
+    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: '#006b75', locked: true }] }, '74b0a09e2e11254a953abc591bdf1c86d8abdddceba5db45bf773a734f212f7a'],
+    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: 'oklch(0.6 0.4 29)', locked: true }] }, 'e6fe683a065be3e4e4b5785cc5ef00d9cc4d0440dba615305a71a776500f6bfc'],
   ];
   for (const [config, expected] of cases) {
     const before = structuredClone(config);
@@ -36,7 +36,7 @@ it('matches the reviewed outputs across representative configurations', () => {
 it('retains the reviewed accepted settings, ratios and feedback when limiting a value', () => {
   const previous = defaults(), requested = structuredClone(previous);
   requested.muted.distance = { light: 0.055, dark: 0.8 };
-  expect(fingerprint(balanceConfiguration(previous, requested))).toBe('0ea2c41ef273553cea14e8804d59589cfdccb6030f76013b49c695d8c75ab530');
+  expect(fingerprint(balanceConfiguration(previous, requested))).toBe('06e0b866c2185f21323d85ce7835c265b1cc2653130e293d5100db4675487827');
 });
 it('does not generate an identical candidate twice within one balance request', () => {
   const previous = defaults(), requested = structuredClone(previous);

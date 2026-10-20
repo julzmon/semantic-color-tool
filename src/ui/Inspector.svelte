@@ -1,4 +1,5 @@
 <script lang="ts">
+  import FeasibilityDetails from './FeasibilityDetails.svelte';
   import type { Selection } from './types';
   import type { GeneratedSystem } from '../engine/types';
   import { inkFor } from './presentation';
@@ -28,6 +29,8 @@
       </h3>
       {#if detail}<p class="help">{detail.anchor === 'locked' ? 'Locked anchor · exact source color is preserved.' : detail.anchor === 'preferred' ? 'Preferred anchor · color may adjust to preserve contrast.' : 'Derived token · generated from your settings and contrast constraints.'}</p>{/if}
       <dl>
+        <dt>Chosen lightness</dt>
+        <dd>{Number(role.color.l.toFixed(6))}</dd>
         <dt>OKLCH</dt>
         <dd><code>{role.color.css}</code></dd>
         <dt>HEX / sRGB approximation</dt>
@@ -39,8 +42,8 @@
       </dl>
       <span class={`sharing-label ${role.sharedWith.length ? 'shared' : ''}`}
         >{role.sharedWith.length
-          ? `↗ Shared with ${role.sharedWith.length} role${role.sharedWith.length === 1 ? '' : 's'}`
-          : 'Separate primitive'}</span
+          ? `Shared complete color with ${role.sharedWith.length} role${role.sharedWith.length === 1 ? '' : 's'}`
+          : 'Shared complete color: none in this theme'}</span
       >
       {#if role.sharedWith.length > 0}<ul class="usage-list">
           {#each role.sharedWith as name}<li><code>{shortName(name)}</code></li>{/each}
@@ -48,6 +51,7 @@
       {#if role.color.gamutMapped}<p class="gamut-note">
           Chroma reduced to fit sRGB. Lightness and hue are preserved.
         </p>{/if}
+      <FeasibilityDetails {system} mode={selected.mode} token={role.semantic} />
       <h4>Contrast relationships</h4>
       {#if sorted.length}<div class="inspector-checks">
           {#each sorted.slice(0, 8) as check}<div>
