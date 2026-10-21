@@ -19,20 +19,21 @@ afterEach(async () => { for (const component of mounted.splice(0)) await unmount
 it('lazily checks the active control and discards samples when settings or locks change', async () => {
   vi.stubGlobal('Worker', FakeWorker);
   const config = defaults();
+  config.families.find(family => family.id === 'info')!.hue = 29;
   let accepted = $state.raw(generateSystem(config));
   let checking = $state(false);
   const props = { get config() { return accepted.config; }, get system() { return accepted; }, get checking() { return checking; }, settingsOpen: false,
     onKeydown: () => {}, onClose: () => {}, onChange: vi.fn(async () => true), onReset: () => {}, onUndo: () => {} };
   mounted.push(mount(Controls, { target: document.body, props })); flushSync();
   expect(workers).toHaveLength(0);
-  document.querySelector<HTMLInputElement>('[aria-label="Brand hue value"]')!.focus(); flushSync();
+  document.querySelector<HTMLInputElement>('[aria-label="Info hue value"]')!.focus(); flushSync();
   const worker = workers[0]; const original = worker.requests().at(-1);
-  expect(original.key).toBe('families.brand.hue');
+  expect(original.key).toBe('families.info.hue');
   worker.reply({ id: original.id, sample: { value: 30, safe: true, failedChecks: 0 } });
   worker.reply({ id: original.id, complete: true }); await tick(); flushSync();
-  expect(document.querySelector<HTMLInputElement>('[aria-label="Brand hue value"]')!.getAttribute('aria-valuemin')).toBe(String(Math.min(config.families.find(f => f.id === 'brand')!.hue, 30)));
+  expect(document.querySelector<HTMLInputElement>('[aria-label="Info hue value"]')!.getAttribute('aria-valuemin')).toBe(String(Math.min(config.families.find(f => f.id === 'info')!.hue, 30)));
   checking = true; flushSync();
-  expect(document.querySelector<HTMLInputElement>('[aria-label="Brand hue value"]')!.getAttribute('aria-valuemin')).toBe(String(Math.min(config.families.find(f => f.id === 'brand')!.hue, 30)));
+  expect(document.querySelector<HTMLInputElement>('[aria-label="Info hue value"]')!.getAttribute('aria-valuemin')).toBe(String(Math.min(config.families.find(f => f.id === 'info')!.hue, 30)));
   const locked = structuredClone(config);
   locked.anchors = [{ family: 'brand', mode: 'both', role: 'emphasis.base', color: '#006b75', locked: true }];
   accepted = generateSystem(locked); checking = false; flushSync();
@@ -40,15 +41,15 @@ it('lazily checks the active control and discards samples when settings or locks
   expect(latest.id).not.toBe(original.id);
   expect(latest.config.anchors).toEqual(locked.anchors);
   worker.reply({ id: original.id, sample: { value: 300, safe: true, failedChecks: 0 } }); flushSync();
-  expect(document.querySelector<HTMLInputElement>('[aria-label="Brand hue value"]')!.getAttribute('aria-valuemax')).toBe('360');
+  expect(document.querySelector<HTMLInputElement>('[aria-label="Info hue value"]')!.getAttribute('aria-valuemax')).toBe('360');
   worker.reply({ id: latest.id, sample: { value: 0, acceptedValue: 20, safe: true, failedChecks: 0 } });
   worker.reply({ id: latest.id, sample: { value: 360, acceptedValue: 60, safe: true, failedChecks: 0 } });
   worker.reply({ id: latest.id, complete: true }); await tick(); flushSync();
-  const field = document.querySelector<HTMLInputElement>('[aria-label="Brand hue value"]')!;
+  const field = document.querySelector<HTMLInputElement>('[aria-label="Info hue value"]')!;
   expect(field.getAttribute('aria-valuemax')).toBe('60');
   const range = field.closest('.slider-control')!.querySelector<HTMLInputElement>('input[type=range]')!;
   range.value = '90'; range.dispatchEvent(new Event('input', { bubbles: true })); await tick();
-  expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({ anchors: locked.anchors, families: expect.arrayContaining([expect.objectContaining({ id: 'brand', hue: 60 })]) }));
+  expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({ anchors: locked.anchors, families: expect.arrayContaining([expect.objectContaining({ id: 'info', hue: 60 })]) }));
   expect(document.querySelector('.live-control-values, datalist')).toBeNull();
 });
 
@@ -87,4 +88,33 @@ it('shows the shared emphasis cap on all state sliders without focusing or probi
   }
   }
   expect(workers).toHaveLength(0);
+});
+
+it('uses one Brand entry and swaps family sliders for lock destinations', async () => {
+  const initial = defaults();
+  let accepted = $state.raw(generateSystem(initial));
+  const currentConfig = () => accepted.config;
+  const onChange = vi.fn(async (next: typeof initial) => { accepted = generateSystem(next); return true; });
+  mounted.push(mount(Controls, { target: document.body, props: { get config() { return accepted.config; }, get system() { return accepted; }, onChange, onKeydown() {}, onClose() {}, onReset() {}, onUndo() {} } }));
+  flushSync();
+  const input = document.querySelector<HTMLInputElement>('[aria-label="Brand color HEX or OKLCH"]')!;
+  const selector = document.querySelector<HTMLSelectElement>('[aria-label="Brand color format"]')!;
+  selector.value = 'hex'; selector.dispatchEvent(new Event('change', { bubbles: true }));
+  await tick(); flushSync();
+  input.value = '#c02030'; input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('blur'));
+  await tick(); flushSync();
+  expect(currentConfig().anchors[0].color).toBe('#c02030');
+  const hue = document.querySelector<HTMLInputElement>('[aria-label="Brand hue value"]')!;
+  expect(Number(hue.value)).toBeCloseTo(currentConfig().families.find(family => family.id === 'brand')!.hue, 2);
+  const lock = document.querySelector<HTMLInputElement>('.brand-entry-controls > .checkbox-row input')!;
+  lock.checked = true; lock.dispatchEvent(new Event('input', { bubbles: true }));
+  await tick(); await tick(); flushSync();
+  expect(currentConfig().anchors[0]).toMatchObject({ color: '#c02030', locked: true });
+  expect(document.querySelector('[aria-label="Brand hue value"]')).toBeNull();
+  expect(document.querySelector('[aria-label="Brand chroma value"]')).toBeNull();
+  expect(document.body.textContent).toContain('Apply to');
+  lock.checked = false; lock.dispatchEvent(new Event('input', { bubbles: true }));
+  await tick(); await tick(); flushSync();
+  expect(document.querySelector('[aria-label="Brand hue value"]')).not.toBeNull();
+  expect(input.value).toBe('#c02030');
 });

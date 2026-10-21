@@ -2,8 +2,8 @@
   import type { GeneratedSystem, Mode } from '../engine/types';
   import NestedSurfaceCard from './NestedSurfaceCard.svelte';
   import { previewTokens, previewStates, previewSections, type PreviewSection, type PreviewToken } from './previewTokens';
-  let { system, mode, section, onInspect = () => {} }: {
-    system: GeneratedSystem; mode: Mode; section: PreviewSection;
+  let { system, mode, section, selectedToken = '', onInspect = () => {} }: {
+    system: GeneratedSystem; mode: Mode; section: PreviewSection; selectedToken?: string;
     onInspect?: (semantic: string) => void;
   } = $props();
   let theme = $derived(system.modes[mode]);
@@ -23,7 +23,8 @@
 
 {#snippet sample(token: PreviewToken, label: string)}
   <button class="token-sample" class:token-border={token.kind.startsWith('border-')} class:token-text={['foreground', 'text', 'link'].includes(token.kind)}
-    data-token={token.role.semantic} title={`${token.role.semantic}${token.anchor ? ` · ${token.anchor} anchor` : ''}`}
+    data-token={token.role.semantic} class:color-inspection-anchor={selectedToken === token.role.semantic}
+    popovertarget="preview-color-info" popovertargetaction="show"
     aria-label={`Inspect ${token.label} in ${mode} theme`} aria-haspopup="dialog" style={sampleStyle(token)} onclick={() => onInspect(token.role.semantic)}>
     {label}{#if token.anchor === 'locked'}<span class="sample-anchor">Locked</span>{/if}
   </button>
@@ -35,7 +36,7 @@
     <div class="token-text-list">
       {#each tokens.filter(token => token.kind === 'text') as token}{@render sample(token, token.label)}{/each}
     </div>
-    <NestedSurfaceCard surfaces={theme.surfaces} {onInspect} />
+    <NestedSurfaceCard surfaces={theme.surfaces} {selectedToken} {onInspect} />
   {:else}
     {#each system.config.families as item}
       <div class="token-family" data-family={item.id}>

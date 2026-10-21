@@ -1,3 +1,4 @@
+import { editAnchorColor } from './brandAnchor';
 import { balanceConfiguration } from '../engine/balance';
 import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
 import { legacyMutedWeights } from '../engine/muted';
@@ -25,7 +26,7 @@ export function controlDescriptor(config: BuilderConfig, key: string): ControlDe
   if (parts[0] === 'families') {
     const family = config.families.find(f => f.id === parts[1]);
     if (family && field === 'hue') return make(`${family.label} hue`, family.hue, 0, 360, 1, '°');
-    if (family && field === 'chroma') return make(`${family.label} chroma`, family.chroma, 0, .3);
+    if (family && field === 'chroma') return make(`${family.label} chroma`, family.chroma, 0, family.id === 'brand' ? Math.max(.3, family.chroma) : .3);
   }
   if (key === 'surfaces.levels') return make('Surface count', config.surfaces.levels, 1, 6, 1);
   if (parts[0] === 'surfaces' && ['light','dark'].includes(mode)) {
@@ -58,6 +59,11 @@ export function setControlValue(config: BuilderConfig, key: string, value: numbe
   if (group === 'families') {
     const family = next.families.find(f => f.id === part as FamilyId)!;
     if (field === 'hue') family.hue = value; else family.chroma = value;
+    const primary = next.anchors.find(anchor => anchor.family === 'brand');
+    if (part === 'brand' && primary && !primary.locked) {
+      const edited = editAnchorColor(primary.color, field === 'hue' ? { h: String(value) } : { c: String(value) });
+      if (edited) primary.color = edited;
+    }
   } else if (key === 'surfaces.levels') next.surfaces.levels = value;
   else if (group === 'surfaces') {
     if (field === 'l') next.surfaces[mode].l = value;

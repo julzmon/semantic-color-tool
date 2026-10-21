@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { GeneratedSystem } from '../engine/types';
   import { inkFor } from './presentation';
+  import ColorPopover from './ColorPopover.svelte';
+  import ColorInfo from './ColorInfo.svelte';
+  import { colorInspection } from './colorInspection';
   let { system }: { system: GeneratedSystem } = $props();
   let selected = $state<string>('');
+  let inspection = $derived(selected ? colorInspection(system, { primitive: selected }) : undefined);
   let primitive = $derived(system.primitives.find((item) => item.name === selected));
 </script>
 
@@ -20,22 +24,22 @@
       </div>
       <div class="primitive-grid">
         {#each generated as item}<button
-            aria-pressed={selected === item.name}
+            aria-pressed={selected === item.name} class:color-inspection-anchor={selected === item.name}
+            aria-haspopup="dialog" popovertarget="palette-color-details" popovertargetaction="show"
             onclick={() => (selected = item.name)}
-            title={item.name}
             ><span style:background={item.color.css} style:color={inkFor(item.color)}
               >{item.name.replace(`--${system.config.prefix}-key-${family.key}-`, '')}</span
             ><code>{item.color.hex}</code></button
           >{/each}
       </div>
-    </div>{/each}{#if primitive}<div class="primitive-detail" aria-live="polite">
-      <div class="detail-dot" style:background={primitive.color.css}></div>
-      <div>
-        <strong>{primitive.name}</strong><code>{primitive.color.css}</code>
-        <p>Used in {primitive.usages.length} roles:</p>
-        <ul class="usage-list">
-          {#each primitive.usages as name}<li><code>{name}</code></li>{/each}
-        </ul>
-      </div>
-    </div>{/if}
+    </div>{/each}
+  <ColorPopover id="palette-color-details" title={inspection?.label ?? 'Color information'} anchorName="--palette-color-anchor">
+    {#if primitive && inspection}
+      <ColorInfo {inspection} />
+      <details class="color-inspection-details"><summary>Used in {primitive.usages.length} roles</summary><div class="color-inspection-full">
+        <code>{primitive.name}</code><p>Exact source: <code>{primitive.color.css}</code></p>
+        <ul class="usage-list">{#each primitive.usages as name}<li><code>{name}</code></li>{/each}</ul>
+      </div></details>
+    {/if}
+  </ColorPopover>
 </section>

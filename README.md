@@ -71,13 +71,9 @@ Corresponding family roles use one lightness position. Equal OKLCH lightness cre
 
 ## Brand color anchors
 
-Open **Families → Brand** and choose **Add anchor**. The default target is the light-mode semantic token:
+Start in **Setup → Brand**. Choose a color with the swatch picker or select HEX or OKLCH and enter an opaque value in the field. Switching the display format does not change the stored source or a locked color. Hue and chroma sliders refine the unlocked color; the solver may adjust lightness to satisfy contrast.
 
-```css
---kds-bg-brand-emphasis-base
-```
-
-Enter L, C, and H directly in OKLCH. The anchor starts unlocked, so the solver may adjust it to satisfy the system. Select **Lock exact color** to preserve that literal `oklch(L C H)` source. The editor also supports a foreground-base target and light, dark, or both modes for advanced use.
+Select **Lock exact color** to preserve the original source string. The family sliders hide, and **Apply to** and **Theme** select the locked role and theme (emphasis fill or foreground text; light, dark, or both). **Edit locked color** deliberately enables source entry and exact lightness/chroma/hue sliders. Unchanged sources retain their original precision; coordinate edits replace only the chosen coordinate. Unrenderable or contrast-failing changes are rejected. **Use generated color** removes the explicit preference or lock while retaining the family settings. Additional imported Brand anchors remain editable.
 
 An exact lock constrains the same semantic lightness position across families. The builder rejects a lock when it cannot find a passing configuration without changing that source. The engine API retains raw failed checks and diagnostics for consumers that need to inspect infeasible configurations.
 
@@ -104,7 +100,7 @@ Use **Export → Configuration** to download the current configuration and valid
 | `src/engine/generate.ts` | Surface/state generation, joint constraint solving, shared primitives, and semantic mapping |
 | `src/engine/reuse.ts` | Bounded gray reuse that preserves contextual contrast, state spacing, and locks |
 | `src/engine/export.ts` and `src/engine/tokens.ts` | CSS, configuration, and DTCG serialization |
-| `src/ui/BrandAnchors.svelte` | OKLCH-only Brand anchor editor |
+| `src/ui/BrandAnchors.svelte` | HEX/OKLCH entry, primary Brand lock flow, and additional imported anchors |
 | `src/ui/configuration.ts` | Configuration migration, validation, import, and local persistence |
 | `src/ui/` and `src/App.svelte` | Controls, inspection, previews, and export workflow |
 
@@ -243,6 +239,13 @@ References: [the theming discussion](https://chatgpt.com/share/6ac306ac-7990-83e
 
 ### Control workflow
 
-The builder starts with **System structure** (surface count and selected state), followed by **Surfaces & neutrals**, **Semantic colors**, **Muted fills**, and **Interaction states**. Light and dark settings are grouped within surfaces and muted fills. Brand anchors and emphasis strategy are expandable; independent muted and emphasis strengths are in Interaction states; token prefix is in **Export settings**. Processing and adjustment feedback uses the content-area status.
+The builder starts with **Setup** (Brand color and optional exact lock, surface count, and selected state), followed by **Surface appearance**, **Muted fills**, **Interaction states**, **Color adjustments** (Neutral and other semantic families), and **Contrast protection**. All groups remain open. Light and dark settings are grouped within surfaces and muted fills. Independent muted and emphasis strengths are in Interaction states; token prefix is in **Export settings**. Processing and adjustment feedback uses the content-area status.
 
 Each slider has a numeric field: Enter or blur commits a value within its range and step; Escape cancels editing. Automatically adjusted controls are marked inline. **Undo last adjusted change** restores the entire previous verified configuration, including the initiating edit, rather than trying to keep an infeasible request.
+
+
+## Color information popovers
+
+Select a preview token, palette swatch, or neutral role-map stop to open a compact, non-modal color popover. It shows readable OKLCH values, the selected token, and the tightest checked foreground/background relationship with its actual target and margin. Text checks show AA/AAA for that relationship; UI boundaries show Pass/Fail, and decorative colors have no invented rating. Full token diagnostics, role assignments, and contrast tables remain available inside the popover.
+
+Native HTML popover controls provide click/tap, keyboard activation, Escape and outside-click dismissal. All placement uses CSS anchor positioning and position-try fallbacks, with a viewport-contained bottom panel for narrow screens or insufficient anchor space. No JavaScript geometry calculations or positioning listeners are used.

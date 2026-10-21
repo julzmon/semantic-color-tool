@@ -6,12 +6,13 @@
   import NeutralRoleMap from './ui/NeutralRoleMap.svelte';
   import Inspector from './ui/Inspector.svelte';
   import { handleModalKeydown } from './ui/settingsKeyboard';
-  import { lightDismiss } from './ui/lightDismiss';
-  import { withMutedStateControls } from './engine/muted';
+  import ColorPopover from './ui/ColorPopover.svelte';
+  import ColorInfo from './ui/ColorInfo.svelte';
+  import { colorInspection } from './ui/colorInspection';
   import { balanceConfiguration } from './engine/balance';
   import { createBalanceClient } from './engine/balance-client';
   import { adjustedControlKeys } from './ui/controlValues';
-  import { configFromReference } from './engine/config';
+  import { defaultConfiguration } from './ui/defaultConfiguration';
   import {
     CONFIGURATION_STORAGE_KEY,
     browserStorage,
@@ -24,7 +25,7 @@
   import Controls from './ui/Controls.svelte';
   import PwaStatus from './ui/PwaStatus.svelte';
   import ThemePreview from './ui/ThemePreview.svelte';
-  const initialConfig = withMutedStateControls(configFromReference(reference));
+  const initialConfig = defaultConfiguration(reference);
   const tabs = ['Overview', 'Color palette', 'Export'] as const;
   type Tab = (typeof tabs)[number];
   let primitivesModule: Promise<typeof import('./ui/Primitives.svelte')> | undefined;
@@ -60,12 +61,8 @@
   );
   let tab = $state<Tab>('Overview');
   let previewSelection = $state<Selection | null>(null);
-  let previewInspector = $state<HTMLDialogElement>();
-  const inspectPreview = async (mode: Mode, token: string) => {
-    previewSelection = { mode, token };
-    await tick();
-    previewInspector?.showModal();
-  };
+  let previewInfo = $derived(previewSelection ? colorInspection(system, previewSelection) : undefined);
+  const inspectPreview = (mode: Mode, token: string) => { previewSelection = { mode, token }; };
   let settingsOpen = $state(false);
   let settingsToggle = $state<HTMLButtonElement | undefined>(undefined);
   const openSettings = async () => {
@@ -205,12 +202,14 @@
       {/if}
       {#if tab === 'Overview'}
         <div class="preview-grid">
-          {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} onInspect={token => void inspectPreview(previewMode, token)} />{/each}
+          {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} selectedToken={previewSelection?.mode === previewMode ? previewSelection.token : ''} onInspect={token => inspectPreview(previewMode, token)} />{/each}
         </div>
-        <dialog class="role-map-dialog preview-inspector-dialog" closedby="any" use:lightDismiss bind:this={previewInspector} aria-labelledby="preview-inspector-title">
-          <div class="role-map-dialog-heading"><h3 id="preview-inspector-title">Token details</h3><button class="secondary-button" onclick={() => previewInspector?.close()}>Close</button></div>
-          {#if previewSelection}<Inspector {system} selected={previewSelection} />{/if}
-        </dialog>
+        <ColorPopover id="preview-color-info" title={previewInfo?.label ?? 'Color information'} anchorName="--preview-color-anchor">
+          {#if previewSelection && previewInfo}
+            <ColorInfo inspection={previewInfo} />
+            <details class="color-inspection-details"><summary>All token details</summary><div class="color-inspection-full"><Inspector {system} selected={previewSelection} /></div></details>
+          {/if}
+        </ColorPopover>
       {:else if tab === 'Color palette'}
         {#await loadPrimitives()}
           <p class="help" role="status">Loading color palette…</p>

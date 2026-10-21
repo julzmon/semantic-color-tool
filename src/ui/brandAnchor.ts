@@ -1,5 +1,5 @@
 import { isSrgb, parseLockedColor } from '../engine/color';
-import type { ColorAnchor, FamilyConfig, OklchColor } from '../engine/types';
+import type { BuilderConfig, ColorAnchor, FamilyConfig, OklchColor } from '../engine/types';
 
 const precision = (value: number, digits: number) => Number(value.toFixed(digits)).toString();
 
@@ -55,4 +55,23 @@ export function createBrandAnchor(brand: Pick<FamilyConfig, 'hue' | 'chroma'>): 
     color: serializeOklch({ l: 0.530761849, c: brand.chroma, h: brand.hue }),
     locked: false,
   };
+}
+
+/** The primary preferred Brand input also seeds the family's adjustable hue/chroma. */
+export function applyBrandAnchors(config: BuilderConfig, anchors: ColorAnchor[]): BuilderConfig {
+  const primary = anchors.find(anchor => anchor.family === 'brand');
+  if (!primary || primary.locked) return { ...config, anchors };
+  const color = parseLockedColor(primary.color);
+  return { ...config, anchors, families: config.families.map(family => family.id === 'brand'
+    ? { ...family, hue: color.h, chroma: color.c } : family) };
+}
+
+/** Readable display only; persistence and calculations keep the original source. */
+export function displayBrandColor(source: string, target: 'hex' | 'oklch', fullPrecision = false): string {
+  const original = source.trim();
+  const parsed = parseLockedColor(original);
+  if (target === 'hex') return original.startsWith('#') ? original : parsed.hex;
+  if (fullPrecision) return original.toLowerCase().startsWith('oklch(') ? original
+    : `oklch(${parsed.l} ${parsed.c} ${parsed.h})`;
+  return `oklch(${precision(parsed.l, 3)} ${precision(parsed.c, 3)} ${precision(parsed.h, 1)})`;
 }

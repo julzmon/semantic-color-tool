@@ -7,6 +7,7 @@
   import type { BuilderConfig, FamilyId, GeneratedSystem, Mode } from '../engine/types';
   import { familyControlColor, familyTrackStyle, mutedBorderTrackStyle, mutedTrackStyle, mutedStateTrackStyle, stateTrackStyle, surfaceTrackStyle } from './controlTracks';
   import BrandAnchors from './BrandAnchors.svelte';
+  import { applyBrandAnchors } from './brandAnchor';
   import { legacyMutedWeights } from '../engine/muted';
   import { emphasisStrengthLimit, mutedStrengthLimit } from '../engine/emphasis-limits';
   import { emphasisStates, legacyEmphasisWeights } from '../engine/emphasis';
@@ -42,7 +43,8 @@
     const busy = checking;
     const visible = !compact || settingsOpen;
     const revision = ++probeRevision;
-    if (!key || !visible) { probeClient?.cancel(); availability = undefined; return; }
+    const hiddenBrandControl = key.startsWith('families.brand.') && config.anchors.find(anchor => anchor.family === 'brand')?.locked;
+    if (!key || !visible || hiddenBrandControl) { probeClient?.cancel(); availability = undefined; return; }
     if (!probeClient) return;
     const descriptor = controlDescriptor(current, key);
     const retained = completedConfig === current && completedReport?.descriptor.key === key ? completedReport : undefined;
@@ -78,6 +80,7 @@
   const updateStrength = (state: keyof typeof weights, strength: number) => onChange(setControlValue(config, `emphasis.${state}`, strength));
   const updateFamily = (id: FamilyId, patch: { hue?: number; chroma?: number }) => onChange(setControlValue(config,
     `families.${id}.${patch.hue !== undefined ? 'hue' : 'chroma'}`, patch.hue ?? patch.chroma!));
+  const updateBrandAnchors = (anchors: BuilderConfig['anchors']) => onChange(applyBrandAnchors(config, anchors));
   const updateStep = (mode: Mode, value: number) => onChange(setControlValue(config, `surfaces.${mode}.step`, value));
   const updateDistance = (mode: Mode, value: number) => onChange(setControlValue(config, `muted.${mode}.distance`, value));
   const updateChroma = (mode: Mode, value: number) => onChange(setControlValue(config, `muted.${mode}.chroma`, value));
@@ -96,9 +99,20 @@
   </div>
   <p class="help live-controls-help">Each slider spans its currently available range. Edits check live and rebalance related settings to preserve contrast.</p>
 
-  <details class="control-section sidebar-section" aria-labelledby="structure-heading">
-    <summary class="section-heading"><h3 id="structure-heading">Surface structure</h3></summary>
-    <p class="help">Add colors for selected buttons and items.</p>
+  <section class="control-section sidebar-section" aria-labelledby="structure-heading">
+    <header class="section-heading"><h3 id="structure-heading">Setup</h3></header>
+    <p class="help">Choose your brand color and the structure of your color system. Chroma controls intensity; lightness adjusts to meet contrast requirements.</p>
+    <div class="family-adjustments">
+      {#each config.families.filter(family => family.id === 'brand') as family (family.id)}
+        <div class="sidebar-group family-group">
+          <BrandAnchors brand={family} anchors={config.anchors} color={system.modes.light.families.brand.roles['emphasis.base']!.color.css} onChange={updateBrandAnchors}>
+          <Slider {...liveControl(`families.${family.id}.hue`)} label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" rangeStyle={(min, max) => familyTrackStyle(family, 'hue', { min, max })} onChange={value => updateFamily(family.id, { hue: value })} />
+          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={Math.max(0.3, family.chroma)} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />
+          </BrandAnchors>
+        </div>
+      {/each}
+    </div>
+    <p class="help">Choose how many surface levels to generate. Optionally add colors for selected buttons and items.</p>
     <fieldset class="surface-count"><legend>Surface count</legend>
       <div class="segmented" aria-label="Surface count">
         {#each [1, 2, 3, 4, 5, 6] as count}<button disabled={unavailableOption('surfaces.levels', count)} title={unavailableOption('surfaces.levels', count) ? 'Unavailable with current contrast settings' : undefined} aria-pressed={config.surfaces.levels === count} aria-label={`${count} ${count === 1 ? 'surface' : 'surfaces'}`} onfocus={() => activate('surfaces.levels')} onclick={() => onChange(setControlValue(config, 'surfaces.levels', count))}>{count}</button>{/each}
@@ -106,26 +120,12 @@
     </fieldset>
     <p class="help">{config.surfaces.levels} {config.surfaces.levels === 1 ? 'surface: base only' : `surfaces: base + ${config.surfaces.levels - 1} ${config.surfaces.levels === 2 ? 'level' : 'levels'}`}.</p>
     <label class="checkbox-row"><input type="checkbox" disabled={unavailableOption('emphasis.includeSelected', Number(!config.emphasis.selected))} title={unavailableOption('emphasis.includeSelected', Number(!config.emphasis.selected)) ? 'Unavailable with current contrast settings' : undefined} onfocus={() => activate('emphasis.includeSelected')} checked={config.emphasis.selected} oninput={async event => { const input = event.currentTarget; await onChange(setControlValue(config, 'emphasis.includeSelected', Number(input.checked))); await tick(); input.checked = config.emphasis.selected; }} />Include selected state</label>
-  </details>
+  </section>
 
-  <details class="control-section sidebar-section" aria-labelledby="families-heading" open>
-    <summary class="section-heading"><h3 id="families-heading">Color adjustments</h3></summary>
-    <p class="help">Chroma controls intensity. Lightness adjusts to meet contrast requirements.</p>
-    <div class="family-adjustments">
-      {#each config.families as family (family.id)}
-        <div class="sidebar-group family-group">
-          <h4 class="family-heading"><span class="family-color-swatch" aria-hidden="true" style={`--swatch-color: ${familyControlColor(family)}`}></span>{family.label}</h4>
-          <Slider {...liveControl(`families.${family.id}.hue`)} label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" rangeStyle={(min, max) => familyTrackStyle(family, 'hue', { min, max })} onChange={value => updateFamily(family.id, { hue: value })} />
-          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />
-          {#if family.id === 'brand'}<div class="advanced-controls"><BrandAnchors brand={family} anchors={config.anchors} onChange={anchors => onChange({ ...config, anchors })} /></div>{/if}
-          {#if family.id === 'neutral'}<div class="advanced-controls"><strong>Neutral color limits</strong><p class="help">Exact color locks and related states keep their own colors. Pure white and black have no tint. Chroma is reduced when needed to fit the sRGB color range.</p></div>{/if}
-        </div>
-      {/each}
-    </div>
-  </details>
 
-  <details class="control-section sidebar-section" aria-labelledby="surface-heading">
-    <summary class="section-heading"><h3 id="surface-heading">Surface appearance</h3></summary>
+
+  <section class="control-section sidebar-section" aria-labelledby="surface-heading">
+    <header class="section-heading"><h3 id="surface-heading">Surface appearance</h3></header>
     {#each ['light', 'dark'] as const as theme}
       <fieldset class="theme-controls"><legend>{theme === 'light' ? 'Light theme' : 'Dark theme'}</legend>
         <p class="help">{theme === 'light' ? 'Each added level is darker than the previous one.' : 'Each added level is lighter than the previous one.'}</p>
@@ -134,10 +134,10 @@
       </fieldset>
     {/each}
     <p class="help">Level spacing tracks preview the deepest surface at the current surface count.</p>
-  </details>
+  </section>
 
-  <details class="control-section sidebar-section" aria-labelledby="muted-heading">
-    <summary class="section-heading"><h3 id="muted-heading">Muted fills</h3></summary>
+  <section class="control-section sidebar-section" aria-labelledby="muted-heading">
+    <header class="section-heading"><h3 id="muted-heading">Muted fills</h3></header>
     <p class="help">Muted chroma controls color intensity for colored families. Neutral colors use Neutral chroma.</p>
     {#each ['light', 'dark'] as const as theme}
       <fieldset class="theme-controls"><legend>{theme === 'light' ? 'Light theme' : 'Dark theme'}</legend>
@@ -150,10 +150,10 @@
     {/each}
     <p class="help">Tracks preview Brand muted fills and borders in each theme.</p>
     <div class="advanced-controls"><strong>Muted color limits</strong><p class="help">100% uses the family chroma; 0% removes color. Higher values add color where the sRGB range allows it. Muted borders are decorative; their text is checked for contrast.</p></div>
-  </details>
+  </section>
 
-  <details class="control-section sidebar-section" aria-labelledby="states-heading">
-    <summary class="section-heading"><h3 id="states-heading">Interaction states</h3></summary>
+  <section class="control-section sidebar-section" aria-labelledby="states-heading">
+    <header class="section-heading"><h3 id="states-heading">Interaction states</h3></header>
     <p class="help">Controls how much colors change on hover, press, and selection in both themes.</p>
     <p class="help">Tracks show Brand colors: light theme above, dark below. Emphasis strengths mix each family’s base with black, or white for reversed dark states. Higher percentages make a stronger change.</p>
     <h4>Muted</h4>
@@ -174,10 +174,25 @@
       </div>
       <p class="help">Match uses identical colors for every state. Reverse makes dark hover, pressed, and selected fills lighter. The default emphasis fill stays the same in both themes.</p>
     </fieldset>
-  </details>
+  </section>
 
-  <details class="control-section sidebar-section protection-section">
-    <summary class="section-heading"><h3>Contrast protection</h3></summary>
+  <section class="control-section sidebar-section" aria-labelledby="families-heading">
+    <header class="section-heading"><h3 id="families-heading">Color adjustments</h3></header>
+    <p class="help">Chroma controls intensity. Lightness adjusts to meet contrast requirements.</p>
+    <div class="family-adjustments">
+      {#each config.families.filter(family => family.id !== 'brand') as family (family.id)}
+        <div class="sidebar-group family-group">
+          <h4 class="family-heading"><span class="family-color-swatch" aria-hidden="true" style={`--swatch-color: ${familyControlColor(family)}`}></span>{family.label}</h4>
+          <Slider {...liveControl(`families.${family.id}.hue`)} label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" rangeStyle={(min, max) => familyTrackStyle(family, 'hue', { min, max })} onChange={value => updateFamily(family.id, { hue: value })} />
+          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />
+          {#if family.id === 'neutral'}<div class="advanced-controls"><strong>Neutral color limits</strong><p class="help">Exact color locks and related states keep their own colors. Pure white and black have no tint. Chroma is reduced when needed to fit the sRGB color range.</p></div>{/if}
+        </div>
+      {/each}
+    </div>
+  </section>
+
+  <section class="control-section sidebar-section protection-section">
+    <header class="section-heading"><h3>Contrast protection</h3></header>
     <p class="help">Settings adjust automatically to keep contrast checks passing. Locked colors stay fixed; changes that cannot pass are limited or rejected.</p>
     <div class="anchor-field"><label for="solving-strategy">Color solving strategy</label>
     <select id="solving-strategy" value={config.solvingStrategy ?? 'standard'} onchange={event => onChange({ ...config, solvingStrategy: event.currentTarget.value as BuilderConfig['solvingStrategy'] })}>
@@ -190,5 +205,5 @@
         <div class="target-row"><dt>{label}</dt><dd>{config.targets[key]}:1</dd></div>
       {/each}
     </dl>
-  </details>
+  </section>
 </aside>

@@ -22,11 +22,11 @@ it('renders aligned light and dark maps with accessible stop buttons', () => {
   expect(markup).toContain('Borders');
   expect(markup).toContain('Surfaces');
   expect(markup).toContain('Fills');
-  expect(markup).toContain('<dialog');
-  expect(markup).toContain('closedby="any"');
-  expect(markup).toContain('aria-labelledby="neutral-color-detail-title"');
+  expect(markup).toContain('class="color-popover"');
+  expect(markup).toContain('popover="auto"');
+  expect(markup).toContain('popovertarget="neutral-color-details"');
   expect(markup.match(/aria-haspopup="dialog"/g)).toHaveLength(buildNeutralRoleMap(system).stops.length * 2);
-  expect(markup).toContain('>Close</button>');
+  expect(markup).toContain('aria-label="Close color information"');
   for (const stop of buildNeutralRoleMap(system).stops) {
     const ordinal = stop.primitive.split('-').at(-1);
     expect(markup).toContain(`<code>${stop.color.hex} </code><small>${ordinal}</small>`);
@@ -45,7 +45,7 @@ it('orders actual neutral primitives and preserves shared role stacks', () => {
 
 it('renders every selected color relationship as a table row with explicit requirements', () => {
   const markup = render(NeutralRoleMap, { props: { system, modes: ['light', 'dark'] } }).body;
-  const dialog = markup.slice(markup.indexOf('<dialog'));
+  const dialog = markup.slice(markup.indexOf('class="color-popover"'));
   const selectedStop = buildNeutralRoleMap(system).stops[0];
   const relationships = groupContrastChecks([...selectedStop.checks.light, ...selectedStop.checks.dark]);
   const rows = [...dialog.matchAll(/<tbody>([\s\S]*?)<\/tbody>/g)].flatMap(match => match[1].match(/<tr>/g) ?? []);

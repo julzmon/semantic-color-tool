@@ -1,20 +1,18 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import type { ColorValue, GeneratedSystem, Mode } from '../engine/types';
   import { buildNeutralRoleMap, type RoleGroup } from './neutralRoleMap';
   import { inkFor, shortToken } from './presentation';
   import { toColor } from '../engine/color';
   import { describeNeutralRole, groupContrastChecks, groupContrastTables } from './neutralColorDetails';
-  import { lightDismiss } from './lightDismiss';
+  import ColorPopover from './ColorPopover.svelte';
+  import ColorInfo from './ColorInfo.svelte';
+  import { colorInspection } from './colorInspection';
   let { system, modes }: { system: GeneratedSystem; modes: Mode[] } = $props();
   let model = $derived(buildNeutralRoleMap(system));
   let selected = $state<string>('');
-  let detailDialog: HTMLDialogElement;
-  async function inspectStop(primitive: string) {
-    selected = primitive;
-    await tick();
-    detailDialog.showModal();
-  }
+  let selectedMode = $state<Mode>('light');
+  function inspectStop(primitive: string, mode: Mode) { selected = primitive; selectedMode = mode; }
+  let inspection = $derived(selected ? colorInspection(system, { primitive: selected, mode: selectedMode }) : undefined);
   let selectedStop = $derived(model.stops.find((stop) => stop.primitive === selected) ?? model.stops[0]);
   let related = $derived(groupContrastChecks(selectedStop ? modes.flatMap((mode) => selectedStop!.checks[mode]) : []));
   let contrastTables = $derived(groupContrastTables(related, {
@@ -84,9 +82,10 @@
               class:selected={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-pressed={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
               aria-haspopup="dialog"
-              aria-controls="neutral-color-details"
+              aria-controls="neutral-color-details" popovertarget="neutral-color-details" popovertargetaction="show"
+              class:color-inspection-anchor={selected === stop.primitive && selectedMode === mode}
               title={neutralNote(stop.color)}
-              onclick={() => void inspectStop(stop.primitive)}
+              onclick={() => inspectStop(stop.primitive, mode)}
               ><span class="sr-only">{modeNames[mode]} neutral color{' '} </span><span class="role-map-swatch" style:background={stop.color.css}></span><code>{stop.color.hex}{' '}</code><small>{shortToken(stop.primitive)}</small></button
             >{/each}
           {#each groups.filter((group) => group.position === 'below') as group (group.id)}<div class="role-map-group-label">{group.label}</div>
@@ -96,12 +95,10 @@
         </div>
       </div>{/each}
   </div>
-  <dialog class="role-map-dialog" id="neutral-color-details" closedby="any" use:lightDismiss bind:this={detailDialog} aria-labelledby="neutral-color-detail-title">
+  <ColorPopover id="neutral-color-details" title={`Neutral color ${selectedStop ? shortToken(selectedStop.primitive) : ''}`} anchorName="--neutral-color-anchor">
     {#if selectedStop}
-    <div class="role-map-dialog-heading">
-      <h3 id="neutral-color-detail-title">Neutral color {shortToken(selectedStop.primitive)}</h3>
-      <button class="secondary-button" onclick={() => detailDialog.close()}>Close</button>
-    </div>
+    {#if inspection}<ColorInfo {inspection} />{/if}
+    <details class="color-inspection-details"><summary>All roles and contrast checks</summary><div class="color-inspection-full">
     <div class="role-map-detail">
       <div class="role-map-detail-swatch" style:background={selectedStop.color.css}></div>
       <div>
@@ -155,6 +152,7 @@
           {/each}
         {:else}<p class="help">No contrast checks involve this color in the displayed modes.</p>{/if}
       </section>
-    </div>{/if}
-  </dialog>
+    </div>
+    </div></details>{/if}
+  </ColorPopover>
 </section>

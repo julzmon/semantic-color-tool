@@ -12,13 +12,13 @@ const props = { config, system: generateSystem(config), onKeydown: () => {}, onC
 it('keeps every color family visible without a collapse control', () => {
   const markup = render(Controls, { props }).body;
   for (const family of ['Neutral', 'Brand', 'Info', 'Positive', 'Negative', 'Warning']) {
-    expect(markup).toContain(`</span>${family}</h4>`);
+    if (family !== 'Brand') expect(markup).toContain(`</span>${family}</h4>`);
     expect(markup).toContain(`${family} hue`);
     expect(markup).toContain(`${family} chroma`);
   }
-  expect(markup.match(/class="family-color-swatch"/g)).toHaveLength(6);
+  expect(markup.match(/class="family-color-swatch"/g)).toHaveLength(5);
   expect(markup).not.toMatch(/<details[^>]*family-group/);
-  expect(markup).toContain('<details class="control-section sidebar-section" aria-labelledby="families-heading" open="">');
+  expect(markup).toContain('<section class="control-section sidebar-section" aria-labelledby="families-heading">');
   expect(markup).toContain('--swatch-color: oklch(0.62');
   const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
   const stylesheet = parse(styles);
@@ -32,12 +32,13 @@ it('keeps every color family visible without a collapse control', () => {
   expect(markup).not.toContain('Edit semantic color family');
 });
 
-it('keeps advanced control sections collapsible', () => {
+it('keeps all control groups permanently visible', () => {
   const markup = render(Controls, { props }).body;
-  for (const [id, title] of [['structure-heading', 'Surface structure'], ['families-heading', 'Color adjustments'], ['surface-heading', 'Surface appearance'], ['muted-heading', 'Muted fills'], ['states-heading', 'Interaction states']] as const) {
-    expect(markup).toContain(`<summary class="section-heading"><h3 id="${id}">${title}</h3></summary>`);
+  for (const [id, title] of [['structure-heading', 'Setup'], ['families-heading', 'Color adjustments'], ['surface-heading', 'Surface appearance'], ['muted-heading', 'Muted fills'], ['states-heading', 'Interaction states']] as const) {
+    expect(markup).toContain(`<header class="section-heading"><h3 id="${id}">${title}</h3></header>`);
   }
-  expect(markup).toContain('<summary class="section-heading"><h3>Contrast protection</h3></summary>');
+  expect(markup).toContain('<header class="section-heading"><h3>Contrast protection</h3></header>');
+  expect(markup).not.toMatch(/<(details|summary)\b/);
   expect(markup).toContain('<legend>Emphasis states in dark mode</legend>');
   expect(markup).toContain('aria-pressed="true">Match light mode</button>');
   expect(markup).toContain('aria-pressed="false">Reverse direction</button>');
@@ -55,8 +56,9 @@ it('places section descriptions before the controls they explain', () => {
     expect(descriptionIndex).toBeLessThan(controlIndex);
   };
 
-  comesBefore('Add colors for selected buttons and items.', 'Include selected state');
-  comesBefore('Chroma controls intensity. Lightness adjusts to meet contrast requirements.', 'Brand hue');
+  comesBefore('Choose how many surface levels to generate.', 'Include selected state');
+  comesBefore('Chroma controls intensity; lightness adjusts to meet contrast requirements.', 'Brand hue');
+  comesBefore('Chroma controls intensity. Lightness adjusts to meet contrast requirements.', 'Neutral hue');
   comesBefore('Each added level is darker than the previous one.', 'Base lightness');
   comesBefore('Higher values make muted fills darker.', 'Muted distance');
   comesBefore('Muted chroma controls color intensity for colored families. Neutral colors use Neutral chroma.', 'Muted distance');
@@ -103,4 +105,19 @@ it('replaces muted spacing with independent muted state strengths', () => {
   expect(markup).toContain('Pressed muted strength');
   expect(markup).toContain('Pressed emphasis strength');
   expect(markup).toContain('Muted distance');
+});
+
+
+it('puts brand setup first and remaining color adjustments second to last', () => {
+  const markup = render(Controls, { props }).body;
+  const headings = [...markup.matchAll(/<header class="section-heading"><h3[^>]*>([^<]+)<\/h3>/g)].map(match => match[1]);
+  expect(headings).toEqual(['Setup', 'Surface appearance', 'Muted fills', 'Interaction states', 'Color adjustments', 'Contrast protection']);
+  const setup = markup.slice(markup.indexOf('aria-labelledby="structure-heading"'), markup.indexOf('aria-labelledby="surface-heading"'));
+  const adjustments = markup.slice(markup.indexOf('aria-labelledby="families-heading"'));
+  expect(setup).toContain('Brand hue');
+  expect(setup).toContain('Lock exact color');
+  expect(setup).toContain('Surface count');
+  expect(adjustments).not.toContain('Brand hue');
+  expect(adjustments).not.toContain('Lock exact color');
+  expect(markup.match(/>Brand hue<\/label>/g)).toHaveLength(1);
 });

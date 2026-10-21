@@ -18,6 +18,7 @@
   --line: #dedede;
   --line-soft: #ededed;
   --accent: #111;
+  --focus-ring: #006d8f;
   --accent-hover: #333;
   --workspace-surface: #fafafa;
   --accent-active: #000;
@@ -66,7 +67,7 @@ input[type="range"], input[type="checkbox"] {
 }
 
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
   outline-offset: 3px;
 }
 
@@ -348,7 +349,7 @@ summary {
     font: 11px var(--mono);
   }
   & input:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
     outline-offset: 2px;
   }
   & input[aria-invalid="true"] {
@@ -681,7 +682,7 @@ summary {
   border-color: #e5e5e5;
   color: #444;
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
     outline-offset: 3px;
   }
   & p {
@@ -848,7 +849,7 @@ summary {
     color: var(--kds-fg-base);
   }
   & :focus-visible {
-    outline-color: var(--kds-fg-base);
+    outline-color: var(--kds-fg-link-base, var(--focus-ring));
   }
 }
 
@@ -869,7 +870,7 @@ summary {
     padding: 0 10px;
   }
   & input:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
     outline-offset: 2px;
   }
 }
@@ -1000,7 +1001,7 @@ summary {
     font-weight: 600;
   }
   & summary:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
     outline-offset: 3px;
   }
   &[open] summary {
@@ -1024,7 +1025,7 @@ summary {
   max-inline-size: 100%;
   overflow-x: auto;
   padding: 4px 0 12px;
-  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  &:focus-visible { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
 }
 
 .role-map-mode {
@@ -1106,7 +1107,7 @@ summary {
   &:focus-visible {
     position: relative;
     z-index: 1;
-    outline: 2px solid currentColor;
+    outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
     outline-offset: -2px;
   }
   & code { font-size: 10px; }
@@ -1997,7 +1998,7 @@ summary {
 }
 
 .settings-sidebar :is(button, input, select, textarea, summary):focus-visible, .workspace-tabs button:focus-visible {
-  outline-color: #111;
+  outline-color: var(--kds-fg-link-base, var(--focus-ring));
 }
 
 .settings-sidebar {
@@ -2150,7 +2151,7 @@ summary {
     background: transparent;
   }
   & .slider-control input[type="range"]:focus-visible {
-    outline: 2px solid #111;
+    outline: 2px solid var(--kds-fg-link-base, var(--focus-ring));
     outline-offset: 3px;
   }
   & .family-color-swatch {
@@ -2166,17 +2167,11 @@ summary {
     padding-block: 16px;
     border-block-start: 1px solid var(--line-soft);
   }
-  & .sidebar-section > summary.section-heading {
-    display: list-item;
-    margin-block-end: 0;
-    color: #111;
-    cursor: pointer;
-  }
-  & .sidebar-section[open] > summary.section-heading {
+  & .sidebar-section > .section-heading {
     margin-block-end: 14px;
+    color: #111;
   }
-  & .sidebar-section > summary.section-heading h3 {
-    display: inline;
+  & .sidebar-section > .section-heading h3 {
     font-size: 1rem;
     font-weight: 600;
   }
@@ -2333,7 +2328,7 @@ summary {
   cursor: pointer;
   &.token-border { border-width: 2px; }
   &.token-text { text-decoration: underline; text-underline-offset: 3px; }
-  &:focus-visible { outline: 2px solid var(--kds-fg-base); outline-offset: 3px; }
+  &:focus-visible { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
 }
 .sample-anchor { font-size: 9px; font-weight: 600; }
 .token-text-list { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 14px; & button { padding-inline: 9px; } }
@@ -2360,4 +2355,196 @@ summary {
   .token-sample { min-block-size: 44px; }
   .surface-inspect { min-block-size: 44px; }
   .token-demo h4 .token-row-label { display: inline; }
+}
+
+.brand-color-entry {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+  & input[type="color"] {
+    inline-size: 44px;
+    block-size: 40px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+  }
+  & select {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-block-size: 32px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    background: white;
+    color: var(--ink);
+    font: inherit;
+  }
+  & .text-input { min-inline-size: 0; inline-size: 100%; font-weight: 400; }
+}
+.brand-entry-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block-start: 0;
+  padding-block-start: 0;
+  border-block-start: 0;
+  & > label:first-child { font-weight: 600; }
+  & .help { margin: 0; }
+  & > .text-button { align-self: flex-start; }
+}
+
+/* Native top-layer popovers; all placement and collision handling is CSS. */
+.color-popover {
+  --focus-ring: #14aadd;
+  position: fixed;
+  inset: auto 12px 12px;
+  inline-size: min(420px, calc(100vw - 24px));
+  max-inline-size: calc(100vw - 24px);
+  max-block-size: min(76dvh, 680px);
+  margin: 0 auto;
+  padding: 18px 20px 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: 12px;
+  background: #172235;
+  color: #f1f5fb;
+  box-shadow: 0 12px 36px rgb(9 18 33 / .28);
+  font: 13px/1.5 var(--sans);
+  color-scheme: dark;
+  & code { font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
+  & ::selection { background: #bacaff; color: #172235; }
+  & :is(button, summary):focus-visible { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
+}
+.color-popover-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-block-end: 10px;
+  & h3 { margin: 2px 0 0; font-size: 14px; font-weight: 600; line-height: 1.4; }
+}
+.color-popover-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  inline-size: 28px;
+  min-block-size: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #b8c7db;
+  cursor: pointer;
+  &:hover { background: #2b3a51; color: #fff; }
+}
+.color-info-selected {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  & code:last-child { color: #c6d2e4; }
+}
+.color-info-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  inline-size: 17px;
+  block-size: 17px;
+  border: 1px solid rgb(255 255 255 / .45);
+  border-radius: 4px;
+}
+.color-info-token { display: block; margin-block-start: 8px; color: #bacaff; }
+.color-info-comparison-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-block: 18px 12px;
+  & p { margin: 0; font-size: 12px; font-weight: 500; }
+  & p span { display: block; margin-block-start: 2px; color: #b8c7db; font-size: 11px; font-weight: 400; }
+}
+.color-info-ratio {
+  display: grid;
+  justify-items: end;
+  flex-shrink: 0;
+  color: #86efac;
+  & strong { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  & span { font-size: 11px; font-weight: 600; }
+}
+.color-info-pair {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  & > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; }
+  & dt { color: #c6d2e4; font-size: 12px; }
+  & dd { display: grid; grid-template-columns: 17px minmax(0, 1fr); gap: 3px 8px; align-items: center; margin: 0; }
+  & .color-info-role { grid-column: 2; font-size: 10px; color: #aabbd2; }
+}
+.color-info-requirement {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-block-start: 16px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid #39465a;
+  color: #c6d2e4;
+  font-size: 12px;
+  & > span:last-child { color: #86efac; }
+  & strong { color: #f1f5fb; }
+}
+.color-info-fail, .color-info-requirement > span.color-info-fail { color: #fda4af; }
+.color-info-note { margin-block: 16px 0; color: #c6d2e4; font-size: 12px; }
+.color-inspection-details {
+  margin-block-start: 14px;
+  & > summary { color: #bacaff; font-size: 12px; cursor: pointer; }
+  & > .color-inspection-full {
+    --ink: #172235;
+    --muted: #536174;
+    --panel: #fff;
+    --line: #d5dce5;
+    margin-block-start: 12px;
+    padding: 14px;
+    border-radius: 6px;
+    background: #fff;
+    color: #172235;
+    color-scheme: light;
+    & .inspector { border: 0; margin: 0; border-radius: 0; }
+    & .inspector-body { padding: 14px 0 0; }
+    & .role-map-detail, & .role-map-detail-body { padding-inline: 0; }
+    & .role-map-detail-body { margin-block-start: 14px; }
+    & :is(code, dd, p) { overflow-wrap: anywhere; }
+  }
+}
+@supports (position-area: bottom) and (anchor-name: --color-anchor) and (position-try-fallbacks: flip-block) {
+  @media (min-width: 601px) {
+    .color-popover {
+      inset: auto;
+      position-area: bottom;
+      position-try-fallbacks: flip-block, --color-right, --color-left, --color-viewport;
+      margin: 10px;
+      max-block-size: min(76dvh, 680px);
+    }
+    .preview-shell .color-inspection-anchor { anchor-name: --preview-color-anchor; }
+    .neutral-role-map .color-inspection-anchor { anchor-name: --neutral-color-anchor; }
+    .primitive-section .color-inspection-anchor { anchor-name: --palette-color-anchor; }
+  }
+}
+.color-inspection-anchor { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
+
+@position-try --color-viewport {
+  position-anchor: auto;
+  position-area: none;
+  inset: auto 12px 12px;
+  margin: 0 auto;
+}
+
+@position-try --color-right {
+  position-area: right span-all;
+  align-self: safe center;
+}
+@position-try --color-left {
+  position-area: left span-all;
+  align-self: safe center;
 }

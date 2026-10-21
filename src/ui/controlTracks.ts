@@ -3,7 +3,7 @@ import { MAX_MUTED_BORDER_STRENGTH, mutedChromaScale, mutedDistance, surfaceStep
 import { adjustMutedBorders, generateStates, mutedGeneration, surfaceGeneration } from '../engine/generate';
 import { mutedTarget } from '../engine/muted';
 import { emphasisTarget, mixEmphasis } from '../engine/emphasis';
-import type { BuilderConfig, ColorValue, FamilyConfig, GeneratedSystem, Mode } from '../engine/types';
+import type { BuilderConfig, ColorValue, FamilyConfig, GeneratedSystem, Mode, OklchColor } from '../engine/types';
 
 interface TrackBounds { min: number; max: number }
 
@@ -81,4 +81,9 @@ export function mutedStateTrackStyle(system: GeneratedSystem, bounds: TrackBound
     return gradient(bounds.min, bounds.max, strength => mixEmphasis(base, 1 - strength / 100, mutedTarget(mode)));
   });
   return `--range-track: ${tracks[0]} top / 100% 50% no-repeat, ${tracks[1]} bottom / 100% 50% no-repeat`;
+}
+
+/** Preview explicit edits to an exact source; acceptance still verifies contrast. */
+export function exactColorTrackStyle(source: OklchColor, key: keyof OklchColor, bounds: TrackBounds): string {
+  return `--range-track: ${gradient(bounds.min, bounds.max, value => toColor({ ...source, [key]: value }), key === 'h' ? 72 : 24)}`;
 }

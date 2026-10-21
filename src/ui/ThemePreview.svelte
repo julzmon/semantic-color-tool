@@ -12,9 +12,10 @@
   ] as const;
 
   let {
-    system, mode, onInspect = () => {},
+    system, mode, selectedToken = '', onInspect = () => {},
   }: {
     system: GeneratedSystem;
+    selectedToken?: string;
     mode: Mode;
     onInspect?: (semantic: string) => void;
   } = $props();
@@ -44,7 +45,7 @@
       </div>
     </div>
     {#each previewSections as section}
-      <TokenSamples {system} {mode} section={section.id} {onInspect} />
+      <TokenSamples {system} {mode} {selectedToken} section={section.id} {onInspect} />
     {/each}
       <section class="preview-nested" data-mode={mode === 'light' ? 'dark' : 'light'} aria-label={`Nested ${mode === 'light' ? 'dark' : 'light'} region`}>
         <strong>{mode === 'light' ? 'Dark' : 'Light'} within {mode}</strong>
