@@ -1640,7 +1640,6 @@ summary {
 }
 
 .surface-nested-card {
-  border: 1px solid var(--kds-border-neutral-muted-base);
   border-radius: 6px;
   color: var(--kds-fg-base);
 }
