@@ -955,12 +955,34 @@ summary {
     color: var(--kds-fg-base);
     font-size: 11px;
   }
-  & > span {
-    display: block;
-    margin-block-start: 7px;
-    font-size: 10px;
-    line-height: 1.5;
-    color: var(--kds-fg-muted);
+}
+
+.preview-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  & input {
+    flex: 1 1 110px;
+    min-inline-size: 0;
+  }
+}
+
+.preview-muted-button {
+  flex: 0 0 auto;
+  min-block-size: 37px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--kds-bg-neutral-muted-base);
+  color: var(--kds-fg-neutral-base);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  &[data-state="hover"] {
+    background: var(--kds-bg-neutral-muted-hover);
   }
 }
 
@@ -1642,6 +1664,9 @@ summary {
 .surface-nested-card {
   border-radius: 6px;
   color: var(--kds-fg-base);
+}
+.token-demo > .surface-nested-card {
+  border: 1px solid var(--kds-border-neutral-muted-base);
 }
 
 .surface-nested-card > span {

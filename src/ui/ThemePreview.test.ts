@@ -73,6 +73,8 @@ it.each(['light', 'dark'] as const)('keeps contextual alerts and an editable inp
     expect(markup).toContain(`id="${id}"`);
   });
   expect(markup.match(/>Project name<\/label>/g)).toHaveLength(surfaces.length);
+  expect(markup.match(/class="preview-muted-button" data-state="base">Base<\/button>/g)).toHaveLength(surfaces.length);
+  expect(markup.match(/class="preview-muted-button" data-state="hover">Hover<\/button>/g)).toHaveLength(surfaces.length);
 });
 it.each(['light', 'dark'] as const)('uses matching family foreground states inside border examples in %s mode', mode => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode } }).body;

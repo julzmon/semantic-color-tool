@@ -16,7 +16,11 @@
   <button class="surface-inspect" class:color-inspection-anchor={selectedToken === surface.semantic} popovertarget="preview-color-info" popovertargetaction="show" data-token={surface.semantic} aria-label={`Inspect ${surfaceLabel(index)} surface`} aria-haspopup="dialog" onclick={() => onInspect(surface.semantic)}>{surfaceLabel(index)} surface</button>
   <div class="preview-field">
     <label for={inputId}>Project name</label>
-    <input id={inputId} bind:value={name} />
+    <div class="preview-field-row">
+      <input id={inputId} bind:value={name} />
+      <button type="button" class="preview-muted-button" data-state="base">Base</button>
+      <button type="button" class="preview-muted-button" data-state="hover">Hover</button>
+    </div>
   </div>
   {#if index + 1 < surfaces.length}<NestedSurfaceCard {surfaces} {mode} index={index + 1} {selectedToken} {onInspect} />{:else}<p>
       Content sits on the deepest generated surface.
