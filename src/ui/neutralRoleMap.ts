@@ -15,11 +15,17 @@ type NeutralRoleMapModel = {
 
 const groups: RoleGroup[] = ['text', 'border', 'surface', 'fill'];
 const stateOrder = ['base', 'hover', 'active', 'selected'];
-const stateLabel = (value: string) => value[0].toUpperCase() + value.slice(1);
+const stateLabel = (value: string) => value === 'active' ? 'Pressed' : value[0].toUpperCase() + value.slice(1);
 
 function labelFor(semantic: string, group: RoleGroup, order: number): RoleMapLabel {
   const suffix = semantic.split('-').at(-1) ?? semantic;
-  const label = group === 'surface' ? (suffix === 'base' ? 'Surface base' : `Surface ${suffix.replace('level-', 'level ')}`) : group === 'text' ? `Text ${stateLabel(suffix)}` : group === 'border' ? `Border ${stateLabel(suffix)}` : `Fill ${stateLabel(suffix)}`;
+  const variant = semantic.match(/-(muted|emphasis)-(base|hover|active|selected)$/)?.[1];
+  const state = stateLabel(suffix);
+  const variantName = variant ? stateLabel(variant) : '';
+  const label = group === 'surface' ? (suffix === 'base' ? 'Surface base' : `Surface ${suffix.replace('level-', 'level ')}`)
+    : group === 'text' ? `Text ${state}`
+    : group === 'border' ? `${variantName ? `${variantName} border` : 'Border'} ${state}`
+    : `${variantName || 'Fill'} ${state}`;
   return { semantic, label, group, order };
 }
 

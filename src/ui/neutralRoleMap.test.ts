@@ -88,3 +88,23 @@ it('identifies neutral states derived from an exact lock instead of claiming glo
   const markup = render(NeutralRoleMap, { props: { system: locked, modes: ['light', 'dark'] } }).body;
   expect(markup).toContain('Uses an exact locked neutral state group');
 });
+
+it('distinguishes muted and emphasis fills and borders with user-facing state names', () => {
+  const input = structuredClone(system.config);
+  input.prefix = 'custom-theme';
+  input.emphasis.selected = true;
+  const generated = generateSystem(input);
+  const map = buildNeutralRoleMap(generated);
+  for (const mode of ['light', 'dark'] as const) {
+    const labels = map.stops.flatMap(stop => Object.values(stop.labels[mode]).flat());
+    for (const group of ['muted', 'emphasis'] as const) {
+      const name = group === 'muted' ? 'Muted' : 'Emphasis';
+      for (const [state, label] of [['base', 'Base'], ['hover', 'Hover'], ['active', 'Pressed'], ['selected', 'Selected']]) {
+        expect(labels.find(item => item.semantic === `--custom-theme-bg-neutral-${group}-${state}`)?.label).toBe(`${name} ${label}`);
+      }
+      for (const [state, label] of [['base', 'Base'], ['hover', 'Hover']]) {
+        expect(labels.find(item => item.semantic === `--custom-theme-border-neutral-${group}-${state}`)?.label).toBe(`${name} border ${label}`);
+      }
+    }
+  }
+});
