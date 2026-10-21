@@ -16,7 +16,7 @@ export const previewSections = [
   { id: 'relationships', label: 'Foregrounds & borders' },
 ] as const;
 export const previewStates = [
-  { id: 'base', label: 'Default' }, { id: 'hover', label: 'Hover' },
+  { id: 'base', label: 'Base' }, { id: 'hover', label: 'Hover' },
   { id: 'active', label: 'Pressed' }, { id: 'selected', label: 'Selected' },
 ] as const;
 
@@ -46,7 +46,7 @@ export function previewTokens(system: GeneratedSystem, mode: Mode): PreviewToken
     if (system.semantics.some(token => token.name === semantic)) {
       const source = theme.families.info.roles[`foreground.${state}`]!;
       tokens.push({ role: { ...source, semantic, sharedWith: [source.semantic, ...source.sharedWith.filter(name => name !== semantic)] },
-        label: `Link ${state === 'base' ? 'Default' : 'Hover'}`, state, kind: 'link', section: 'relationships' });
+        label: `Link ${state === 'base' ? 'Base' : 'Hover'}`, state, kind: 'link', section: 'relationships' });
     }
   }
   return tokens;

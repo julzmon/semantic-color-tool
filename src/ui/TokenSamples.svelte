@@ -54,7 +54,7 @@
           {#each [['foreground', 'Text'], ['border-muted', 'Muted border'], ['border-emphasis', 'Emphasis border']] as const as [kind, label]}
             <div class="token-sample-row" style="--sample-columns: 2">
               <span class="token-row-label">{label}</span>
-              {#each tokens.filter(token => token.family === item.id && token.kind === kind) as token}{@render sample(token, token.state === 'base' ? 'Default' : 'Hover')}{/each}
+              {#each tokens.filter(token => token.family === item.id && token.kind === kind) as token}{@render sample(token, token.state === 'base' ? 'Base' : 'Hover')}{/each}
             </div>
           {/each}
         {/if}
@@ -63,7 +63,7 @@
     {#if section === 'relationships'}
       <div class="token-family"><h4>Links <span class="token-row-label">Info aliases</span></h4>
         <div class="token-sample-row" style="--sample-columns: 2"><span class="token-row-label">Link text</span>
-          {#each tokens.filter(token => token.kind === 'link') as token}{@render sample(token, token.state === 'base' ? 'Default' : 'Hover')}{/each}
+          {#each tokens.filter(token => token.kind === 'link') as token}{@render sample(token, token.state === 'base' ? 'Base' : 'Hover')}{/each}
         </div>
       </div>
       <p class="token-demo-help">Muted borders are decorative. Emphasis borders meet the configured UI boundary target.</p>

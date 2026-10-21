@@ -40,6 +40,9 @@ it('shows all generated states for every family', () => {
   expect(markup).toContain('data-token="--kds-bg-warning-emphasis-hover"');
   for (const family of defaultSystem.config.families) expect(markup).toContain(`data-token="--kds-bg-${family.id}-emphasis-hover"`);
   expect(markup).toContain('data-token="--kds-bg-warning-muted-base"');
+  expect(markup).toContain('aria-label="Inspect Warning muted Base in dark theme"');
+  expect(markup).toContain('aria-label="Inspect Link Base in dark theme"');
+  expect(markup).not.toContain('Default');
   expect(markup).not.toContain('data-token="--kds-bg-warning-muted-selected"');
 });
 it('demonstrates selected tokens when enabled', () => {
