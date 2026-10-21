@@ -36,7 +36,7 @@
     <div class="token-text-list">
       {#each tokens.filter(token => token.kind === 'text') as token}{@render sample(token, token.label)}{/each}
     </div>
-    <NestedSurfaceCard surfaces={theme.surfaces} {selectedToken} {onInspect} />
+    <NestedSurfaceCard surfaces={theme.surfaces} {mode} {selectedToken} {onInspect} />
   {:else}
     {#each system.config.families as item}
       <div class="token-family" data-family={item.id}>

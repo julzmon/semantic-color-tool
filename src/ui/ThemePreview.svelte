@@ -19,7 +19,6 @@
     mode: Mode;
     onInspect?: (semantic: string) => void;
   } = $props();
-  let name = $state('Design foundations');
   let failures = $derived(system.checks.filter(check => check.mode === mode && !check.pass).length);
 </script>
 
@@ -39,10 +38,6 @@
           </div>{/each}
         </div>
       </section>
-      <div class="preview-field">
-        <label for={`project-${mode}`}>Project name</label>
-        <input id={`project-${mode}`} bind:value={name} />
-      </div>
     </div>
     {#each previewSections as section}
       <TokenSamples {system} {mode} {selectedToken} section={section.id} {onInspect} />

@@ -53,17 +53,26 @@ it('demonstrates selected tokens when enabled', () => {
 it('shows each surface once as nested cards', () => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode: 'light' } }).body;
   for (const surface of defaultSystem.modes.light.surfaces) expect(markup.split(`data-token="${surface.semantic}"`)).toHaveLength(2);
+  expect(markup).not.toContain('Workspace card');
+  expect(markup).not.toContain('Nested card');
 });
 it('keeps the sample buttons and helper text removed', () => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode: 'light' } }).body;
   for (const text of ['Interactive sample', 'Save changes', 'Reset project']) expect(markup).not.toContain(text);
 });
-it.each(['light', 'dark'] as const)('keeps contextual alerts and an editable input in %s mode', mode => {
+it.each(['light', 'dark'] as const)('keeps contextual alerts and an editable input per surface level in %s mode', mode => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode } }).body;
   expect(markup).toContain('Status updates');
   for (const title of ['You’re all up to date', 'Ready to share', 'Review before publishing', 'Needs attention']) expect(markup).toContain(title);
-  expect(markup).toContain(`id="project-${mode}"`);
-  expect(markup).toContain('Project name');
+  const context = markup.slice(markup.indexOf('class="preview-context"'), markup.indexOf('class="token-demo"'));
+  expect(context).not.toContain('Project name');
+  const surfaces = defaultSystem.modes[mode].surfaces;
+  surfaces.forEach((_, index) => {
+    const id = index === 0 ? `project-${mode}` : `project-${mode}-${index}`;
+    expect(markup).toContain(`for="${id}">Project name</label>`);
+    expect(markup).toContain(`id="${id}"`);
+  });
+  expect(markup.match(/>Project name<\/label>/g)).toHaveLength(surfaces.length);
 });
 it.each(['light', 'dark'] as const)('uses matching family foreground states inside border examples in %s mode', mode => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode } }).body;

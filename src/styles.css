@@ -1669,6 +1669,10 @@ summary {
 .surface-nested-card {
   min-inline-size: 0;
   padding: 12px;
+  & > .preview-field {
+    margin-block-start: 8px;
+    & input { background: transparent; }
+  }
   & > .surface-nested-card {
     margin-block-start: 10px;
   }
@@ -2296,7 +2300,7 @@ summary {
 }
 .preview-context {
   padding: 18px 20px;
-  & .preview-statuses { margin-block: 0 16px; }
+  & .preview-statuses { margin-block: 0; }
 }
 .token-demo-help { margin: 7px 0 16px; color: var(--kds-fg-muted); font-size: 11px; line-height: 1.6; }
 .token-family {
