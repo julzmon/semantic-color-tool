@@ -146,6 +146,14 @@ it('defers automatic limit clamping until an existing edit completes', async () 
   props.pending = false; flushSync(); await tick(); await tick();
   expect(props.onChange).toHaveBeenCalledExactlyOnceWith(.05);
 });
+it.each([[1 + Number.EPSILON, 1], [-Number.EPSILON, 0]])('does not submit floating-point boundary noise on mount (%s)', async (value, displayed) => {
+  const onChange = vi.fn(async () => {});
+  mounted.push(mount(Slider, { target: document.body, props: { label: 'Boundary value', value, min: 0, max: 1, onChange } }));
+  flushSync(); await tick(); await tick();
+  expect(onChange).not.toHaveBeenCalled();
+  expect(document.querySelector<HTMLInputElement>('input[type=range]')!.valueAsNumber).toBe(displayed);
+  expect(document.querySelector<HTMLInputElement>('input[type=number]')!.valueAsNumber).toBe(displayed);
+});
 it('reaches off-grid fractional bounds by dragging to either physical edge', async () => {
   const availability: ControlAvailabilityView = { descriptor: { key: 'test', label: 'Test value', value: .1, min: 0, max: 1, step: .001, unit: '' }, status: 'ready', samples: [{ value: 0, acceptedValue: .0508, safe: true, failedChecks: 0 }, { value: 1, acceptedValue: .2002, safe: true, failedChecks: 0 }] };
   const { props } = setup(async next => { props.value = next; }, availability);

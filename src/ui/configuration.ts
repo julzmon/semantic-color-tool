@@ -117,6 +117,7 @@ function normalizeConfiguration(value: unknown, defaults: BuilderConfig): Builde
   const expectedFamilies = list((defaults as unknown as RecordValue).families, 'Default configuration families').map((family, index) => copyFamily(family, `Default configuration families[${index}]`));
   const importedFamilies = list(source.families, 'Configuration families').map((family, index) => copyFamily(family, `Configuration families[${index}]`));
   const importedById = new Map(importedFamilies.map((family) => [family.id, family]));
+  if (importedById.size !== importedFamilies.length) throw new Error('Configuration contains a duplicate color family.');
   const expectedIds = new Set(expectedFamilies.map((family) => family.id));
   if (importedFamilies.some((family) => !expectedIds.has(family.id))) throw new Error('Configuration contains an unsupported color family.');
   if (sourceVersion === defaultVersion && importedFamilies.length !== expectedFamilies.length) throw new Error('Configuration is missing a required color family.');

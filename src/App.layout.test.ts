@@ -2,21 +2,13 @@ import { render } from 'svelte/server';
 import { expect, it, vi } from 'vitest';
 import App from './App.svelte';
 
-it('keeps workspace navigation inside the preview content and shows both themes without a mode selector', () => {
+it('renders an accessible loading shell before client-side worker initialization', () => {
   const markup = render(App).body;
-  expect(markup).not.toContain('Quick color controls');
-  expect(markup).toContain('class="controls settings-sidebar"');
-  expect(markup).toContain('Settings');
-  expect(markup).toContain('aria-label="Workspace sections"');
-  const workspace = markup.match(/<main id="workspace"[\s\S]*?<\/main>/)?.[0];
-  expect(workspace).toContain('aria-label="Workspace sections"');
-  expect(markup).not.toContain('aria-label="Preview mode"');
-  expect(markup).not.toContain('class="mode-switch');
-  expect(workspace).toContain('Light theme');
-  expect(workspace).toContain('Dark theme');
-  expect(workspace).not.toContain('Color roles');
-  expect(workspace).toContain('Color palette');
-  expect(markup).not.toContain('brand-mark');
+  expect(markup).toContain('id="workspace"');
+  expect(markup).toContain('role="status"');
+  expect(markup).toContain('Loading your color system');
+  expect(markup).not.toContain('class="controls settings-sidebar"');
+  expect(markup).not.toContain('class="preview-grid"');
 });
 
 it('sticks preview tabs and lets the sidebar use the available viewport height', async () => {

@@ -44,6 +44,13 @@ class MemoryStorage {
 }
 
 describe('configuration lifecycle', () => {
+  it.each([1, 2])('rejects duplicate family IDs in version-%i imports before filling defaults', (version) => {
+    const input = version === 1 ? legacyV1() : defaults();
+    input.families[1] = { ...input.families[0] };
+
+    expect(() => parseConfigurationJson(JSON.stringify(input), defaults())).toThrow(/duplicate.*family/i);
+  });
+
   it('migrates old spacing into shared proportional emphasis weights', () => {
     const input = defaults();
     const result = parseConfigurationJson(JSON.stringify(input), defaults());

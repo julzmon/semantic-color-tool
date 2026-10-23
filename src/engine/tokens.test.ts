@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import * as tokens from './tokens';
+import * as color from './color';
 import { generateSystem } from './generate';
 import { configFromReference, parseKdsTokens } from './reference';
-import { exportDtcgFiles, exportDtcg } from './export';
+import { exportCss, exportDtcgFiles, exportDtcg } from './export';
 
 const config = configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
 
@@ -56,4 +58,84 @@ describe('DTCG 2025.10 exports', () => {
     expect(exportDtcg(system)).not.toContain('light-dark(');
     expect(exportDtcg(system)).not.toContain('"config"');
   });
+});
+
+describe('verified token preparation', () => {
+  it('shares verification across CSS and DTCG and invalidates mutable inputs', () => {
+    const system = generateSystem(config);
+    const foundation = tokens.tokenFoundation(system);
+    const model = tokens.cssTokenModel(system);
+    const docs = tokens.dtcgDocuments(system);
+    expect(tokens.tokenFoundation(system)).toBe(foundation);
+    expect(tokens.dtcgDocuments(system)).toBe(docs);
+    expect(tokens.cssTokenModel(system)).toBe(model);
+    system.config.targets.normalText += 0.01;
+    expect(tokens.tokenFoundation(system)).not.toBe(foundation);
+    expect(tokens.dtcgDocuments(system)).not.toBe(docs);
+    expect(tokens.cssTokenModel(system)).not.toBe(model);
+  });
+
+  it('adopts structured-cloned prepared data without repeating contrast verification', () => {
+    const system = generateSystem(config);
+    const prepared = tokens.prepareTokens(system);
+    const expectedCss = exportCss(system);
+    const expectedFiles = exportDtcgFiles(system);
+    const clone = structuredClone({ system, prepared });
+    const contrast = vi.spyOn(color, 'contrast');
+    try {
+      expect(tokens.adoptTokens(clone.system, clone.prepared)).toBe(true);
+      expect(exportCss(clone.system)).toBe(expectedCss);
+      expect(exportDtcgFiles(clone.system)).toEqual(expectedFiles);
+      expect(contrast).not.toHaveBeenCalled();
+      expect(Object.isFrozen(tokens.cssTokenModel(clone.system).semantics[0])).toBe(true);
+      clone.system.config.targets.normalText += 0.01;
+      expect(tokens.adoptTokens(clone.system, clone.prepared)).toBe(false);
+      tokens.cssTokenModel(clone.system);
+      expect(contrast).toHaveBeenCalled();
+    } finally { contrast.mockRestore(); }
+  });
+
+  it('preserves variant suffixes and hyphenated custom palette family keys', () => {
+    expect(tokens.tokenPath('--custom-key-gray-2000-2', 'custom')).toEqual(['color', 'palette', 'gray', '2000-2']);
+    expect(tokens.tokenPath('--custom-key-brand-blue-2000-2', 'custom')).toEqual(['color', 'palette', 'brand-blue', '2000-2']);
+    const locked = structuredClone(config);
+    locked.anchors = [
+      { family: 'neutral', mode: 'light', role: 'foreground.base', color: 'oklch(0.2 0.01 200)', locked: true },
+      { family: 'neutral', mode: 'dark', role: 'foreground.base', color: 'oklch(0.2 0.02 200)', locked: true },
+    ];
+    const system = generateSystem(locked);
+    const foundation = tokens.dtcgDocuments(system).colors as any;
+    const variant = system.primitives.find(p => /\d+-\d+$/.test(p.name))!;
+    expect(variant).toBeDefined();
+    const suffix = variant.name.replace(`--kds-key-${variant.family}-`, '');
+    expect(foundation.color.palette[variant.family][suffix].$type).toBe('color');
+  });
+});
+
+it('protects cached verification from mutations without freezing the mutable input system', () => {
+  const system = generateSystem(config);
+  const foundation = tokens.tokenFoundation(system);
+  const documents = tokens.dtcgDocuments(system);
+  const originalCss = exportCss(system);
+  const originalFiles = exportDtcgFiles(system);
+  expect(() => { foundation.palette[0].primitive.color.l = 0; }).toThrow(TypeError);
+  expect(() => { foundation.lightness[foundation.palette[0].lightness] = 0; }).toThrow(TypeError);
+  expect(() => { (documents.colors as any).color.palette.gray = {}; }).toThrow(TypeError);
+  expect(exportCss(system)).toBe(originalCss);
+  expect(exportDtcgFiles(system)).toEqual(originalFiles);
+  expect(Object.isFrozen(system.primitives[0].color)).toBe(false);
+  system.primitives[0].usages.push('external API mutation');
+  expect(tokens.tokenFoundation(system)).not.toBe(foundation);
+  expect(tokens.dtcgDocuments(system)).not.toBe(documents);
+});
+
+it('owns the adopted foundation without freezing structured-cloned public system references', () => {
+  const system = generateSystem(config);
+  const clone = structuredClone({ system, prepared: tokens.prepareTokens(system) });
+  expect(tokens.adoptTokens(clone.system, clone.prepared)).toBe(true);
+  const foundation = tokens.tokenFoundation(clone.system);
+  expect(() => { foundation.palette[0].primitive.color.l = 0; }).toThrow(TypeError);
+  expect(Object.isFrozen(clone.system.primitives[0].color)).toBe(false);
+  clone.system.primitives[0].usages.push('still mutable');
+  expect(tokens.tokenFoundation(clone.system)).not.toBe(foundation);
 });

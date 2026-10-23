@@ -62,7 +62,8 @@
   let lastLimitRequest = '';
   $effect(() => {
     const next = constrain(value);
-    if (next === value) { lastLimitRequest = ''; return; }
+    // Engine calculations can land just outside a bound through floating-point noise.
+    if (Math.abs(next - value) <= 1e-9) { lastLimitRequest = ''; return; }
     if (pending || checking || editing) return;
     const signature = `${value}:${lower}:${upper}`;
     if (lastLimitRequest === signature) return;

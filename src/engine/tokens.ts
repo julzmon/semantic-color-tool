@@ -40,7 +40,7 @@ function semanticResolver(system: GeneratedSystem, colors: Map<string, ColorValu
 }
 
 /** One component model feeds CSS and DTCG without recalculating colors. */
-export function tokenFoundation(system: GeneratedSystem) {
+function buildTokenFoundation(system: GeneratedSystem) {
   const prefix = system.config.prefix ?? 'kds';
   const lightness: Record<string, number> = {};
   const hue: Record<string, number> = {};
@@ -84,7 +84,10 @@ export function tokenFoundation(system: GeneratedSystem) {
       }
     }
   }
-  return { lightness, hue, chroma, palette };
+  // Palette entries reference input primitives; own them before freezing the cache.
+  return freezeTokens({ lightness, hue, chroma, palette: palette.map(item => ({ ...item,
+    primitive: { ...item.primitive, color: { ...item.primitive.color }, usages: [...(item.primitive.usages ?? [])] },
+  })) });
 }
 
 /** Reconstruct the shared foundation after verified coordinate shortening. */
@@ -176,17 +179,71 @@ function buildCssTokenModel(system: GeneratedSystem) {
   });
 }
 
-const cssModels = new WeakMap<GeneratedSystem, { signature: string; model: ReturnType<typeof buildCssTokenModel> }>();
+/** Freeze only owned serialization data, never mutable public system objects. */
+function freezeTokens<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.values(value).forEach(freezeTokens);
+    Object.freeze(value);
+  }
+  return value;
+}
 
-/** Share expensive verified serialization across previews and exports; tolerate mutable API inputs. */
-export function cssTokenModel(system: GeneratedSystem) {
-  const signature = JSON.stringify([system.config, system.primitives, system.semantics,
+/** Prepared separately so worker transport leaves the public system unchanged. */
+export interface PreparedTokens {
+  signature: string;
+  foundation: ReturnType<typeof buildTokenFoundation>;
+  model: ReturnType<typeof buildCssTokenModel>;
+}
+interface TokenCache {
+  signature: string;
+  foundation?: PreparedTokens['foundation'];
+  model?: PreparedTokens['model'];
+  documents?: ReturnType<typeof buildDtcgDocuments>;
+}
+const tokenCaches = new WeakMap<GeneratedSystem, TokenCache>();
+function tokenSignature(system: GeneratedSystem): string {
+  return JSON.stringify([system.config, system.primitives, system.semantics,
     system.checks.map(check => [check.mode, check.foreground, check.background, check.target, check.pass])]);
-  const cached = cssModels.get(system);
-  if (cached?.signature === signature) return cached.model;
-  const model = buildCssTokenModel(system);
-  cssModels.set(system, { signature, model });
-  return model;
+}
+function tokenCache(system: GeneratedSystem): TokenCache {
+  const signature = tokenSignature(system);
+  const cached = tokenCaches.get(system);
+  if (cached?.signature === signature) return cached;
+  const next = { signature };
+  tokenCaches.set(system, next);
+  return next;
+}
+
+/** Reuse verified shortening across CSS and DTCG; invalidate mutable API inputs. */
+export function tokenFoundation(system: GeneratedSystem) {
+  const cached = tokenCache(system);
+  return cached.foundation ??= buildTokenFoundation(system);
+}
+export function cssTokenModel(system: GeneratedSystem) {
+  const cached = tokenCache(system);
+  return cached.model ??= buildCssTokenModel(system);
+}
+export function dtcgDocuments(system: GeneratedSystem) {
+  const cached = tokenCache(system);
+  return cached.documents ??= buildDtcgDocuments(system);
+}
+
+export function prepareTokens(system: GeneratedSystem): PreparedTokens {
+  return { signature: tokenSignature(system), foundation: tokenFoundation(system), model: cssTokenModel(system) };
+}
+
+/** Structured cloning drops freezing; restore the CSS model's read-only contract. */
+export function adoptTokens(system: GeneratedSystem, prepared: PreparedTokens): boolean {
+  if (tokenSignature(system) !== prepared.signature) return false;
+  const model = prepared.model;
+  for (const items of [model.components, model.settings, model.semantics]) {
+    items.forEach(Object.freeze);
+    Object.freeze(items);
+  }
+  Object.freeze(model.stats);
+  Object.freeze(model);
+  tokenCaches.set(system, { signature: prepared.signature, foundation: freezeTokens(structuredClone(prepared.foundation)), model });
+  return true;
 }
 
 type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
@@ -196,7 +253,7 @@ const reference = (path: string): JsonObject => ({ $ref: `#/${path}/$value` });
 
 export function tokenPath(cssName: string, prefix = 'kds'): string[] {
   const name = cssName.replace(`--${prefix}-`, '');
-  const primitive = name.match(/^key-([a-z][a-z0-9-]*)-(.+)$/);
+  const primitive = name.match(/^key-([a-z][a-z0-9-]*?)-(\d+(?:-\d+)*)$/);
   if (primitive) return ['color', 'palette', primitive[1], primitive[2]];
   const [group, ...parts] = name.split('-');
   if (group === 'fg' && parts.join('-') === 'on-emphasis') return ['color', 'foreground', 'on-emphasis'];
@@ -225,7 +282,7 @@ function materializeComponents(value: Json, source: JsonObject): Json {
   return value;
 }
 
-export function dtcgDocuments(system: GeneratedSystem) {
+function buildDtcgDocuments(system: GeneratedSystem) {
   const prefix = system.config.prefix ?? 'kds';
   const foundation = tokenFoundation(system);
   const scope = configuredFamilyScope(system);
@@ -270,5 +327,5 @@ export function dtcgDocuments(system: GeneratedSystem) {
     }, default: 'light' } },
     resolutionOrder: [{ $ref: '#/sets/foundation' }, { $ref: '#/modifiers/mode' }],
   });
-  return { colors, light, dark, resolver: resolver(false), bundle: resolver(true) };
+  return freezeTokens({ colors, light, dark, resolver: resolver(false), bundle: resolver(true) });
 }

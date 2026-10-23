@@ -1,3 +1,4 @@
+import { adoptTokens, type PreparedTokens } from './tokens';
 import type { BalancedConfiguration } from './balance';
 import type { BuilderConfig } from './types';
 type Job = { previous: BuilderConfig; requested: BuilderConfig; resolve: (result: BalancedConfiguration | null) => void; reject: (error: Error) => void };
@@ -19,11 +20,18 @@ export function createBalanceClient(worker: Worker) {
     active = pending = undefined;
     worker.terminate();
   };
-  worker.onmessage = (event: MessageEvent<{ result?: BalancedConfiguration; error?: string }>) => {
+  worker.onmessage = (event: MessageEvent<{ result?: BalancedConfiguration; prepared?: PreparedTokens; error?: string }>) => {
     const job = active;
     active = undefined;
     if (!job) return;
-    if (event.data.result) job.resolve(event.data.result);
+    if (event.data.result) {
+      try {
+        if (event.data.prepared) adoptTokens(event.data.result.system, event.data.prepared);
+        job.resolve(event.data.result);
+      } catch {
+        job.reject(new Error('Unable to adopt prepared tokens. Previous settings retained.'));
+      }
+    }
     else job.reject(new Error(event.data.error || 'Unable to verify contrast. Previous settings retained.'));
     if (pending) { const next = pending; pending = undefined; run(next); }
   };

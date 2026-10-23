@@ -11,16 +11,18 @@
   import { legacyMutedWeights } from '../engine/muted';
   import { emphasisStrengthLimit, mutedStrengthLimit } from '../engine/emphasis-limits';
   import { emphasisStates, legacyEmphasisWeights } from '../engine/emphasis';
-  let { config, system, adjusted = [], checking = false, canUndo = false, settingsOpen = false, onKeydown, onClose, onChange, onReset, onUndo }: {
+  let { config, system, adjusted = [], checking = false, canUndo = false, settingsOpen = false, onCompactChange, onKeydown, onClose, onChange, onReset, onUndo }: {
     config: BuilderConfig; system: GeneratedSystem; adjusted?: string[]; checking?: boolean; canUndo?: boolean; settingsOpen?: boolean;
+    onCompactChange?: (compact: boolean) => void;
     onKeydown: (event: KeyboardEvent) => void; onClose: () => void;
     onChange: (config: BuilderConfig) => Promise<boolean | undefined>; onReset: () => void; onUndo: () => void;
   } = $props();
   let activeControl = $state('');
   let compact = $state(false);
+  const modal = $derived(compact && settingsOpen);
   onMount(() => {
     const media = window.matchMedia('(max-width: 760px)');
-    const update = () => { compact = media.matches; };
+    const update = () => { compact = media.matches; onCompactChange?.(compact); };
     update(); media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   });
@@ -88,7 +90,7 @@
 
 </script>
 
-<aside id="settings-panel" class="controls settings-sidebar" class:settings-open={settingsOpen} role={settingsOpen ? 'dialog' : undefined} aria-modal={settingsOpen ? 'true' : undefined} aria-label="Color system configuration" onkeydown={onKeydown}>
+<aside id="settings-panel" class="controls settings-sidebar" class:settings-open={settingsOpen} role={modal ? 'dialog' : undefined} aria-modal={modal ? 'true' : undefined} aria-label="Color system configuration" onkeydown={event => { if (modal) onKeydown(event); }}>
   <div class="controls-heading">
     <h2>Adjust colors</h2>
     <div class="controls-heading-actions">

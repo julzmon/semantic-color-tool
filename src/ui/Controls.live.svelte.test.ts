@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { generateSystem } from '../engine/generate';
 import { configFromReference } from '../engine/config';
 import Controls from './Controls.svelte';
+import { handleModalKeydown } from './settingsKeyboard';
 const defaults = () => configFromReference(reference);
 const workers: FakeWorker[] = [];
 class FakeWorker {
@@ -66,6 +67,47 @@ it('cancels probes while the mobile panel is hidden and resumes when the desktop
   expect(document.querySelector('.live-control-values')).toBeNull();
   narrow = false; listeners.forEach(listener => listener()); flushSync();
   expect(worker.requests()).toHaveLength(2);
+});
+
+it('releases modal semantics and keyboard containment when an open drawer becomes a desktop sidebar', () => {
+  let narrow = true;
+  const listeners = new Set<() => void>();
+  vi.spyOn(window, 'matchMedia').mockImplementation(() => ({
+    get matches() { return narrow; },
+    addEventListener: (_: string, callback: () => void) => listeners.add(callback),
+    removeEventListener: (_: string, callback: () => void) => listeners.delete(callback),
+  } as unknown as MediaQueryList));
+  const onCompactChange = vi.fn();
+  const config = defaults();
+  mounted.push(mount(Controls, { target: document.body, props: {
+    config, system: generateSystem(config), settingsOpen: true, onCompactChange,
+    onKeydown: event => handleModalKeydown(event, true, () => {}),
+    onClose() {}, onReset() {}, onUndo() {}, onChange: async () => true,
+  } }));
+  flushSync();
+  const panel = document.querySelector<HTMLElement>('#settings-panel')!;
+  const controls = [...panel.querySelectorAll<HTMLElement>('button, input, select')];
+  for (const control of controls) vi.spyOn(control, 'checkVisibility').mockReturnValue(true);
+  const first = controls[0], last = controls.at(-1)!;
+  expect(panel.getAttribute('role')).toBe('dialog');
+  expect(panel.getAttribute('aria-modal')).toBe('true');
+  last.focus();
+  const modalTab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+  last.dispatchEvent(modalTab);
+  expect(modalTab.defaultPrevented).toBe(true);
+  expect(document.activeElement).toBe(first);
+
+  narrow = false;
+  listeners.forEach(listener => listener());
+  flushSync();
+  expect(panel.getAttribute('role')).toBeNull();
+  expect(panel.getAttribute('aria-modal')).toBeNull();
+  expect(onCompactChange.mock.calls).toEqual([[true], [false]]);
+  last.focus();
+  const desktopTab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+  last.dispatchEvent(desktopTab);
+  expect(desktopTab.defaultPrevented).toBe(false);
+  expect(document.activeElement).toBe(last);
 });
 
 it('shows the shared emphasis cap on all state sliders without focusing or probing them', async () => {

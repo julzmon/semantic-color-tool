@@ -26,7 +26,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - run: pnpm test
       - run: pnpm run build
+      - run: pnpm run verify:pwa
       - uses: actions/configure-pages@v5
         with:
           enablement: true

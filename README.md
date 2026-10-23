@@ -40,6 +40,8 @@ pnpm run build
 pnpm run verify:pwa
 ```
 
+The test suite uses one worker to keep CPU-heavy feasibility calculations from competing for CPU time and exceeding their existing timeouts. GitHub Pages deployment runs the tests, production build, and PWA verification before uploading the site.
+
 ## Builder scope
 
 - Six generated semantic families: Neutral, Brand, Info, Positive, Negative, and Warning.

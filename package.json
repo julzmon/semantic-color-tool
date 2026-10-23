@@ -7,7 +7,7 @@
     "dev": "vite",
     "start": "vite --host 127.0.0.1",
     "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=1 --minWorkers=1",
     "test:watch": "vitest",
     "preview": "vite preview --host 127.0.0.1",
     "verify:pwa": "node scripts/verify-pwa-build.mjs",
