@@ -17,7 +17,7 @@ it('renders aligned light and dark maps with accessible stop buttons', () => {
   expect(markup).toContain('Light neutral roles');
   expect(markup).toContain('Dark neutral roles');
   expect(markup).toContain('Neutral role map. Scroll horizontally');
-  expect(markup).toContain('aria-pressed="true"');
+  expect(markup).not.toContain('aria-pressed="true"');
   expect(markup).toContain('Text');
   expect(markup).toContain('Borders');
   expect(markup).toContain('Surfaces');

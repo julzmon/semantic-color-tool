@@ -162,3 +162,15 @@ it('does not mount stale popup diagnostics after leaving and returning to Overvi
   button('Overview').click(); flushSync();
   expect(document.querySelector('#preview-color-info .inspector')).toBeNull();
 });
+
+it('clears preview anchor highlighting when its popup closes', async () => {
+  const worker = start(); await reply(worker);
+  const invoker = document.querySelector<HTMLButtonElement>('[aria-label="Inspect Brand foreground Base in light theme"]')!;
+  invoker.focus(); invoker.click(); flushSync();
+  const popup = document.getElementById('preview-color-info')!;
+  toggle(popup, true);
+  expect(document.querySelector('.preview-shell .color-inspection-anchor')).toBe(invoker);
+  toggle(popup, false);
+  expect(document.querySelector('.preview-shell .color-inspection-anchor')).toBeNull();
+  expect(document.activeElement).toBe(invoker);
+});

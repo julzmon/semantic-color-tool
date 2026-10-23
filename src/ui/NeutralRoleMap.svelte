@@ -55,7 +55,7 @@
   const labelsFor = (stop: (typeof model.stops)[number], mode: Mode, group: RoleGroup) => stop.labels[mode][group].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
   const surfaceBase = (mode: Mode) => system.modes[mode].surfaces[0]?.color.css ?? (mode === 'light' ? '#ffffff' : '#121718');
   $effect(() => {
-    if (!selected || !model.stops.some((stop) => stop.primitive === selected)) selected = model.stops[0]?.primitive ?? '';
+    if (selected && !model.stops.some((stop) => stop.primitive === selected)) selected = '';
   });
 </script>
 
@@ -79,8 +79,8 @@
           <div class="role-map-spacer" aria-hidden="true"></div>
           {#each model.stops as stop (stop.primitive)}<button
               class="role-map-stop"
-              class:selected={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
-              aria-pressed={selected === stop.primitive || (!selected && stop.primitive === model.stops[0]?.primitive)}
+              class:selected={selected === stop.primitive && selectedMode === mode}
+              aria-pressed={selected === stop.primitive && selectedMode === mode}
               aria-haspopup="dialog"
               aria-controls="neutral-color-details" popovertarget="neutral-color-details" popovertargetaction="show"
               class:color-inspection-anchor={selected === stop.primitive && selectedMode === mode}
@@ -95,7 +95,7 @@
         </div>
       </div>{/each}
   </div>
-  <ColorPopover id="neutral-color-details" title={`Neutral color ${selectedStop ? shortToken(selectedStop.primitive) : ''}`} anchorName="--neutral-color-anchor">
+  <ColorPopover id="neutral-color-details" title={`Neutral color ${selectedStop ? shortToken(selectedStop.primitive) : ''}`} anchorName="--neutral-color-anchor" onOpenChange={open => { if (!open) selected = ''; }}>
     {#if selectedStop}
     {#if inspection}<ColorInfo {inspection} />{/if}
     <details class="color-inspection-details"><summary>All roles and contrast checks</summary><div class="color-inspection-full">

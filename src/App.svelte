@@ -247,7 +247,7 @@
       {/if}
       {#if tab === 'Overview'}
         <div class="preview-grid">
-          {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} selectedToken={previewSelection?.mode === previewMode ? previewSelection.token : ''} onInspect={token => inspectPreview(previewMode, token)} />{/each}
+          {#each modes as previewMode (previewMode)}<ThemePreview mode={previewMode} {system} selectedToken={previewPopoverOpen && previewSelection?.mode === previewMode ? previewSelection.token : ''} onInspect={token => inspectPreview(previewMode, token)} />{/each}
         </div>
         <ColorPopover id="preview-color-info" title={previewInfo?.label ?? 'Color information'} anchorName="--preview-color-anchor" onOpenChange={open => { previewPopoverOpen = open; }}>
           {#if previewSelection && previewInfo}

@@ -33,7 +33,7 @@
           >{/each}
       </div>
     </div>{/each}
-  <ColorPopover id="palette-color-details" title={inspection?.label ?? 'Color information'} anchorName="--palette-color-anchor">
+  <ColorPopover id="palette-color-details" title={inspection?.label ?? 'Color information'} anchorName="--palette-color-anchor" onOpenChange={open => { if (!open) selected = ''; }}>
     {#if primitive && inspection}
       <ColorInfo {inspection} />
       <details class="color-inspection-details"><summary>Used in {primitive.usages.length} roles</summary><div class="color-inspection-full">

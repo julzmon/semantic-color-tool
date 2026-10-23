@@ -2559,7 +2559,6 @@ summary {
     .primitive-section .color-inspection-anchor { anchor-name: --palette-color-anchor; }
   }
 }
-.color-inspection-anchor { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
 
 @position-try --color-viewport {
   position-anchor: auto;
