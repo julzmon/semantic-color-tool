@@ -197,6 +197,7 @@ it('keeps on-emphasis separate even when incompatible exact fills leave contrast
   expect(system.modes.light.families.brand.roles['emphasis.base']!.color.css).toBe('#ffffff');
 });
 
+// The hosted Linux runner takes ~6.5s for this bounded integration search.
 it('retains the requested solving strategy through contrast-limited balancing', async () => {
   const { balanceConfiguration } = await import('./balance');
   const previous = defaults(); const requested = structuredClone(previous);
@@ -205,4 +206,4 @@ it('retains the requested solving strategy through contrast-limited balancing', 
   expect(result.config.solvingStrategy).toBe('prefer-shared');
   expect(result.system.checks.every(check => check.pass)).toBe(true);
   expect(result.config.muted.distance).not.toEqual(requested.muted.distance);
-});
+}, 15_000);

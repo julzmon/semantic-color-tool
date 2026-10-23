@@ -11,20 +11,29 @@ const defaults = () => {
   delete config.emphasis.mixWeights;
   return config;
 };
-const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+// libm/V8 can differ in the last numeric bits across ARM and x64. Keep CSS,
+// exact sources, ordering and pass/fail decisions byte-exact; normalize numbers only.
+const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value,
+  (_key, item) => typeof item === 'number' ? Number(item.toPrecision(12)) : item)).digest('hex');
+it('ignores machine-level numeric roundoff while retaining meaningful values and exact sources', () => {
+  expect(fingerprint({ ratio: 4.500000000000001 })).toBe(fingerprint({ ratio: 4.5 }));
+  expect(fingerprint({ ratio: 4.500000001 })).not.toBe(fingerprint({ ratio: 4.5 }));
+  expect(fingerprint({ source: 'oklch(0.500000000000001 0 0)' })).not.toBe(fingerprint({ source: 'oklch(0.5 0 0)' }));
+  expect(fingerprint({ pass: true })).not.toBe(fingerprint({ pass: false }));
+});
 // Reviewed against the pre-sharing engine: modes, checks, primitives and semantics
 // are unchanged. Hashes include the explicit standard strategy and bounded-search/hierarchy diagnostics.
 it('matches the reviewed outputs across representative configurations', () => {
   const base = defaults();
   const cases: [BuilderConfig, string][] = [
-    [base, '6f73460809d70118672c6f07877f2efd49edc052d0f3e8d9d2d532a246fae4be'],
-    [{ ...base, families: base.families.map(f => f.id === 'neutral' ? { ...f, hue: 210 } : f) }, '2e1b0d8e9fe5cf76f6acb7f7bf7bb419f3b285e9c7d946116d2fa85c9e3b3a5a'],
-    [{ ...base, families: base.families.map(f => f.id === 'brand' ? { ...f, hue: 240 } : f) }, '865d1ae7115355c691c4c5f4f873b27d54066e7c832cf3d7e49f0728d4f98d19'],
-    [{ ...base, muted: { ...base.muted, distance: { light: 0.07, dark: 0.3 } } }, '9c5c123071c1bc11cf340ed1b6361a509a6009cb9723b985c5cbff2264f8df1b'],
-    [{ ...base, surfaces: { ...base.surfaces, levels: 6 } }, 'f62d35402900ed6c6d749f27132163aa8bf2c8ac9457277e61c69cdae73153ad'],
-    [{ ...base, emphasis: { ...base.emphasis, selected: true } }, '3b1277187e438b6f359c0b8f3645aa9ac3555e9cfb7cd19daedcfedfc55271b7'],
-    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: '#006b75', locked: true }] }, '74b0a09e2e11254a953abc591bdf1c86d8abdddceba5db45bf773a734f212f7a'],
-    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: 'oklch(0.6 0.4 29)', locked: true }] }, 'e6fe683a065be3e4e4b5785cc5ef00d9cc4d0440dba615305a71a776500f6bfc'],
+    [base, '6f8bc6eee8c322f109c6857989ec841a38adf239ee11c9eb2f43dcd2b7201550'],
+    [{ ...base, families: base.families.map(f => f.id === 'neutral' ? { ...f, hue: 210 } : f) }, 'a59ae40713f27708ad1f569c8055db0bda227d559b37d6d0ce925079216086c8'],
+    [{ ...base, families: base.families.map(f => f.id === 'brand' ? { ...f, hue: 240 } : f) }, '7914258d4a6d41b660cdfb1acbf62e9da9eaa116cb7147844e0b4d274cc4d002'],
+    [{ ...base, muted: { ...base.muted, distance: { light: 0.07, dark: 0.3 } } }, '849a82bf5bc26d862093bb5294e02848eb5c4420c8c9d00da5da59b87150d7b1'],
+    [{ ...base, surfaces: { ...base.surfaces, levels: 6 } }, '9d1ccadd2a833dc6f83ae4258405f89abe48bff0d90acdf21432d90e5d3aa21a'],
+    [{ ...base, emphasis: { ...base.emphasis, selected: true } }, '79e9ad429d93483ba4cb71fea205fccbfd480d848388cc530e56fa5a5970a67e'],
+    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: '#006b75', locked: true }] }, '503ea6bdf91d55e8cfb24478224401311d523a4df47fbdd49cbc527f53500a31'],
+    [{ ...base, anchors: [{ family: 'brand', mode: 'light', role: 'emphasis.base', color: 'oklch(0.6 0.4 29)', locked: true }] }, '4ded6b545658faa9281bccbfae49b8a2338724e1322e65f0633cd8da6ac00483'],
   ];
   for (const [config, expected] of cases) {
     const before = structuredClone(config);
@@ -36,7 +45,7 @@ it('matches the reviewed outputs across representative configurations', () => {
 it('retains the reviewed accepted settings, ratios and feedback when limiting a value', () => {
   const previous = defaults(), requested = structuredClone(previous);
   requested.muted.distance = { light: 0.055, dark: 0.8 };
-  expect(fingerprint(balanceConfiguration(previous, requested))).toBe('06e0b866c2185f21323d85ce7835c265b1cc2653130e293d5100db4675487827');
+  expect(fingerprint(balanceConfiguration(previous, requested))).toBe('d2380478c0ec3d44a01c26f597f8312dc42681a5512580381c7c76fec6c8d201');
 });
 it('does not generate an identical candidate twice within one balance request', () => {
   const previous = defaults(), requested = structuredClone(previous);

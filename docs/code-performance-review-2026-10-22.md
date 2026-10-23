@@ -12,6 +12,10 @@ Also fixed variant DTCG palette paths and floating-point boundary noise that tri
 
 The original findings and measurements are retained below as review history. No deployment or commit was performed.
 
+### Release follow-up
+
+The first Linux deployment gate exposed a 6.45-second integration search exceeding its five-second test timeout, and a platform-sensitive raw numerical fingerprint. That one bounded-search test now has a 15-second allowance; its assertions remain unchanged. Parity fingerprints canonicalize numbers to 12 significant digits while preserving exact CSS/source strings, ordering and pass/fail decisions. All nine replacement golden hashes were derived only after confirming the original full-precision hashes matched locally. A regression confirms that meaningful numerical changes, exact-source changes and certification changes still alter the fingerprint. These changes affect tests only, not generated output.
+
 ## Assessment
 
 The architecture remains appropriate: pure generation and balancing modules, workers for interactive solving, bounded caches, shared verified CSS serialization, and lazy palette/export views. A rewrite is not justified by this review.
