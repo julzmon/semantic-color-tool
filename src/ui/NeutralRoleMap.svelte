@@ -7,7 +7,11 @@
   import ColorPopover from './ColorPopover.svelte';
   import ColorInfo from './ColorInfo.svelte';
   import { colorInspection } from './colorInspection';
-  let { system, modes }: { system: GeneratedSystem; modes: Mode[] } = $props();
+  let { system, modes, checking = false, canUndo = false, reductionFeedback = '', onReduceLightness, onUndo }: {
+    system: GeneratedSystem; modes: Mode[]; checking?: boolean; canUndo?: boolean;
+    reductionFeedback?: string; onReduceLightness?: () => void; onUndo?: () => void;
+  } = $props();
+  let lightnessStops = $derived(new Set(system.primitives.map(primitive => primitive.color.l.toFixed(10))).size);
   let model = $derived(buildNeutralRoleMap(system));
   let selected = $state<string>('');
   let selectedMode = $state<Mode>('light');
@@ -67,6 +71,17 @@
     <span class="mini-tag">{model.stops.length} colors</span>
   </div>
   <p class="section-description">Select a color to inspect its roles.</p>
+  {#if onReduceLightness}
+    <div class="lightness-actions">
+      <span>{lightnessStops} shared lightness stops across all families and both themes</span>
+      <div class="lightness-action-buttons">
+        <button class="secondary-button" disabled={checking} aria-describedby="lightness-reduction-help" onclick={onReduceLightness}>Reduce lightness stops</button>
+        {#if canUndo && onUndo}<button class="text-button" onclick={onUndo}>Undo last change</button>{/if}
+      </div>
+    </div>
+    <p id="lightness-reduction-help" class="help lightness-help">Find fewer stops with small lightness adjustments. Keeps locked colors, state order, and contrast targets. A minimum is not guaranteed.</p>
+    {#if reductionFeedback}<p class="help lightness-feedback">{reductionFeedback}</p>{/if}
+  {/if}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus lets users access the horizontal map scroll region.) -->
   <div class="role-map-scroll" role="region" tabindex="0" aria-label="Neutral role map. Scroll horizontally to view all generated stops.">
     {#each modes as mode (mode)}<div class="role-map-mode" data-mode={mode} style={`--role-map-surface: ${surfaceBase(mode)}; --role-map-label-background: ${system.modes[mode].families.neutral.roles['muted.base']!.color.css}; --role-map-label-foreground: ${system.modes[mode].families.neutral.roles['foreground.base']!.color.css}`} style:color={inkFor(surfaceBase(mode))}>

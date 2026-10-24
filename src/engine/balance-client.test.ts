@@ -5,6 +5,21 @@ import { prepareTokens, cssTokenModel } from './tokens';
 import { describe, expect, it } from 'vitest';
 import { createBalanceClient } from './balance-client';
 import type { BuilderConfig } from './types';
+it('queues lightness reduction in the same bounded queue as edits', async () => {
+  const sent: unknown[] = [];
+  const worker = { postMessage: (value: unknown) => sent.push(value), onmessage: null as any, onerror: null as any, terminate: () => {} };
+  const client = createBalanceClient(worker as unknown as Worker);
+  const config = {} as BuilderConfig;
+  const first = client.balance(config, config);
+  const reduction = client.reduceLightness(config);
+  expect(sent).toHaveLength(1);
+  worker.onmessage({ data: { result: { message: 'balanced' } } });
+  await first;
+  expect(sent[1]).toEqual({ previous: config, requested: config, action: 'reduce-lightness' });
+  worker.onmessage({ data: { error: 'Reduction failed' } });
+  await expect(reduction).rejects.toThrow('Reduction failed');
+  client.dispose();
+});
 describe('background balance scheduling', () => {
   it('coalesces pending edits and resolves failures without getting stuck', async () => {
     const sent: unknown[] = [];

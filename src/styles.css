@@ -670,6 +670,14 @@ summary {
   padding: 0 clamp(16px, 3vw, 48px);
 }
 
+.generated-color-count {
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .configuration-status {
   block-size: 4.5em;
   overflow-y: auto;
@@ -1049,6 +1057,22 @@ summary {
   padding: 4px 0 12px;
   &:focus-visible { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
 }
+
+.lightness-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+.lightness-action-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lightness-help { margin-block: 8px 16px; }
 
 .role-map-mode {
   inline-size: max-content;

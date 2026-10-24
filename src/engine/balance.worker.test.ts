@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { expect, it, vi } from 'vitest';
 import { configFromReference, parseKdsTokens } from './reference';
 import { adoptTokens, cssTokenModel } from './tokens';
+import reference from 'virtual:kds-reference';
+import { defaultConfiguration } from '../ui/defaultConfiguration';
+import { balanceConfiguration } from './balance';
 
 it('prepares cloneable verified tokens beside the unchanged balance result', async () => {
   const config = configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css', import.meta.url), 'utf8')));
@@ -17,6 +20,26 @@ it('prepares cloneable verified tokens beside the unchanged balance result', asy
     expect(data.error).toBeUndefined();
     expect(data.prepared).toBeDefined();
     expect(Object.keys(data.result).sort()).toEqual(['config', 'message', 'system']);
+    expect(adoptTokens(data.result.system, data.prepared)).toBe(true);
+    expect(cssTokenModel(data.result.system)).toBe(data.prepared.model);
+  } finally { vi.unstubAllGlobals(); }
+});
+
+it('dispatches lightness reduction and prepares its accepted token model', async () => {
+  const defaults = defaultConfiguration(reference);
+  const accepted = balanceConfiguration(defaults, defaults);
+  const postMessage = vi.fn();
+  vi.stubGlobal('postMessage', postMessage);
+  vi.stubGlobal('onmessage', undefined);
+  vi.resetModules();
+  try {
+    await import('./balance.worker');
+    const scope = globalThis as unknown as { onmessage: (event: MessageEvent) => void };
+    scope.onmessage({ data: { previous: accepted.config, requested: accepted.config, action: 'reduce-lightness' } } as MessageEvent);
+    const data = structuredClone(postMessage.mock.calls[0][0]);
+    expect(data.error).toBeUndefined();
+    expect(data.result.message).toContain('Reduced shared lightness stops');
+    expect(data.result.system.checks.every((check: { pass: boolean }) => check.pass)).toBe(true);
     expect(adoptTokens(data.result.system, data.prepared)).toBe(true);
     expect(cssTokenModel(data.result.system)).toBe(data.prepared.model);
   } finally { vi.unstubAllGlobals(); }

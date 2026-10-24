@@ -12,7 +12,7 @@ const defaults = defaultConfiguration(reference);
 const verified = balancing.balanceConfiguration(defaults, defaults);
 const workers: FakeWorker[] = [];
 class FakeWorker {
-  sent: { previous: typeof defaults; requested: typeof defaults }[] = [];
+  sent: { previous: typeof defaults; requested: typeof defaults; action?: string }[] = [];
   onmessage: ((event: { data: unknown }) => void) | null = null;
   onerror: (() => void) | null = null;
   terminate = vi.fn();
@@ -51,6 +51,48 @@ function toggle(element: HTMLElement, open: boolean) {
   element.dispatchEvent(Object.assign(new Event('toggle'), { newState: open ? 'open' : 'closed' }));
   flushSync();
 }
+
+it('reduces lightness in the worker, reports progress, saves the result and supports Undo', async () => {
+  const worker = start(); await reply(worker);
+  const original = window.localStorage.getItem(CONFIGURATION_STORAGE_KEY);
+  const reduce = button('Reduce lightness stops');
+  reduce.click(); flushSync();
+  expect(reduce.disabled).toBe(true);
+  expect(worker.sent.at(-1)?.action).toBe('reduce-lightness');
+  expect(document.querySelector('.configuration-status [role=status]')?.textContent).toContain('Reducing');
+  const result = structuredClone(verified);
+  result.config.surfaces.step = { light: 0.012, dark: 0.014 };
+  result.system.config = result.config;
+  result.message = 'Reduced shared lightness stops from 30 to 27.';
+  await reply(worker, { result });
+  expect(document.querySelector('.configuration-status')?.textContent).toContain('30 to 27');
+  expect(document.querySelector('.lightness-feedback')?.textContent).toContain('30 to 27');
+  expect(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)).not.toBe(original);
+  expect(reduce.disabled).toBe(false);
+  reduce.click(); flushSync();
+  await reply(worker, { result: { ...result, message: 'No safe reduction was found within the bounded search.' } });
+  expect(document.querySelector('.lightness-feedback')?.textContent).toContain('No safe reduction');
+  button('Undo last change').click(); flushSync();
+  expect(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)).toBe(original);
+  expect(document.querySelector('.configuration-status')?.textContent).toContain('undone');
+});
+
+it('retains the palette on reduction failure and ignores a reduction superseded by Reset', async () => {
+  const worker = start(); await reply(worker);
+  const original = window.localStorage.getItem(CONFIGURATION_STORAGE_KEY);
+  button('Reduce lightness stops').click(); flushSync();
+  await reply(worker, { error: 'No verified result available' });
+  expect(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)).toBe(original);
+  expect(button('Reduce lightness stops').disabled).toBe(false);
+  expect(document.querySelector('.configuration-status')?.textContent).toContain('No verified result');
+  button('Reduce lightness stops').click(); flushSync();
+  button('Reset').click(); flushSync();
+  await reply(worker, { result: { ...structuredClone(verified), message: 'Obsolete reduction' } });
+  expect(document.querySelector('.configuration-status')?.textContent).not.toContain('Obsolete reduction');
+  expect(worker.sent.at(-1)?.action).toBeUndefined();
+  await reply(worker);
+  expect(document.querySelector('.configuration-status')?.textContent).toContain('Default colors restored');
+});
 
 it('renders loading and restores through the worker before showing the workspace', async () => {
   const calculate = vi.spyOn(balancing, 'balanceConfiguration');

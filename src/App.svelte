@@ -44,6 +44,7 @@
   let balancer: ReturnType<typeof createBalanceClient> | undefined;
   let editVersion = 0;
   let configurationStatus = $state('Loading your color system…');
+  let reductionFeedback = $state('');
   const initialize = async () => {
     const version = ++editVersion;
     initializing = checking = true;
@@ -128,6 +129,7 @@
     const version = ++editVersion;
     checking = true;
     configurationStatus = 'Restoring default colors…';
+    reductionFeedback = '';
     try {
       if (!balancer) throw new Error('Contrast checker is not ready. Previous settings retained.');
       const balanced = await balancer.balance(initialConfig, initialConfig);
@@ -161,6 +163,7 @@
     checking = true;
     draft = next;
     configurationStatus = 'Checking contrast… Your previous colors remain available.';
+    reductionFeedback = '';
     try {
       if (!balancer) throw new Error('Contrast checker is not ready. Previous settings retained.');
       const balanced = await balancer.balance(config, next);
@@ -189,6 +192,33 @@
     adjusted = [];
     checking = false;
     configurationStatus = 'Last change undone. Your previous colors are restored.';
+    reductionFeedback = '';
+  };
+  const reduceLightness = async () => {
+    if (!system || checking || !balancer) return;
+    const version = ++editVersion;
+    const previous = { config, system };
+    checking = true;
+    configurationStatus = 'Reducing shared lightness stops… Checking both themes and preserving locked colors.';
+    reductionFeedback = configurationStatus;
+    try {
+      const result = await balancer.reduceLightness(config);
+      if (!result || version !== editVersion) return;
+      if (JSON.stringify(result.config) !== JSON.stringify(config)) {
+        undo = previous;
+        adjusted = adjustedControlKeys(config, result.config);
+        config = draft = result.config;
+        system = result.system;
+      }
+      configurationStatus = result.message;
+      reductionFeedback = result.message;
+    } catch (error) {
+      if (version !== editVersion) return;
+      configurationStatus = error instanceof Error ? error.message : 'Unable to reduce lightness stops. Previous settings retained.';
+      reductionFeedback = configurationStatus;
+    } finally {
+      if (version === editVersion) checking = false;
+    }
   };
 </script>
 
@@ -234,6 +264,7 @@
         {#each tabs as item}
           <button aria-current={tab === item ? 'page' : undefined} onclick={() => selectTab(item)}>{item}</button>
         {/each}
+        <span class="generated-color-count" title="Total generated colors across all families and both themes">{system.primitives.length} colors generated</span>
       </nav>
       <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
       <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
@@ -277,7 +308,7 @@
           {@render viewLoadError()}
         {/await}
       {/if}
-      <NeutralRoleMap {system} {modes} />
+      <NeutralRoleMap {system} {modes} {checking} {reductionFeedback} canUndo={!!undo} onReduceLightness={() => void reduceLightness()} onUndo={undoAdjustments} />
       {#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}
       <ModelNotes />
       </main>
