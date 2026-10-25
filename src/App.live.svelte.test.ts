@@ -60,13 +60,14 @@ it('reduces lightness in the worker, reports progress, saves the result and supp
   reduce.click(); flushSync();
   expect(reduce.disabled).toBe(true);
   expect(worker.sent.at(-1)?.action).toBe('reduce-lightness');
-  expect(document.querySelector('.configuration-status [role=status]')?.textContent).toContain('Reducing');
+  expect(document.querySelector('.lightness-feedback[role=status]')?.textContent).toContain('Reducing');
   const result = structuredClone(verified);
   result.config.surfaces.step = { light: 0.012, dark: 0.014 };
   result.system.config = result.config;
   result.message = 'Reduced shared lightness stops from 30 to 27.';
   await reply(worker, { result });
-  expect(document.querySelector('.configuration-status')?.textContent).toContain('30 to 27');
+  expect(document.querySelector('.configuration-status')).toBeNull();
+  expect(document.body.textContent!.split(result.message)).toHaveLength(2);
   expect(document.querySelector('.lightness-feedback')?.textContent).toContain('30 to 27');
   expect(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)).not.toBe(original);
   expect(reduce.disabled).toBe(false);
@@ -86,7 +87,7 @@ it('retains the palette on reduction failure and ignores a reduction superseded 
   await reply(worker, { error: 'No verified result available' });
   expect(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)).toBe(original);
   expect(button('Simplify lightness').disabled).toBe(false);
-  expect(document.querySelector('.configuration-status')?.textContent).toContain('No verified result');
+  expect(document.querySelector('.lightness-feedback[role=status]')?.textContent).toContain('No verified result');
   button('Simplify lightness').click(); flushSync();
   button('Reset').click(); flushSync();
   await reply(worker, { result: { ...structuredClone(verified), message: 'Obsolete reduction' } });
@@ -243,4 +244,16 @@ it('places simplification above the color palette and links to it from Role mapp
   expect(document.querySelector('.neutral-role-map .lightness-action-buttons')).toBeNull();
   button('Overview').click(); flushSync();
   expect(button('Simplify lightness')).toBeUndefined();
+});
+
+it('shows simplification feedback once and keeps it available outside Color palette', async () => {
+  const worker = start(); await reply(worker);
+  button('Color palette').click(); flushSync();
+  button('Simplify lightness').click(); flushSync();
+  const message = 'Kept 21 shared lightness stops. No safe reduction was found within the bounded search.';
+  await reply(worker, { result: { ...structuredClone(verified), message } });
+  expect(document.body.textContent!.split(message)).toHaveLength(2);
+  expect(document.querySelector('.lightness-feedback[role=status]')?.textContent).toBe(message);
+  button('Overview').click(); flushSync();
+  expect(document.querySelector('.configuration-status [role=status]')?.textContent).toBe(message);
 });

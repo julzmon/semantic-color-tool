@@ -273,10 +273,12 @@
         {/each}
         <span class="generated-color-count" title="Total generated colors across all families and both themes">{system.primitives.length} colors generated</span>
       </nav>
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
-      <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
-        <p role="status">{configurationStatus}</p>
-      </div>
+      {#if tab !== 'Color palette' || !reductionFeedback || reductionFeedback !== configurationStatus}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus allows users to scroll long feedback messages.) -->
+        <div class="configuration-status" role="region" aria-label="Configuration feedback" tabindex="0">
+          <p role="status">{configurationStatus}</p>
+        </div>
+      {/if}
       {#if system.diagnostics.length > 0}
         <details class="diagnostics">
           <summary>{system.diagnostics.length} generation notice{system.diagnostics.length === 1 ? '' : 's'} — review constraints</summary>
@@ -303,7 +305,7 @@
             </div>
           </div>
           <p id="lightness-reduction-help" class="help lightness-help">Find fewer lightness positions with small adjustments. Preserves shared lightness by role, locked colors, state order, and contrast targets. A minimum is not guaranteed.</p>
-          {#if reductionFeedback}<p class="help lightness-feedback">{reductionFeedback}</p>{/if}
+          {#if reductionFeedback}<p class="help lightness-feedback" role="status">{reductionFeedback}</p>{/if}
         </section>
         {#await loadPrimitives()}
           <p class="help" role="status">Loading color palette…</p>
