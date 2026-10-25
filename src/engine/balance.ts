@@ -1,3 +1,4 @@
+import { chromaCurveIssues } from './chroma-curves';
 import { conflictingLightnessLocks, sharedLightnessIssues } from './shared-lightness';
 import { generateSystem, validateConfig } from './generate';
 import { capEmphasisStrengths, capMutedStrengths, emphasisStrengthLimit, mutedStrengthLimit, MAX_EMPHASIS_LIGHTNESS_CHANGE } from './emphasis-limits';
@@ -20,7 +21,7 @@ export function balanceConfiguration(previous: BuilderConfig, input: BuilderConf
   validateConfig(requested);
   const conflicts = conflictingLightnessLocks(requested);
   if (conflicts.length) throw new Error(`Shared lightness cannot reconcile conflicting exact locks: ${conflicts.join('; ')}. The previous settings were kept.`);
-  const passing = (system: GeneratedSystem) => system.checks.length > 0 && system.checks.every(check => check.pass) && !sharedLightnessIssues(system).length;
+  const passing = (system: GeneratedSystem) => system.checks.length > 0 && system.checks.every(check => check.pass) && !sharedLightnessIssues(system).length && !chromaCurveIssues(system).length;
   if (requested.targets.normalText < 4.5 || requested.targets.largeText < 3 || requested.targets.ui < 3)
     throw new Error('Contrast protection requires at least 4.5:1 normal text, 3:1 large text and 3:1 UI boundaries.');
   // Candidate rounding and unchanged settings can revisit the same request.
@@ -110,6 +111,8 @@ export function balanceConfiguration(previous: BuilderConfig, input: BuilderConf
       targets: structuredClone(requested.targets), anchors: structuredClone(requested.anchors),
       emphasis: { ...config.emphasis, strategy: requested.emphasis.strategy, selected: requested.emphasis.selected,
         reverseDarkStates: requested.emphasis.reverseDarkStates } };
+    if (requested.chromaCurves) next.chromaCurves = structuredClone(requested.chromaCurves);
+    else delete next.chromaCurves;
     if (requested.muted.borderStrength === undefined) delete next.muted.borderStrength;
     else next.muted.borderStrength = structuredClone(requested.muted.borderStrength);
     if (!requested.muted.mixWeights) delete next.muted.mixWeights;

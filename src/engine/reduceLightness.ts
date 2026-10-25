@@ -1,3 +1,4 @@
+import { chromaCurveIssues } from './chroma-curves';
 import { sharedLightnessIssues } from './shared-lightness';
 import type { BalancedConfiguration } from './balance';
 import { isSrgb } from './color';
@@ -30,7 +31,7 @@ function roleGroups(system: GeneratedSystem): GeneratedRole[][] {
 }
 
 function safeCandidate(original: GeneratedSystem, candidate: GeneratedSystem): boolean {
-  if (sharedLightnessIssues(candidate).length) return false;
+  if (sharedLightnessIssues(candidate).length || chromaCurveIssues(candidate).length) return false;
   if (!candidate.checks.length || !candidate.checks.every(check => check.pass) || !candidate.primitives.every(primitive => isSrgb(primitive.color))) return false;
   // Restore/import runs the balancer's shared strength caps. Reject any
   // alignment that would alter those recipes on the next regeneration.
@@ -91,7 +92,7 @@ function options(system: GeneratedSystem): Option[] {
  */
 export function reduceLightnessStops(input: BuilderConfig): BalancedConfiguration {
   const original = generateSystem(input);
-  if (input.targets.normalText < 4.5 || input.targets.largeText < 3 || input.targets.ui < 3 || sharedLightnessIssues(original).length || !original.checks.length || !original.checks.every(check => check.pass)) {
+  if (input.targets.normalText < 4.5 || input.targets.largeText < 3 || input.targets.ui < 3 || sharedLightnessIssues(original).length || chromaCurveIssues(original).length || !original.checks.length || !original.checks.every(check => check.pass)) {
     throw new Error('Lightness reduction requires a palette with shared lightness and all protected contrast checks passing.');
   }
   let best = original;

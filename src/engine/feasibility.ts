@@ -1,3 +1,4 @@
+import { curveColor } from './chroma-curves';
 import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
 import { emphasisStateColors } from './emphasis';
 import type { BuilderConfig, ColorValue, FamilyId, GeneratedRole, GeneratedSystem, Mode, ModeTheme, State } from './types';
@@ -14,10 +15,10 @@ const anchor = (system: System, family: FamilyId, mode: Mode, role: 'emphasis.ba
 };
 const mapped = (system: System, family: FamilyId, l: number, fixed?: ColorValue) => {
   const config = system.config.families.find(f => f.id === family)!;
-  return toColor({ l: Math.max(0, Math.min(1, l)), c: fixed?.c ?? config.chroma, h: fixed?.h ?? config.hue });
+  return system.config.chromaCurves && family !== 'neutral' ? curveColor(system.config, config, l, fixed?.h ?? config.hue) : toColor({ l: Math.max(0, Math.min(1, l)), c: fixed?.c ?? config.chroma, h: fixed?.h ?? config.hue });
 };
-export function candidateStates(config: BuilderConfig, base: ColorValue, mode: Mode): ColorValue[] {
-  if (config.emphasis.mixWeights) return emphasisStateColors(config, base, mode);
+export function candidateStates(config: BuilderConfig, base: ColorValue, mode: Mode, family?: FamilyId): ColorValue[] {
+  if (config.emphasis.mixWeights) return emphasisStateColors(config, base, mode, config.families.find(f=>f.id===family));
   const stateMode = sharedBase(config) && !config.emphasis.reverseDarkStates ? 'light' : mode;
   return states.slice(0, config.emphasis.selected ? 4 : 3).map((_, i) => i === 0 ? base : toColor({
     l: Math.max(0, Math.min(1, base.l + dir(stateMode) * config.emphasis.separation * i)), c: base.c, h: base.h,
@@ -51,8 +52,8 @@ export function familyCandidate(system: System, family: FamilyId, l: number, for
     // Preserve each exact CSS spelling even when two locks describe the same color.
     const fixed = anchor(system, family, mode, 'emphasis.base');
     const recipeBase = fixed ?? base;
-    const colors = config.emphasis.mixWeights ? candidateStates(config, recipeBase, mode)
-      : candidateStates(config, recipeBase, mode).map((color, i) => i === 0 ? recipeBase : mapped(system, family, color.l, fixed ?? customRecipe));
+    const colors = config.emphasis.mixWeights ? candidateStates(config, recipeBase, mode, family)
+      : candidateStates(config, recipeBase, mode, family).map((color, i) => i === 0 ? recipeBase : mapped(system, family, color.l, fixed ?? customRecipe));
     emphasis[mode] = colors;
     const original = states.slice(0, colors.length).map(state => system.modes[mode].families[family].roles[`emphasis.${state}`]!.color);
     colors.forEach((color, index) => {
@@ -96,7 +97,7 @@ export function familyCandidate(system: System, family: FamilyId, l: number, for
 function roleFactory(system: System, family: FamilyId, mode: Mode, kind: 'foreground.base' | 'emphasis.base'): (l: number) => ColorValue {
   const current = system.modes[mode].families[family].roles[kind]!.color;
   const ordinary = colorIdentity(current) === colorIdentity(mapped(system, family, current.l));
-  return l => Math.abs(current.l - l) < 1e-10 ? current : ordinary ? mapped(system, family, l)
+  return l => Math.abs(current.l - l) < 1e-10 ? current : system.config.chromaCurves && family !== 'neutral' ? curveColor(system.config, system.config.families.find(f=>f.id===family)!, l, current.h) : ordinary ? mapped(system, family, l)
     : toColor({ l: Math.max(0, Math.min(1, l)), c: current.c, h: current.h });
 }
 

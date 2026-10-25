@@ -1,3 +1,4 @@
+import { withChromaCurves } from '../engine/chroma-curves';
 import { validateConfig } from '../engine/generate';
 import { DEFAULT_TOKEN_PREFIX } from '../engine/config';
 import { legacyEmphasisWeights } from '../engine/emphasis';
@@ -104,6 +105,7 @@ function normalizeConfiguration(value: unknown, defaults: BuilderConfig): Builde
   normalized.version = defaultVersion;
   if (source.solvingStrategy !== undefined && !['standard', 'prefer-shared'].includes(source.solvingStrategy as string)) throw new Error('Solving strategy must be standard or prefer-shared.');
   normalized.solvingStrategy = 'standard';
+  if (source.chromaCurves !== undefined) normalized.chromaCurves = structuredClone(record(source.chromaCurves, 'Configuration chroma curves'));
   normalized.prefix = typeof source.prefix === 'string' ? source.prefix.trim().toLowerCase() : DEFAULT_TOKEN_PREFIX;
   normalized.surfaces = normalizeSurfaces(source.surfaces);
   normalized.muted = normalizeMuted(source.muted);
@@ -125,7 +127,11 @@ function normalizeConfiguration(value: unknown, defaults: BuilderConfig): Builde
   if (sourceVersion === defaultVersion && importedFamilies.length !== expectedFamilies.length) throw new Error('Configuration is missing a required color family.');
   normalized.families = expectedFamilies.map((family) => importedById.get(family.id) ?? family);
 
-  const config = normalized as unknown as BuilderConfig;
+  let config = normalized as unknown as BuilderConfig;
+  if (defaults.chromaCurves && source.chromaCurves === undefined) {
+    delete config.chromaCurves;
+    config = withChromaCurves(config);
+  }
   validateConfig(config);
   return config;
 }
@@ -140,7 +146,11 @@ export function parseConfigurationJson(json: string, defaults: BuilderConfig, on
     throw new Error('Configuration JSON could not be parsed.');
   }
   const config = normalizeConfiguration(value, defaults);
-  if (sourceConfig(value).solvingStrategy === 'prefer-shared') onMigration?.(SHARED_LIGHTNESS_MIGRATION_NOTICE);
+  const source = sourceConfig(value);
+  const notices: string[] = [];
+  if (source.solvingStrategy === 'prefer-shared') notices.push(SHARED_LIGHTNESS_MIGRATION_NOTICE);
+  if (defaults.chromaCurves && source.chromaCurves === undefined) notices.push('Updated chroma controls to separate Brand and shared semantic curves for both themes. Regenerated colors may change.');
+  if (notices.length) onMigration?.(notices.join(' '));
   return config;
 }
 

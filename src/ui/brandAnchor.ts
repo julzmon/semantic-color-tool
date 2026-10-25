@@ -62,7 +62,7 @@ export function applyBrandAnchors(config: BuilderConfig, anchors: ColorAnchor[])
   const primary = anchors.find(anchor => anchor.family === 'brand');
   if (!primary || primary.locked) return { ...config, anchors };
   const color = parseLockedColor(primary.color);
-  return { ...config, anchors, families: config.families.map(family => family.id === 'brand'
+  return { ...config, anchors, ...(config.chromaCurves ? { chromaCurves: { ...config.chromaCurves, brand: { ...config.chromaCurves.brand, peakLightness: Math.max(.01,Math.min(.99,color.l)), peakChroma: color.c } } } : {}), families: config.families.map(family => family.id === 'brand'
     ? { ...family, hue: color.h, chroma: color.c } : family) };
 }
 

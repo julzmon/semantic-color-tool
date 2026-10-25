@@ -1,3 +1,4 @@
+import { assertChromaCurves } from './chroma-curves';
 import { assertSharedLightness } from './shared-lightness';
 import type { GeneratedSystem } from './types';
 import { configuredFamilyScope, dtcgDocuments, cssTokenModel } from './tokens';
@@ -5,7 +6,7 @@ import { tokenName } from './generate';
 
 /** A scoped token subset; intentionally does not replace unrelated KDS tokens. */
 export function exportCss(system: GeneratedSystem): string {
-  if (system.config.version === 2) assertSharedLightness(system);
+  if (system.config.version === 2) { assertSharedLightness(system); assertChromaCurves(system); }
   const failures = system.checks.filter((check) => !check.pass).length;
   const scope = configuredFamilyScope(system);
   const prefix = system.config.prefix ?? 'kds';
@@ -42,12 +43,12 @@ ${semantic}
 
 /** A portable DTCG resolver with its token sources inlined. */
 export function exportDtcg(system: GeneratedSystem): string {
-  if (system.config.version === 2) assertSharedLightness(system);
+  if (system.config.version === 2) { assertSharedLightness(system); assertChromaCurves(system); }
   return JSON.stringify(dtcgDocuments(system).bundle, null, 2);
 }
 
 export function exportDtcgFiles(system: GeneratedSystem): Record<string, string> {
-  if (system.config.version === 2) assertSharedLightness(system);
+  if (system.config.version === 2) { assertSharedLightness(system); assertChromaCurves(system); }
   const documents = dtcgDocuments(system);
   return Object.fromEntries([
     ['foundation/colors.tokens.json', documents.colors],
@@ -58,7 +59,7 @@ export function exportDtcgFiles(system: GeneratedSystem): Record<string, string>
 }
 
 export function exportJson(system: GeneratedSystem): string {
-  if (system.config.version === 2) assertSharedLightness(system);
+  if (system.config.version === 2) { assertSharedLightness(system); assertChromaCurves(system); }
   const scope = configuredFamilyScope(system);
   return JSON.stringify({
     formatVersion: 1,

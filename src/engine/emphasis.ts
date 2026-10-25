@@ -1,6 +1,7 @@
+import { curveColor } from './chroma-curves';
 import { formatHex } from 'culori';
 import { BoundedCache } from './bounded-cache';
-import type { BuilderConfig, ColorValue, EmphasisMixWeights, Mode, State } from './types';
+import type { BuilderConfig, ColorValue, EmphasisMixWeights, Mode, State, FamilyConfig } from './types';
 
 export const DEFAULT_EMPHASIS_WEIGHTS: EmphasisMixWeights = { hover: 0.92, active: 0.85, selected: 0.8 };
 export const emphasisStates = ['hover', 'active', 'selected'] as const;
@@ -31,10 +32,13 @@ export function mixEmphasis(base: ColorValue, weight: number, target: 'black' | 
   return { ...color };
 }
 
-export function emphasisStateColors(config: BuilderConfig, base: ColorValue, mode: Mode): ColorValue[] {
+export function emphasisStateColors(config: BuilderConfig, base: ColorValue, mode: Mode, family?: FamilyConfig): ColorValue[] {
   const weights = config.emphasis.mixWeights!;
   return [base, ...emphasisStates.slice(0, config.emphasis.selected ? 3 : 2)
-    .map(state => mixEmphasis(base, weights[state], emphasisTarget(config, mode)))];
+    .map(state => {
+      const color = mixEmphasis(base, weights[state], emphasisTarget(config, mode));
+      return config.chromaCurves && family && family.id !== 'neutral' ? curveColor(config, family, color.l, base.h) : color;
+    })];
 }
 
 export function emphasisRecipe(system: { config: BuilderConfig }, name: string): { base: string; state: Exclude<State, 'base'> } | undefined {
@@ -42,6 +46,7 @@ export function emphasisRecipe(system: { config: BuilderConfig }, name: string):
   const prefix = `--${system.config.prefix}-bg-`;
   if (!name.startsWith(prefix)) return;
   const match = name.slice(prefix.length).match(/^([a-z]+)-emphasis-(hover|active|selected)$/);
+  if (system.config.chromaCurves && match?.[1] !== 'neutral') return;
   if (!match || !system.config.families.some(family => family.id === match[1])) return;
   return { base: `${prefix}${match[1]}-emphasis-base`, state: match[2] as Exclude<State, 'base'> };
 }

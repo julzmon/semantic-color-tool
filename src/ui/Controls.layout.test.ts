@@ -122,3 +122,15 @@ it('puts brand setup first and remaining color adjustments second to last', () =
   expect(adjustments).not.toContain('Lock exact color');
   expect(markup.match(/>Brand hue<\/label>/g)).toHaveLength(1);
 });
+
+it('places both curve editors in the sidebar and removes competing chroma controls', async () => {
+  const { withChromaCurves } = await import('../engine/chroma-curves');
+  const curved = withChromaCurves(config);
+  const markup = render(Controls, { props: { ...props, config: curved, system: generateSystem(curved) } }).body;
+  expect(markup).toContain('Chroma shaping');
+  expect(markup).toContain('Brand peak chroma');
+  expect(markup).toContain('Semantic peak chroma');
+  expect(markup).toContain('Neutral chroma');
+  expect(markup).not.toContain('>Muted chroma</label>');
+  for (const family of ['Brand','Info','Positive','Negative','Warning']) expect(markup).not.toContain(`>${family} chroma</label>`);
+});

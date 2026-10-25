@@ -76,6 +76,9 @@ function buildTokenFoundation(system: GeneratedSystem) {
   for (const [component, values, minimum] of [['chroma', chroma, 5], ['lightness', lightness, 4], ['hue', hue, 2]] as const) {
     for (const [key, original] of Object.entries(values)) {
       if (palette.some((item) => item[component] === key && item.primitive.color.source)) continue;
+      // Curve samples couple L/C/H; shortening any coordinate independently can
+      // move a serialized color off a steep profile between exact pins.
+      if (system.config.chromaCurves && palette.some(item => item[component] === key && item.primitive.family !== 'gray')) continue;
       for (let digits = minimum; digits <= 10; digits++) {
         // Lowering chroma avoids pushing gamut-boundary colors outside sRGB.
         values[key] = component === 'chroma' ? Number((Math.floor(original * 10 ** digits) / 10 ** digits).toFixed(digits)) : Number(original.toFixed(digits));

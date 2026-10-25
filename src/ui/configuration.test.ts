@@ -184,3 +184,15 @@ it('discloses retired strategy migration through the import callback', () => {
   parseConfigurationJson(JSON.stringify(defaults()), defaults(), notice => notices.push(notice));
   expect(notices).toEqual([]);
 });
+
+it('migrates legacy app chroma settings with a notice and preserves explicit curves', async () => {
+  const { withChromaCurves } = await import('../engine/chroma-curves');
+  const appDefaults = withChromaCurves(defaults());
+  const notices: string[] = [];
+  const legacy = defaults(); legacy.families.find(f=>f.id==='brand')!.chroma=.15;
+  const migrated = parseConfigurationJson(JSON.stringify(legacy),appDefaults,notice=>notices.push(notice));
+  expect(migrated.chromaCurves?.brand.peakChroma).toBe(.15);
+  expect(notices.join(' ')).toContain('Regenerated colors may change');
+  migrated.chromaCurves!.semantic.darkBend=.8;
+  expect(parseConfigurationJson(JSON.stringify(migrated),appDefaults).chromaCurves).toEqual(migrated.chromaCurves);
+});

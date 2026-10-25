@@ -38,5 +38,8 @@ export function adjustedControlKeys(requested: BuilderConfig, accepted: BuilderC
     const next = accepted.families.find(item => item.id === family.id);
     if (next) for (const component of ['hue', 'chroma'] as const) compare(`families.${family.id}.${component}`, family[component], next[component]);
   }
+  if (requested.chromaCurves && accepted.chromaCurves) for (const group of ['brand','semantic'] as const)
+    for (const field of ['peakLightness','peakChroma','darkBend','lightBend'] as const)
+      compare(`chromaCurves.${group}.${field}`,requested.chromaCurves[group][field],accepted.chromaCurves[group][field]);
   return keys;
 }

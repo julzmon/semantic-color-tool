@@ -23,7 +23,10 @@ export interface ColorAnchor {
   color: string;
   locked: boolean;
 }
+export interface ChromaCurve { peakLightness: number; peakChroma: number; darkBend: number; lightBend: number }
 export interface BuilderConfig {
+  /** Absolute requested C(L) for Brand and shared semantic families, in both themes. */
+  chromaCurves?: { brand: ChromaCurve; semantic: ChromaCurve };
   /** Version 1 configurations remain readable while the generator migrates them. */
   version: 1 | 2;
   prefix: string;
@@ -33,7 +36,7 @@ export interface BuilderConfig {
   families: FamilyConfig[];
   muted: { mixWeights?: EmphasisMixWeights; distance: number | Record<Mode, number>; separation: number; chromaScale?: Record<Mode, number>; borderStrength?: Record<Mode, number> };
   emphasis: {
-    /** Base retention factors for opaque OKLCH state mixes; omitted by legacy engine callers. */
+    /** State lightness retention. Chroma follows profiles when enabled, otherwise opaque OKLCH mixing. */
     mixWeights?: EmphasisMixWeights;
     separation: number;
     selected: boolean;

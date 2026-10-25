@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
   import Slider from './Slider.svelte';
+  import ChromaCurves from './ChromaCurves.svelte';
   import { controlDescriptor, setControlValue, type ControlAvailabilityView } from './controlAvailability';
   import { createControlAvailabilityClient } from './controlAvailability-client';
   import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
@@ -109,7 +110,7 @@
         <div class="sidebar-group family-group">
           <BrandAnchors brand={family} anchors={config.anchors} color={system.modes.light.families.brand.roles['emphasis.base']!.color.css} onChange={updateBrandAnchors}>
           <Slider {...liveControl(`families.${family.id}.hue`)} label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" rangeStyle={(min, max) => familyTrackStyle(family, 'hue', { min, max })} onChange={value => updateFamily(family.id, { hue: value })} />
-          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={Math.max(0.3, family.chroma)} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />
+{#if !config.chromaCurves}          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={Math.max(0.3, family.chroma)} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />{/if}
           </BrandAnchors>
         </div>
       {/each}
@@ -140,24 +141,24 @@
 
   <section class="control-section sidebar-section" aria-labelledby="muted-heading">
     <header class="section-heading"><h3 id="muted-heading">Muted fills</h3></header>
-    <p class="help">Muted chroma controls color intensity for colored families. Neutral colors use Neutral chroma.</p>
+    <p class="help">{config.chromaCurves ? 'Muted fills sample the Brand and semantic chroma curves. Neutral uses its separate global chroma.' : 'Muted chroma controls color intensity for colored families. Neutral colors use Neutral chroma.'}</p>
     {#each ['light', 'dark'] as const as theme}
       <fieldset class="theme-controls"><legend>{theme === 'light' ? 'Light theme' : 'Dark theme'}</legend>
         <p class="help">{theme === 'light' ? 'Higher values make muted fills darker.' : 'Higher values make muted fills lighter.'}</p>
         <Slider {...liveControl(`muted.${theme}.distance`)} label="Muted distance" min={-0.08} max={theme === 'dark' ? 0.5 : 0.16} step={0.005} value={mutedDistance(config, theme)} adjusted={adjusted.includes(`muted.${theme}.distance`)} rangeClass="muted-distance-range" rangeStyle={(min, max) => mutedTrackStyle(config, theme, 'distance', { min, max })} onChange={value => updateDistance(theme, value)} />
-        <Slider {...liveControl(`muted.${theme}.chroma`)} label="Muted chroma" min={0} max={200} step={1} unit="%" value={mutedChromaScale(config, theme) * 100} adjusted={adjusted.includes(`muted.${theme}.chroma`)} rangeClass="muted-chroma-range" rangeStyle={(min, max) => mutedTrackStyle(config, theme, 'chroma', { min, max })} onChange={value => updateChroma(theme, value)} />
+{#if !config.chromaCurves}        <Slider {...liveControl(`muted.${theme}.chroma`)} label="Muted chroma" min={0} max={200} step={1} unit="%" value={mutedChromaScale(config, theme) * 100} adjusted={adjusted.includes(`muted.${theme}.chroma`)} rangeClass="muted-chroma-range" rangeStyle={(min, max) => mutedTrackStyle(config, theme, 'chroma', { min, max })} onChange={value => updateChroma(theme, value)} />{/if}
         <Slider {...liveControl(`muted.${theme}.border`)} label="Muted border strength" min={0} max={100} step={1} unit="%" value={mutedBorderStrength(config, theme) / MAX_MUTED_BORDER_STRENGTH * 100} adjusted={adjusted.includes(`muted.${theme}.border`)} rangeStyle={(min, max) => mutedBorderTrackStyle(config, theme, { min, max })} onChange={value => updateBorder(theme, value)} />
         <p class="help">Subtle → Strong. {theme === 'light' ? 'Stronger borders are darker.' : 'Stronger borders are lighter.'} Fills and text stay the same.</p>
       </fieldset>
     {/each}
     <p class="help">Tracks preview Brand muted fills and borders in each theme.</p>
-    <div class="advanced-controls"><strong>Muted color limits</strong><p class="help">100% uses the family chroma; 0% removes color. Higher values add color where the sRGB range allows it. Muted borders are decorative; their text is checked for contrast.</p></div>
+{#if !config.chromaCurves}    <div class="advanced-controls"><strong>Muted color limits</strong><p class="help">100% uses the family chroma; 0% removes color. Higher values add color where the sRGB range allows it. Muted borders are decorative; their text is checked for contrast.</p></div>{/if}
   </section>
 
   <section class="control-section sidebar-section" aria-labelledby="states-heading">
     <header class="section-heading"><h3 id="states-heading">Interaction states</h3></header>
     <p class="help">Controls how much colors change on hover, press, and selection in both themes.</p>
-    <p class="help">Tracks show Brand colors: light theme above, dark below. Emphasis strengths mix each family’s base with black, or white for reversed dark states. Higher percentages make a stronger change.</p>
+    <p class="help">Tracks show Brand colors: light theme above, dark below. {config.chromaCurves ? 'Strengths change lightness; colored states sample their chroma curve at the resulting position.' : 'Emphasis strengths mix each family’s base with black, or white for reversed dark states.'} Higher percentages make a stronger change.</p>
     <h4>Muted</h4>
     <p class="help">Strength changes the default muted fill: darker in light mode, lighter in dark mode. Muted distance positions the default fill.</p>
     {#each emphasisStates.filter(state => state !== 'selected' || config.emphasis.selected) as state}
@@ -178,6 +179,8 @@
     </fieldset>
   </section>
 
+  {#if config.chromaCurves}<ChromaCurves {config} {system} {checking} {onChange} />{/if}
+
   <section class="control-section sidebar-section" aria-labelledby="families-heading">
     <header class="section-heading"><h3 id="families-heading">Color adjustments</h3></header>
     <p class="help">Chroma controls intensity. Lightness adjusts to meet contrast requirements.</p>
@@ -186,7 +189,7 @@
         <div class="sidebar-group family-group">
           <h4 class="family-heading"><span class="family-color-swatch" aria-hidden="true" style={`--swatch-color: ${familyControlColor(family)}`}></span>{family.label}</h4>
           <Slider {...liveControl(`families.${family.id}.hue`)} label={`${family.label} hue`} min={0} max={360} step={1} unit="°" value={family.hue} adjusted={adjusted.includes(`families.${family.id}.hue`)} rangeClass="hue-range" rangeStyle={(min, max) => familyTrackStyle(family, 'hue', { min, max })} onChange={value => updateFamily(family.id, { hue: value })} />
-          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />
+{#if !config.chromaCurves || family.id === 'neutral'}          <Slider {...liveControl(`families.${family.id}.chroma`)} label={`${family.label} chroma`} min={0} max={0.3} value={family.chroma} adjusted={adjusted.includes(`families.${family.id}.chroma`)} rangeClass="chroma-range" rangeStyle={(min, max) => familyTrackStyle(family, 'chroma', { min, max })} onChange={value => updateFamily(family.id, { chroma: value })} />{/if}
           {#if family.id === 'neutral'}<div class="advanced-controls"><strong>Neutral color limits</strong><p class="help">Exact color locks and related states keep their own colors. Pure white and black have no tint. Chroma is reduced when needed to fit the sRGB color range.</p></div>{/if}
         </div>
       {/each}

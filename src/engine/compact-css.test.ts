@@ -3,6 +3,7 @@ import { parse as parseCss } from 'postcss';
 import { converter, formatCss, interpolate } from 'culori';
 import { describe, expect, it } from 'vitest';
 import { generateSystem } from './generate';
+import { withChromaCurves } from './chroma-curves';
 import { configFromReference, parseKdsTokens } from './reference';
 import { exportCss, exportDtcg } from './export';
 import { contrast, isSrgb, parseLockedColor } from './color';
@@ -53,6 +54,7 @@ function resolve(values: Map<string, string>, name: string, mode: Mode, seen = n
 
 const cases: [string, (config: BuilderConfig) => void][] = [
   ['defaults', () => {}],
+  ['curve-driven states in both themes', config => { Object.assign(config, withChromaCurves(config)); config.emphasis.selected=true; config.emphasis.reverseDarkStates=true; }],
   ['prefer shared colors', config => { config.solvingStrategy = 'prefer-shared'; }],
   ['prefer shared colors with reversed selected states and lock', config => {
     config.solvingStrategy = 'prefer-shared'; config.emphasis.reverseDarkStates = true; config.emphasis.selected = true;

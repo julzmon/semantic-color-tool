@@ -1,3 +1,4 @@
+import { curveColor } from '../engine/chroma-curves';
 import { toColor } from '../engine/color';
 import { MAX_MUTED_BORDER_STRENGTH, mutedChromaScale, mutedDistance, surfaceStep } from '../engine/config';
 import { adjustMutedBorders, generateStates, mutedGeneration, surfaceGeneration } from '../engine/generate';
@@ -67,7 +68,7 @@ export function stateTrackStyle(config: BuilderConfig, system: GeneratedSystem, 
       // after an edit. Shared emphasis uses light-mode direction in both modes.
       const shared = config.emphasis.reverseDarkStates || config.emphasis.strategy !== 'adaptive';
       const base = system.modes[shared ? 'light' : mode].families.brand.roles['emphasis.base']!.color;
-      if (mixed) return mixEmphasis(base, 1 - separation / 100, emphasisTarget(config, mode));
+      if (mixed) { const color = mixEmphasis(base, 1 - separation / 100, emphasisTarget(config, mode)); return config.chromaCurves ? curveColor(config, brand, color.l, base.h) : color; }
       const direction = mode === 'dark' && (config.emphasis.reverseDarkStates || !shared) ? 'dark' : 'light';
       return generateStates(base, direction, separation, count).colors.at(-1)!;
     }));
@@ -78,7 +79,9 @@ export function stateTrackStyle(config: BuilderConfig, system: GeneratedSystem, 
 export function mutedStateTrackStyle(system: GeneratedSystem, bounds: TrackBounds): string {
   const tracks = (['light','dark'] as const).map(mode => {
     const base = system.modes[mode].families.brand.roles['muted.base']!.color;
-    return gradient(bounds.min, bounds.max, strength => mixEmphasis(base, 1 - strength / 100, mutedTarget(mode)));
+    return gradient(bounds.min, bounds.max, strength => { const color = mixEmphasis(base, 1 - strength / 100, mutedTarget(mode));
+      const brand = system.config.families.find(f=>f.id==='brand')!;
+      return system.config.chromaCurves ? curveColor(system.config, brand, color.l, base.h) : color; });
   });
   return `--range-track: ${tracks[0]} top / 100% 50% no-repeat, ${tracks[1]} bottom / 100% 50% no-repeat`;
 }
