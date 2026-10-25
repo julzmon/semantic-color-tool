@@ -1058,6 +1058,12 @@ summary {
   &:focus-visible { outline: 2px solid var(--kds-fg-link-base, var(--focus-ring)); outline-offset: 3px; }
 }
 
+.palette-lightness {
+  margin-block-end: 24px;
+  scroll-margin-block-start: 88px;
+  &:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+}
+
 .lightness-actions {
   display: flex;
   align-items: center;

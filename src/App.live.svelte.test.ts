@@ -55,7 +55,8 @@ function toggle(element: HTMLElement, open: boolean) {
 it('reduces lightness in the worker, reports progress, saves the result and supports Undo', async () => {
   const worker = start(); await reply(worker);
   const original = window.localStorage.getItem(CONFIGURATION_STORAGE_KEY);
-  const reduce = button('Reduce lightness stops');
+  button('Color palette').click(); flushSync();
+  const reduce = button('Simplify lightness');
   reduce.click(); flushSync();
   expect(reduce.disabled).toBe(true);
   expect(worker.sent.at(-1)?.action).toBe('reduce-lightness');
@@ -80,12 +81,13 @@ it('reduces lightness in the worker, reports progress, saves the result and supp
 it('retains the palette on reduction failure and ignores a reduction superseded by Reset', async () => {
   const worker = start(); await reply(worker);
   const original = window.localStorage.getItem(CONFIGURATION_STORAGE_KEY);
-  button('Reduce lightness stops').click(); flushSync();
+  button('Color palette').click(); flushSync();
+  button('Simplify lightness').click(); flushSync();
   await reply(worker, { error: 'No verified result available' });
   expect(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)).toBe(original);
-  expect(button('Reduce lightness stops').disabled).toBe(false);
+  expect(button('Simplify lightness').disabled).toBe(false);
   expect(document.querySelector('.configuration-status')?.textContent).toContain('No verified result');
-  button('Reduce lightness stops').click(); flushSync();
+  button('Simplify lightness').click(); flushSync();
   button('Reset').click(); flushSync();
   await reply(worker, { result: { ...structuredClone(verified), message: 'Obsolete reduction' } });
   expect(document.querySelector('.configuration-status')?.textContent).not.toContain('Obsolete reduction');
@@ -225,4 +227,20 @@ it('discloses migration when restoring a retired sharing preference', async () =
   expect(document.querySelector('.configuration-status')?.textContent).toContain('shared lightness across families');
   expect(document.querySelector('.configuration-status')?.textContent).toContain('colors may change');
   expect(JSON.parse(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)!).config.solvingStrategy).toBe('standard');
+});
+
+it('places simplification above the color palette and links to it from Role mapping', async () => {
+  const worker = start(); await reply(worker);
+  expect(button('Simplify lightness')).toBeUndefined();
+  const link = document.querySelector<HTMLAnchorElement>('.neutral-role-map a[href="#palette-lightness"]');
+  expect(link).not.toBeNull();
+  link!.click(); await tick(); flushSync();
+  const toolbar = document.querySelector('#palette-lightness');
+  expect(toolbar?.contains(button('Simplify lightness'))).toBe(true);
+  expect(toolbar?.textContent).toContain('shared lightness stops');
+  expect(toolbar?.textContent).toContain('locked colors');
+  expect(document.activeElement).toBe(toolbar);
+  expect(document.querySelector('.neutral-role-map .lightness-action-buttons')).toBeNull();
+  button('Overview').click(); flushSync();
+  expect(button('Simplify lightness')).toBeUndefined();
 });

@@ -49,7 +49,7 @@ The test suite uses one worker to keep CPU-heavy feasibility calculations from c
 - Fixed contrast requirements: normal text **4.5:1**, large text **3:1**, and UI boundaries **3:1**.
 - Shared lightness positions for corresponding roles across every family, with contextual contrast checks for each emitted relationship.
 - Shared primitive reuse where it preserves contrast, gamut, state separation, shared lightness by role, and exact locks.
-- **Reduce lightness stops** near Role mapping searches for fewer shared OKLCH lightness positions across all families and both themes. It adjusts existing surface spacing and muted-distance settings, preserves exact locks and contrast targets, and offers Undo. Each search evaluates at most 64 candidates and limits each role's lightness movement to 0.02. It retains the palette when no safe reduction is found; a global minimum is not guaranteed.
+- **Simplify lightness** at the top of Color palette searches for fewer shared OKLCH lightness positions across all families and both themes. It adjusts existing surface spacing and muted-distance settings, preserves exact locks and contrast targets, and offers Undo. Each search evaluates at most 64 candidates and limits each role's lightness movement to 0.02. It retains the palette when no safe reduction is found; a global minimum is not guaranteed. Role mapping shows the shared stop count and links to the palette action.
 - Paired light/dark previews with all families and states shown together, nested surfaces, complete semantic token coverage, and sample inspection; primitive inspection; CSS, DTCG, and configuration exports.
 - Native CSS `light-dark()` output with no legacy fallback.
 

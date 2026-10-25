@@ -45,6 +45,7 @@
   let editVersion = 0;
   let configurationStatus = $state('Loading your color system…');
   let reductionFeedback = $state('');
+  let lightnessStops = $derived(system ? new Set(system.primitives.map(primitive => primitive.color.l.toFixed(10))).size : 0);
   const initialize = async () => {
     const version = ++editVersion;
     initializing = checking = true;
@@ -86,6 +87,11 @@
     previewPopoverOpen = false;
     previewDetailsOpen = false;
     tab = next;
+  };
+  const showPaletteLightness = async () => {
+    selectTab('Color palette');
+    await tick();
+    document.getElementById('palette-lightness')?.focus();
   };
   const inspectPreview = (mode: Mode, token: string) => { previewSelection = { mode, token }; };
   let settingsOpen = $state(false);
@@ -288,6 +294,17 @@
           {/if}
         </ColorPopover>
       {:else if tab === 'Color palette'}
+        <section id="palette-lightness" class="palette-lightness" aria-label="Lightness simplification" tabindex="-1">
+          <div class="lightness-actions">
+            <span>{lightnessStops} shared lightness stops across all families and both themes</span>
+            <div class="lightness-action-buttons">
+              <button class="secondary-button" disabled={checking} aria-describedby="lightness-reduction-help" onclick={() => void reduceLightness()}>Simplify lightness</button>
+              {#if undo}<button class="text-button" onclick={undoAdjustments}>Undo last change</button>{/if}
+            </div>
+          </div>
+          <p id="lightness-reduction-help" class="help lightness-help">Find fewer lightness positions with small adjustments. Preserves shared lightness by role, locked colors, state order, and contrast targets. A minimum is not guaranteed.</p>
+          {#if reductionFeedback}<p class="help lightness-feedback">{reductionFeedback}</p>{/if}
+        </section>
         {#await loadPrimitives()}
           <p class="help" role="status">Loading color palette…</p>
         {:then { default: Primitives }}
@@ -309,7 +326,7 @@
           {@render viewLoadError()}
         {/await}
       {/if}
-      <NeutralRoleMap {system} {modes} {checking} {reductionFeedback} canUndo={!!undo} onReduceLightness={() => void reduceLightness()} onUndo={undoAdjustments} />
+      <NeutralRoleMap {system} {modes} onShowPalette={tab !== 'Color palette' ? () => void showPaletteLightness() : undefined} />
       {#if tab !== 'Export'}<ContrastTable {system} {modes} />{/if}
       <ModelNotes />
       </main>
