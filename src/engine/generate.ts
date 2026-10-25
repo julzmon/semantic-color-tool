@@ -1,4 +1,5 @@
-import { preferSharedColors, separateOnEmphasis } from './feasibility';
+import { sharedLightnessIssues } from './shared-lightness';
+import { separateOnEmphasis } from './feasibility';
 import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
 import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
@@ -410,7 +411,7 @@ function contextualChecks(config: BuilderConfig, themes: Record<Mode, ModeTheme>
 export function generateSystem(input: BuilderConfig): GeneratedSystem {
   validateConfig(input);
   const config = structuredClone(input);
-  config.solvingStrategy = input.solvingStrategy ?? 'standard';
+  config.solvingStrategy = 'standard';
   config.surfaces.step = { light: surfaceStep(input, 'light'), dark: surfaceStep(input, 'dark') };
   config.muted.distance = { light: mutedDistance(input, 'light'), dark: mutedDistance(input, 'dark') };
   config.muted.chromaScale = { light: mutedChromaScale(input, 'light'), dark: mutedChromaScale(input, 'dark') };
@@ -522,9 +523,8 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
   }
   diagnostics.push(...separateOnEmphasis({ config, modes: themes }));
   const originalChecks = contextualChecks(config, themes);
-  const reused = reuseGrayPositions(config, themes, (candidate) => contextualChecks(config, candidate)
+  const reused = reuseGrayPositions(config, themes, (candidate) => !sharedLightnessIssues({ config, modes: candidate }).length && contextualChecks(config, candidate)
     .every((check, index) => check.pass === originalChecks[index].pass));
-  if (config.solvingStrategy === 'prefer-shared') preferSharedColors({ config, modes: reused });
   diagnostics.push(...separateOnEmphasis({ config, modes: reused }));
   for (const mode of modes) for (const family of config.families) {
     const roles = reused[mode].families[family.id].roles;
@@ -544,6 +544,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
   }
   const deduplicated = deduplication(reused, config.prefix);
   const checks = contextualChecks(config, deduplicated.modes);
+  diagnostics.push(...sharedLightnessIssues({ config, modes: deduplicated.modes }).map(issue => `Shared lightness: ${issue}`));
   for (const mode of modes) {
     const failed = checks.filter((check) => check.mode === mode && !check.pass);
     if (failed.length) diagnostics.push(`${mode}: ${failed.length} contextual contrast checks fail. No complete solution was found for these surfaces, targets, and brand locks in the bounded 0.001-lightness search; failed checks retain their measured ratios.`);

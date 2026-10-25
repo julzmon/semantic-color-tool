@@ -221,7 +221,7 @@ export function inspectFeasibility(system: GeneratedSystem, mode: Mode, semantic
   const currentlyShared = grouped && colorIdentity(familyRoles!['foreground.base']!.color) === colorIdentity(familyRoles!['emphasis.base']!.color);
   const actual = currentlyShared ? 'Family foreground and emphasis base currently share a complete color. ' : 'Family foreground and emphasis base currently use separate colors. ';
   const decision = grouped ? jointSamples.length
-    ? `${actual}Joint foreground/emphasis sharing has ${jointSamples.length} verified candidate${jointSamples.length === 1 ? '' : 's'} in this theme; emphasis requirements include coupled themes. ${system.config.solvingStrategy === 'prefer-shared' ? 'Prefer shared colors is enabled.' : 'Standard solving is enabled.'}`
+    ? `${actual}Joint foreground/emphasis sharing has ${jointSamples.length} verified candidate${jointSamples.length === 1 ? '' : 's'} in this theme; emphasis requirements include coupled themes. These are family-only samples, not a verified common solution across all families. Generation preserves shared lightness by role.`
     : actual + 'Keep foreground and emphasis separate: no joint solution was verified in this bounded search, including locks and state hierarchy. This does not prove impossibility.'
     : 'Samples check the selected role against its current contrast relationships. Related roles remain fixed; derived states are not independent controls.';
   return { chosen: selected.color.l, chosenValid, step: .001, samples, runs: sampleRuns(samples), locked, relationships,
@@ -229,38 +229,6 @@ export function inspectFeasibility(system: GeneratedSystem, mode: Mode, semantic
     jointSamples, jointRuns: sampleRuns(jointSamples),
     jointRestricting: [...jointRejected].map(([relationship, rejectedSamples]) => ({ relationship, rejectedSamples })).sort((a,b) => b.rejectedSamples - a.rejectedSamples),
     lightnessOverlaps, sharing, decision };
-}
-
-/** Prefer a verified joint base; existing surfaces, muted fills, text hierarchy and on-emphasis remain fixed. */
-export function preferSharedColors(system: System): void {
-  for (const family of system.config.families) {
-    const coupled = !!sharedBase(system.config);
-    const groups: Mode[][] = coupled ? [['light', 'dark']] : [['light'], ['dark']];
-    for (const group of groups) {
-      const current = system.modes[group[0]].families[family.id].roles['emphasis.base']!.color;
-      const locks = system.config.anchors.filter(a => a.locked && a.family === family.id && (a.mode === 'both' || group.includes(a.mode)))
-        .map(a => parseLockedColor(a.color));
-      const preferences = system.config.anchors.filter(a => !a.locked && a.family === family.id).map(a => toColor(a.color));
-      const recipes = [roleFactory(system, family.id, group[0], 'emphasis.base'), ...group.map(mode => roleFactory(system, family.id, mode, 'foreground.base'))];
-      const unique = new Map<string, ColorValue>();
-      for (const color of [current, ...locks, ...preferences, ...Array.from({ length: 1001 }, (_, i) => recipes.map(factory => factory(i / 1000))).flat()]) {
-        if (!unique.has(color.css)) unique.set(color.css, color);
-      }
-      const candidates = [...unique.values()].sort((a,b) => Math.abs(a.l - current.l) - Math.abs(b.l - current.l));
-      const masks: Mode[][] = coupled ? [['light', 'dark'], ['light'], ['dark']] : [group];
-      let accepted = false;
-      for (const foregroundModes of masks) {
-        for (const base of candidates) {
-          const result = familyCandidate(system, family.id, base.l, foregroundModes, true, group[0], base);
-          if (!result.valid) continue;
-          for (const mode of group) result.emphasis[mode]?.forEach((color, i) => { system.modes[mode].families[family.id].roles[`emphasis.${states[i]}`]!.color = color; });
-          for (const mode of foregroundModes) result.foreground[mode]?.forEach((color, i) => { system.modes[mode].families[family.id].roles[`foreground.${states[i]}` as 'foreground.base' | 'foreground.hover']!.color = color; });
-          accepted = true; break;
-        }
-        if (accepted) break;
-      }
-    }
-  }
 }
 
 /** Exact fill locks may make contrast unsatisfied; their text must still use a distinct color. */

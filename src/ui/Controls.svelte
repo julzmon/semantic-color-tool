@@ -174,7 +174,7 @@
         <button type="button" aria-pressed={!config.emphasis.reverseDarkStates} onclick={() => onChange({ ...config, emphasis: { ...config.emphasis, strategy: 'shared', reverseDarkStates: false } })}>Match light mode</button>
         <button type="button" aria-pressed={config.emphasis.reverseDarkStates ?? false} onclick={() => onChange({ ...config, emphasis: { ...config.emphasis, strategy: 'shared', reverseDarkStates: true } })}>Reverse direction</button>
       </div>
-      <p class="help">Match uses identical colors for every state. Reverse makes dark hover, pressed, and selected fills lighter. The default emphasis fill stays the same in both themes.</p>
+      <p class="help">Match uses identical colors for every state. Reverse makes dark hover, pressed, and selected fills lighter. Both themes share the default emphasis fill. Changing direction may adjust that fill in both themes to preserve text contrast.</p>
     </fieldset>
   </section>
 
@@ -196,12 +196,7 @@
   <section class="control-section sidebar-section protection-section">
     <header class="section-heading"><h3>Contrast protection</h3></header>
     <p class="help">Settings adjust automatically to keep contrast checks passing. Locked colors stay fixed; changes that cannot pass are limited or rejected.</p>
-    <div class="anchor-field"><label for="solving-strategy">Color solving strategy</label>
-    <select id="solving-strategy" value={config.solvingStrategy ?? 'standard'} onchange={event => onChange({ ...config, solvingStrategy: event.currentTarget.value as BuilderConfig['solvingStrategy'] })}>
-      <option value="standard">Standard</option>
-      <option value="prefer-shared">Prefer shared colors when feasible</option>
-    </select></div>
-    <p class="help">Shared colors solve family text and emphasis bases together, including both themes and interaction states. Text inside emphasis fills stays separate. Exact locks and state recipes are retained; no verified joint solution keeps the colors separate. Inspect a token for allowed lightness samples and hierarchy tradeoffs.</p>
+    <p class="help">Corresponding roles share lightness across all color families. Hue and chroma provide color differences. Reuse preserves this structure.</p>
     <dl class="contrast-requirements">
       {#each [['normalText', 'Normal text'], ['largeText', 'Large text'], ['ui', 'Emphasis borders']] as const as [key, label]}
         <div class="target-row"><dt>{label}</dt><dd>{config.targets[key]}:1</dd></div>

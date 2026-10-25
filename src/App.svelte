@@ -65,7 +65,7 @@
       config = draft = balanced.config;
       system = balanced.system;
       adjusted = adjustedControlKeys(stored.config, balanced.config);
-      configurationStatus = restoreError || balanced.message || stored.error || (stored.restored ? 'Your saved colors are restored.' : '');
+      configurationStatus = restoreError || [stored.migrationNotice, balanced.message, stored.error].filter(Boolean).join(' ') || (stored.restored ? 'Your saved colors are restored.' : '');
     } catch (error) {
       if (version !== editVersion) return;
       initializationError = error instanceof Error ? error.message : 'Unable to load the color system.';
@@ -150,11 +150,12 @@
     }
   };
   const importConfiguration = async (json: string) => {
-    const next = parseConfigurationJson(json, initialConfig);
+    let migrationNotice = '';
+    const next = parseConfigurationJson(json, initialConfig, notice => { migrationNotice = notice; });
     const accepted = await updateConfiguration(next);
     if (accepted === undefined) throw new Error('Import was superseded by a newer edit.');
     if (!accepted) throw new Error('Import was not accepted. Previous configuration retained.');
-    configurationStatus ||= 'Imported settings saved.';
+    configurationStatus = [migrationNotice, configurationStatus || 'Imported settings saved.'].filter(Boolean).join(' ');
   };
   const updateConfiguration = async (next: BuilderConfig) => {
     if (!system) return false;

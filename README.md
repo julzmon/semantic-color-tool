@@ -48,7 +48,7 @@ The test suite uses one worker to keep CPU-heavy feasibility calculations from c
 - Light and dark surface controls, independent light and dark muted-distance controls, generated gray levels, muted states, shared emphasis mixing strengths, semantic foregrounds, and borders. Default emphasis fills stay shared across themes; dark hover, pressed, and selected fills can reverse direction while contrast protection remains enabled.
 - Fixed contrast requirements: normal text **4.5:1**, large text **3:1**, and UI boundaries **3:1**.
 - Shared lightness positions for corresponding roles across every family, with contextual contrast checks for each emitted relationship.
-- Shared primitive reuse where it preserves contrast, gamut, state separation, and exact locks.
+- Shared primitive reuse where it preserves contrast, gamut, state separation, shared lightness by role, and exact locks.
 - **Reduce lightness stops** near Role mapping searches for fewer shared OKLCH lightness positions across all families and both themes. It adjusts existing surface spacing and muted-distance settings, preserves exact locks and contrast targets, and offers Undo. Each search evaluates at most 64 candidates and limits each role's lightness movement to 0.02. It retains the palette when no safe reduction is found; a global minimum is not guaranteed.
 - Paired light/dark previews with all families and states shown together, nested surfaces, complete semantic token coverage, and sample inspection; primitive inspection; CSS, DTCG, and configuration exports.
 - Native CSS `light-dark()` output with no legacy fallback.
@@ -71,6 +71,16 @@ Brand deliberately uses its own generated `brand` namespace even though its star
 Surfaces belong to the Neutral/gray palette. Their controls set base lightness, number of levels, and per-mode tonal spacing; Neutral hue and chroma apply to surfaces and Neutral roles together.
 
 Corresponding family roles use one lightness position. Equal OKLCH lightness creates a consistent system structure, but it does not guarantee equal WCAG contrast across hues, so every intended foreground/background and boundary relationship is checked independently.
+
+## Shared lightness contract
+
+Corresponding semantic roles use the same OKLCH lightness across all six families within each theme. This applies to muted and emphasis bases and states, family foregrounds, and family borders. Hue and chroma distinguish families; requested chroma can be reduced to fit sRGB. Shared lightness does not imply equal WCAG contrast across hues, so each modeled relationship is checked independently.
+
+Generation checks this structure after reuse and border adjustments. Balancing, lightness reduction, and version-2 system exports reject divergent role positions even when contrast checks pass. Engine callers can inspect raw unsatisfied generation results and diagnostics, but those results cannot be accepted or exported as a valid shared-lightness system.
+
+Exact anchors constrain the common position for their role. Locks requiring different lightness for the same role are rejected by the builder; numeric balancing cannot bypass them. Both themes retain a common emphasis base. Reversing dark interaction direction can change that base in both themes to preserve text contrast; each interaction state still shares lightness across families.
+
+The former **Color solving strategy** control has been removed. Legacy `solvingStrategy: "prefer-shared"` inputs migrate to unified `standard` solving, and restore/import feedback warns that regenerated colors may change. Complete-color reuse remains available where it preserves the common positions. Legacy direct engine callers can still use adaptive themes; application imports migrate adaptive emphasis to shared bases and reversed dark states.
 
 ## Brand color anchors
 

@@ -92,11 +92,12 @@ it('keeps generated CSS implementation details out of the controls sidebar', () 
 });
 
 
-it('makes the shared-color strategy explicit while keeping the standard default', () => {
+it('explains the invariant without exposing a solving strategy', () => {
   const markup = render(Controls, { props }).body;
-  expect(markup).toContain('for="solving-strategy">Color solving strategy</label>');
-  expect(markup).toContain('value="prefer-shared">Prefer shared colors when feasible</option>');
-  expect(markup).toContain('Text inside emphasis fills stays separate.');
+  expect(markup).not.toContain('solving-strategy');
+  expect(markup).not.toContain('Prefer shared colors');
+  expect(markup).toContain('Corresponding roles share lightness across all color families.');
+  expect(markup).toContain('Changing direction may adjust that fill in both themes');
 });
 it('replaces muted spacing with independent muted state strengths', () => {
   const markup = render(Controls, { props }).body;

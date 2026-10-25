@@ -8,7 +8,7 @@
       <h3>Colors with a purpose</h3>
       <p>
         Adjust surfaces and color families. The app finds colors for text, fills, borders, and interaction states,
-        then checks their intended contrast relationships.
+        then checks their intended contrast relationships. Corresponding roles share lightness across every family; hue and chroma provide the color differences.
       </p>
     </div>
     <div>
@@ -23,7 +23,7 @@
       <h3>Locked brand colors</h3>
       <p>
         Lock a brand color to keep its exact value. Contrast protection may adjust other settings or reject
-        a change that cannot pass. Some roles may need separate colors to meet their contrast requirements.
+        a change that cannot pass. A lock sets the shared lightness for its role; conflicting locks are rejected.
       </p>
     </div>
     <div>

@@ -1,3 +1,4 @@
+import { sharedLightnessIssues } from './shared-lightness';
 import type { BalancedConfiguration } from './balance';
 import { isSrgb } from './color';
 import { mutedDistance, surfaceStep } from './config';
@@ -29,6 +30,7 @@ function roleGroups(system: GeneratedSystem): GeneratedRole[][] {
 }
 
 function safeCandidate(original: GeneratedSystem, candidate: GeneratedSystem): boolean {
+  if (sharedLightnessIssues(candidate).length) return false;
   if (!candidate.checks.length || !candidate.checks.every(check => check.pass) || !candidate.primitives.every(primitive => isSrgb(primitive.color))) return false;
   // Restore/import runs the balancer's shared strength caps. Reject any
   // alignment that would alter those recipes on the next regeneration.
@@ -89,8 +91,8 @@ function options(system: GeneratedSystem): Option[] {
  */
 export function reduceLightnessStops(input: BuilderConfig): BalancedConfiguration {
   const original = generateSystem(input);
-  if (input.targets.normalText < 4.5 || input.targets.largeText < 3 || input.targets.ui < 3 || !original.checks.length || !original.checks.every(check => check.pass)) {
-    throw new Error('Lightness reduction requires a palette with all protected contrast checks passing.');
+  if (input.targets.normalText < 4.5 || input.targets.largeText < 3 || input.targets.ui < 3 || sharedLightnessIssues(original).length || !original.checks.length || !original.checks.every(check => check.pass)) {
+    throw new Error('Lightness reduction requires a palette with shared lightness and all protected contrast checks passing.');
   }
   let best = original;
   let bestCount = countLightnessStops(best);
@@ -115,7 +117,7 @@ export function reduceLightnessStops(input: BuilderConfig): BalancedConfiguratio
     config: best.config,
     system: best,
     message: bestCount < initialCount
-      ? `Reduced shared lightness stops from ${initialCount} to ${bestCount}. Both themes pass all checked contrast relationships; locked colors and state order are preserved.`
+      ? `Reduced shared lightness stops from ${initialCount} to ${bestCount}. Both themes pass all checked contrast relationships; shared lightness by role, locked colors and state order are preserved.`
       : `Kept ${initialCount} shared lightness stops. No safe reduction was found within the bounded search.`,
   };
 }

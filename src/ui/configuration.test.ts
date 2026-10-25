@@ -162,13 +162,25 @@ it.each([null, 1, {}, { light: 1 }, { light: -1, dark: 1 }, { light: 1, dark: 3 
   expect(() => parseConfigurationJson(JSON.stringify(input), defaults())).toThrow(/chroma/i);
 });
 
-it('migrates absent solving strategy to standard and persists an explicit sharing preference', () => {
+it('migrates absent and retired solving strategies to shared-lightness solving', () => {
   const input = defaults();
   expect(parseConfigurationJson(JSON.stringify(input), { ...defaults(), solvingStrategy: 'prefer-shared' }).solvingStrategy).toBe('standard');
   expect(parseConfigurationJson(JSON.stringify(legacyV1()), defaults()).solvingStrategy).toBe('standard');
   input.solvingStrategy = 'prefer-shared';
   const storage = new MemoryStorage();
   expect(saveStoredConfiguration(storage, input)).toBe(true);
-  expect(loadStoredConfiguration(storage, defaults()).config.solvingStrategy).toBe('prefer-shared');
+  expect(loadStoredConfiguration(storage, defaults()).config.solvingStrategy).toBe('standard');
+  expect(loadStoredConfiguration(storage, defaults()).migrationNotice).toContain('colors may change');
   expect(() => parseConfigurationJson(JSON.stringify({ ...input, solvingStrategy: 'unknown' }), defaults())).toThrow(/Solving strategy/);
+});
+
+it('discloses retired strategy migration through the import callback', () => {
+  const notices: string[] = [];
+  const input = { ...defaults(), solvingStrategy: 'prefer-shared' };
+  expect(parseConfigurationJson(JSON.stringify(input), defaults(), notice => notices.push(notice)).solvingStrategy).toBe('standard');
+  expect(notices).toHaveLength(1);
+  expect(notices[0]).toContain('colors may change');
+  notices.length = 0;
+  parseConfigurationJson(JSON.stringify(defaults()), defaults(), notice => notices.push(notice));
+  expect(notices).toEqual([]);
 });

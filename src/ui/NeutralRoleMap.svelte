@@ -79,7 +79,7 @@
         {#if canUndo && onUndo}<button class="text-button" onclick={onUndo}>Undo last change</button>{/if}
       </div>
     </div>
-    <p id="lightness-reduction-help" class="help lightness-help">Find fewer stops with small lightness adjustments. Keeps locked colors, state order, and contrast targets. A minimum is not guaranteed.</p>
+    <p id="lightness-reduction-help" class="help lightness-help">Find fewer stops with small lightness adjustments. Keeps shared lightness by role, locked colors, state order, and contrast targets. A minimum is not guaranteed.</p>
     {#if reductionFeedback}<p class="help lightness-feedback">{reductionFeedback}</p>{/if}
   {/if}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus lets users access the horizontal map scroll region.) -->

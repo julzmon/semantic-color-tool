@@ -12,11 +12,11 @@
 <details class="feasibility-details" open={open || expanded} ontoggle={event => { open = event.currentTarget.open; }}>
   <summary>Allowed lightness and sharing</summary>
   {#if report}
-    <p class="help">Verified discrete samples at 0.001 lightness increments, with chroma reduced to fit sRGB. Values between samples are unverified. {report.locked ? 'Exact locks restrict the candidate values.' : ''}</p>
+    <p class="help">Family-only discrete samples at 0.001 lightness increments, with chroma reduced to fit sRGB. Values between samples are unverified. These samples do not establish a shared solution across every family. {report.locked ? 'Exact locks restrict the candidate values.' : ''}</p>
     <dl>
       <dt>Chosen lightness</dt><dd>{format(report.chosen)} · {report.chosenValid ? 'verified' : 'unresolved constraints'}</dd>
       <dt>Allowed samples</dt><dd>{runs(report.runs)}</dd>
-      {#if report.jointSamples.length}<dt>Joint base samples</dt><dd>{runs(report.jointRuns)}</dd>{/if}
+      {#if report.jointSamples.length}<dt>Family text/fill base samples</dt><dd>{runs(report.jointRuns)}</dd>{/if}
     </dl>
     <p class="help">{report.decision}</p>
     <details><summary>Restricting relationships ({report.relationships.length})</summary>

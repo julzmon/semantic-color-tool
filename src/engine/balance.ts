@@ -1,4 +1,5 @@
-import { generateSystem } from './generate';
+import { conflictingLightnessLocks, sharedLightnessIssues } from './shared-lightness';
+import { generateSystem, validateConfig } from './generate';
 import { capEmphasisStrengths, capMutedStrengths, emphasisStrengthLimit, mutedStrengthLimit, MAX_EMPHASIS_LIGHTNESS_CHANGE } from './emphasis-limits';
 import { mutedDistance, surfaceStep } from './config';
 import { legacyMutedWeights, withMutedStateControls } from './muted';
@@ -16,6 +17,10 @@ const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b
 /** Try only verified results; the bounded search may stop short of the true feasible limit. */
 export function balanceConfiguration(previous: BuilderConfig, input: BuilderConfig): BalancedConfiguration {
   const requested = previous.muted.mixWeights ? withMutedStateControls(input) : input;
+  validateConfig(requested);
+  const conflicts = conflictingLightnessLocks(requested);
+  if (conflicts.length) throw new Error(`Shared lightness cannot reconcile conflicting exact locks: ${conflicts.join('; ')}. The previous settings were kept.`);
+  const passing = (system: GeneratedSystem) => system.checks.length > 0 && system.checks.every(check => check.pass) && !sharedLightnessIssues(system).length;
   if (requested.targets.normalText < 4.5 || requested.targets.largeText < 3 || requested.targets.ui < 3)
     throw new Error('Contrast protection requires at least 4.5:1 normal text, 3:1 large text and 3:1 UI boundaries.');
   // Candidate rounding and unchanged settings can revisit the same request.
@@ -47,7 +52,7 @@ export function balanceConfiguration(previous: BuilderConfig, input: BuilderConf
   };
   const tryConfig = (config: BuilderConfig): GeneratedSystem | undefined => {
     const system = evaluate(config);
-    return system.checks.length && system.checks.every(check => check.pass) ? system : undefined;
+    return passing(system) ? system : undefined;
   };
   const finish = (system: GeneratedSystem, limited = false): BalancedConfiguration => {
     const changes: string[] = [];
@@ -70,7 +75,7 @@ export function balanceConfiguration(previous: BuilderConfig, input: BuilderConf
     return { config: system.config, system, message: [message, visualLimit].filter(Boolean).join(' ') };
   };
   const direct = evaluate(requested);
-  if (direct.checks.length && direct.checks.every(check => check.pass)) return finish(direct);
+  if (passing(direct)) return finish(direct);
   const failingModes = new Set(direct.checks.filter(check => !check.pass).map(check => check.mode));
   const candidate = structuredClone(requested);
   if (candidate.emphasis.mixWeights && equal(candidate.emphasis.mixWeights, previous.emphasis.mixWeights)) {
@@ -115,7 +120,7 @@ export function balanceConfiguration(previous: BuilderConfig, input: BuilderConf
   };
   const start = hard(previous);
   let best = tryConfig(start);
-  if (!best) throw new Error('No passing contrast configuration was found with these targets and locked colors. The previous settings were kept.');
+  if (!best) throw new Error('No passing contrast configuration satisfying shared lightness was found with these targets and locked colors. The previous settings were kept.');
   const interpolate = (amount: number): BuilderConfig => {
     const mix = (a: number, b: number, increment = 0.001) => a === b ? a : Number((Math.round((a + (b - a) * amount) / increment) * increment).toFixed(6));
     const next = hard(previous);

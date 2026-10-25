@@ -27,7 +27,7 @@ export interface BuilderConfig {
   /** Version 1 configurations remain readable while the generator migrates them. */
   version: 1 | 2;
   prefix: string;
-  /** Absent in older configurations: retain standard solving. */
+  /** @deprecated Legacy input only. Both accepted values normalize to standard shared-lightness solving. */
   solvingStrategy?: 'standard' | 'prefer-shared';
   surfaces: { light: { l: number }; dark: { l: number }; levels: number; step: number | Record<Mode, number> };
   families: FamilyConfig[];

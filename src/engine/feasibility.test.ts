@@ -38,20 +38,20 @@ describe('verified lightness samples', () => {
   });
 });
 
-describe('prefer shared colors', () => {
-  it('keeps absent strategy compatible and round-trips the explicit strategy', () => {
+describe('shared-lightness solving', () => {
+  it('normalizes retired strategy and round-trips shared-lightness solving', () => {
     const config = defaults(); delete config.solvingStrategy;
     expect(generateSystem({ ...config, solvingStrategy: 'standard' }).modes).toEqual(generateSystem(config).modes);
     config.solvingStrategy = 'prefer-shared';
-    expect(parseConfigurationJson(exportJson(generateSystem(config)), defaults()).solvingStrategy).toBe('prefer-shared');
+    expect(parseConfigurationJson(exportJson(generateSystem(config)), defaults()).solvingStrategy).toBe('standard');
     expect(parseConfigurationJson(JSON.stringify(defaults()), config).solvingStrategy).toBe('standard');
   });
-  it('jointly shares light foreground with emphasis while dark text stays separate', () => {
+  it('keeps foreground and emphasis independent when sharing would fragment family lightness', () => {
     const config = defaults(); config.solvingStrategy = 'prefer-shared';
     const system = generateSystem(config);
     const light = system.modes.light.families.brand.roles;
     const dark = system.modes.dark.families.brand.roles;
-    expect(colorIdentity(light['foreground.base']!.color)).toBe(colorIdentity(light['emphasis.base']!.color));
+    expect(colorIdentity(light['foreground.base']!.color)).not.toBe(colorIdentity(light['emphasis.base']!.color));
     expect(colorIdentity(dark['foreground.base']!.color)).not.toBe(colorIdentity(dark['emphasis.base']!.color));
     expect(system.checks.every(c => c.pass)).toBe(true);
     expect(light['foreground.base']!.color.l - light['foreground.hover']!.color.l).toBeCloseTo(config.emphasis.separation, 8);
@@ -139,30 +139,28 @@ it('reports lightness overlap without conflating it with complete-color sharing'
   expect(report.sharing.completeColor.some(name => name.includes('fg-info-base'))).toBe(false);
 });
 
-it('inspects the actual inherited anchor hue and chroma after joint sharing', () => {
+it('inspects the exact foreground anchor without copying it into emphasis', () => {
   const config = defaults(); config.solvingStrategy = 'prefer-shared';
   config.anchors = [{ family: 'brand', mode: 'light', role: 'foreground.base', color: '#000080', locked: true }];
   const system = generateSystem(config);
-  const actual = system.modes.light.families.brand.roles['emphasis.base']!.color;
-  expect(colorIdentity(actual)).toBe(colorIdentity(system.modes.light.families.brand.roles['foreground.base']!.color));
-  const report = inspectFeasibility(system, 'light', '--kds-bg-brand-emphasis-base');
-  const onEmphasis = system.modes.light.foreground.onEmphasis.color;
-  for (const l of report.samples) {
-    const base = toColor({ l, c: actual.c, h: actual.h });
-    expect(contrast(base, onEmphasis)).toBeGreaterThanOrEqual(config.targets.normalText);
-  }
+  const roles = system.modes.light.families.brand.roles;
+  expect(roles['foreground.base']!.color.css).toBe('#000080');
+  expect(colorIdentity(roles['emphasis.base']!.color)).not.toBe(colorIdentity(roles['foreground.base']!.color));
+  const report = inspectFeasibility(system, 'light', '--kds-fg-brand-base');
   expect(report.chosenValid).toBe(true);
-  expect(report.jointSamples).toContain(actual.l);
+  expect(report.samples).toEqual([roles['foreground.base']!.color.l]);
 });
 
-it.each([true, false])('keeps inherited lock hue in foreground hover and emphasis states (mix: %s)', mixed => {
+it.each([true, false])('retains locked role hue in its own derived state group (mix: %s)', mixed => {
   const config = defaults(); config.solvingStrategy = 'prefer-shared';
   if (!mixed) delete config.emphasis.mixWeights;
-  config.anchors = [{ family: 'brand', mode: 'light', role: mixed ? 'emphasis.base' : 'foreground.base', color: '#000080', locked: true }];
+  const path = mixed ? 'emphasis.base' : 'foreground.base';
+  config.anchors = [{ family: 'brand', mode: 'light', role: path, color: '#000080', locked: true }];
   const system = generateSystem(config);
   const roles = system.modes.light.families.brand.roles;
-  expect(colorIdentity(roles['emphasis.base']!.color)).toBe(colorIdentity(roles['foreground.base']!.color));
-  for (const role of ['foreground.hover', 'emphasis.hover', 'emphasis.active'] as const) expect(roles[role]!.color.h).toBeCloseTo(roles['emphasis.base']!.color.h, 8);
+  expect(roles[path]!.color.css).toBe('#000080');
+  const derived = mixed ? ['emphasis.hover', 'emphasis.active'] as const : ['foreground.hover'] as const;
+  for (const role of derived) expect(roles[role]!.color.h).toBeCloseTo(roles[path]!.color.h, 8);
   expect(system.checks.every(c => c.pass)).toBe(true);
 });
 
@@ -198,12 +196,12 @@ it('keeps on-emphasis separate even when incompatible exact fills leave contrast
 });
 
 // The hosted Linux runner takes ~6.5s for this bounded integration search.
-it('retains the requested solving strategy through contrast-limited balancing', async () => {
+it('normalizes retired strategy through contrast-limited balancing', async () => {
   const { balanceConfiguration } = await import('./balance');
   const previous = defaults(); const requested = structuredClone(previous);
   requested.solvingStrategy = 'prefer-shared'; requested.muted.distance = { light: .055, dark: .8 };
   const result = balanceConfiguration(previous, requested);
-  expect(result.config.solvingStrategy).toBe('prefer-shared');
+  expect(result.config.solvingStrategy).toBe('standard');
   expect(result.system.checks.every(check => check.pass)).toBe(true);
   expect(result.config.muted.distance).not.toEqual(requested.muted.distance);
 }, 15_000);

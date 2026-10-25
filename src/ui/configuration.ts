@@ -13,6 +13,7 @@ interface StorageLike {
 interface StoredConfiguration {
   config: BuilderConfig;
   restored: boolean;
+  migrationNotice?: string;
   error?: string;
 }
 
@@ -101,7 +102,8 @@ function normalizeConfiguration(value: unknown, defaults: BuilderConfig): Builde
 
   const normalized = structuredClone(defaults) as unknown as RecordValue;
   normalized.version = defaultVersion;
-  normalized.solvingStrategy = source.solvingStrategy ?? 'standard';
+  if (source.solvingStrategy !== undefined && !['standard', 'prefer-shared'].includes(source.solvingStrategy as string)) throw new Error('Solving strategy must be standard or prefer-shared.');
+  normalized.solvingStrategy = 'standard';
   normalized.prefix = typeof source.prefix === 'string' ? source.prefix.trim().toLowerCase() : DEFAULT_TOKEN_PREFIX;
   normalized.surfaces = normalizeSurfaces(source.surfaces);
   normalized.muted = normalizeMuted(source.muted);
@@ -128,14 +130,18 @@ function normalizeConfiguration(value: unknown, defaults: BuilderConfig): Builde
   return config;
 }
 
-export function parseConfigurationJson(json: string, defaults: BuilderConfig): BuilderConfig {
+export const SHARED_LIGHTNESS_MIGRATION_NOTICE = 'Updated retired color sharing to preserve shared lightness across families. Regenerated colors may change.';
+
+export function parseConfigurationJson(json: string, defaults: BuilderConfig, onMigration?: (notice: string) => void): BuilderConfig {
   let value: unknown;
   try {
     value = JSON.parse(json);
   } catch {
     throw new Error('Configuration JSON could not be parsed.');
   }
-  return normalizeConfiguration(value, defaults);
+  const config = normalizeConfiguration(value, defaults);
+  if (sourceConfig(value).solvingStrategy === 'prefer-shared') onMigration?.(SHARED_LIGHTNESS_MIGRATION_NOTICE);
+  return config;
 }
 
 function fallback(defaults: BuilderConfig, error?: string): StoredConfiguration {
@@ -147,7 +153,10 @@ export function loadStoredConfiguration(storage: StorageLike | null | undefined,
   if (!storage) return fallback(defaults);
   try {
     const json = storage.getItem(key);
-    return json ? { config: parseConfigurationJson(json, defaults), restored: true } : fallback(defaults);
+    if (!json) return fallback(defaults);
+    let migrationNotice: string | undefined;
+    const config = parseConfigurationJson(json, defaults, notice => { migrationNotice = notice; });
+    return { config, restored: true, ...(migrationNotice ? { migrationNotice } : {}) };
   } catch (error) {
     return fallback(defaults, error instanceof Error ? error.message : 'Saved configuration could not be restored.');
   }

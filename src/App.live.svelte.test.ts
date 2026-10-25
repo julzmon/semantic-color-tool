@@ -129,7 +129,7 @@ it('retries defaults in the worker when saved settings cannot be restored', asyn
   const stored = { ...verified.config, solvingStrategy: 'prefer-shared' };
   window.localStorage.setItem(CONFIGURATION_STORAGE_KEY, JSON.stringify({ formatVersion: 1, config: stored }));
   const worker = start();
-  expect(worker.sent[0].requested.solvingStrategy).toBe('prefer-shared');
+  expect(worker.sent[0].requested.solvingStrategy).toBe('standard');
   await reply(worker, { error: 'Saved locks cannot pass' });
   expect(worker.sent).toHaveLength(2);
   expect(worker.sent[1].requested).toEqual(defaults);
@@ -215,4 +215,14 @@ it('clears preview anchor highlighting when its popup closes', async () => {
   toggle(popup, false);
   expect(document.querySelector('.preview-shell .color-inspection-anchor')).toBeNull();
   expect(document.activeElement).toBe(invoker);
+});
+
+it('discloses migration when restoring a retired sharing preference', async () => {
+  window.localStorage.setItem(CONFIGURATION_STORAGE_KEY, JSON.stringify({ config: { ...verified.config, solvingStrategy: 'prefer-shared' } }));
+  const worker = start();
+  expect(worker.sent[0].requested.solvingStrategy).toBe('standard');
+  await reply(worker);
+  expect(document.querySelector('.configuration-status')?.textContent).toContain('shared lightness across families');
+  expect(document.querySelector('.configuration-status')?.textContent).toContain('colors may change');
+  expect(JSON.parse(window.localStorage.getItem(CONFIGURATION_STORAGE_KEY)!).config.solvingStrategy).toBe('standard');
 });
