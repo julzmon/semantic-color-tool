@@ -37,7 +37,9 @@ export function validateChromaCurves(config: BuilderConfig): void {
     if (!curve || !Number.isFinite(curve.peakLightness) || curve.peakLightness<.01 || curve.peakLightness>.99 ||
       !Number.isFinite(curve.peakChroma) || curve.peakChroma<0 || curve.peakChroma>1 ||
       !Number.isFinite(curve.darkBend) || curve.darkBend<0 || curve.darkBend>1 ||
-      !Number.isFinite(curve.lightBend) || curve.lightBend<0 || curve.lightBend>1)
+      !Number.isFinite(curve.lightBend) || curve.lightBend<0 || curve.lightBend>1 ||
+      (curve.darkPosition !== undefined && (!Number.isFinite(curve.darkPosition) || curve.darkPosition<0 || curve.darkPosition>2/3)) ||
+      (curve.lightPosition !== undefined && (!Number.isFinite(curve.lightPosition) || curve.lightPosition<1/3 || curve.lightPosition>1)))
       throw new Error(`Invalid ${group} chroma curve: peak lightness must be 0.01–0.99, chroma 0–1, and shape handles 0–1.`);
   }
   const conflicts = conflictingLightnessLocks(config);
@@ -82,7 +84,20 @@ export function requestedChroma(config: BuilderConfig, family: FamilyId, lightne
   const l = Math.max(0,Math.min(1,lightness));
   const index = Math.max(0,points.findIndex((_,i)=>i<points.length-1 && l<=points[i+1].l));
   const a=points[index], b=points[index+1];
-  const t=(l-a.l)/(b.l-a.l), u=1-t;
+  const fraction=(l-a.l)/(b.l-a.l);
+  const x1=index===0 ? curve.darkPosition ?? 1/3 : 1/3;
+  const x2=index===points.length-2 ? curve.lightPosition ?? 2/3 : 2/3;
+  let t=fraction;
+  if (fraction>0 && fraction<1 && (Math.abs(x1-1/3)>1e-12 || Math.abs(x2-2/3)>1e-12)) {
+    let low=0,high=1;
+    for(let iteration=0;iteration<36;iteration++) {
+      t=(low+high)/2; const u=1-t;
+      const position=3*u*u*t*x1+3*u*t*t*x2+t*t*t;
+      if(position<fraction)low=t;else high=t;
+    }
+    t=(low+high)/2;
+  }
+  const u=1-t;
   const p1=index===0 ? a.c+(b.c-a.c)*curve.darkBend : a.c;
   const p2=index===points.length-2 ? b.c+(a.c-b.c)*curve.lightBend : b.c;
   return u*u*u*a.c+3*u*u*t*p1+3*u*t*t*p2+t*t*t*b.c;

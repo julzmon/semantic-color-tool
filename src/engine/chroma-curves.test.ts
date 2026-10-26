@@ -140,3 +140,14 @@ it('retains serialized coordinates between closely spaced exact pins', async () 
   expect(c).toBeCloseTo(expected.c,8);
   expect(l).toBeCloseTo(role.color.l,9);
 });
+
+it('supports horizontal Bézier handle movement without moving the peak or pins', async () => {
+  const { requestedChroma }=await import('./chroma-curves');
+  const input=curved();
+  const before=requestedChroma(input,'info',.15);
+  Object.assign(input.chromaCurves.semantic,{darkPosition:.6});
+  expect(requestedChroma(input,'info',.15)).not.toBeCloseTo(before,6);
+  expect(requestedChroma(input,'info',.5)).toBeCloseTo(.1,9);
+  Object.assign(input.chromaCurves.semantic,{darkPosition:.9});
+  expect(()=>generateSystem(input)).toThrow(/chroma curve/i);
+});

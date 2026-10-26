@@ -128,8 +128,8 @@ it('places both curve editors in the sidebar and removes competing chroma contro
   const curved = withChromaCurves(config);
   const markup = render(Controls, { props: { ...props, config: curved, system: generateSystem(curved) } }).body;
   expect(markup).toContain('Chroma shaping');
-  expect(markup).toContain('Brand peak chroma');
-  expect(markup).toContain('Semantic peak chroma');
+  expect(markup).toContain('Brand strongest color');
+  expect(markup).toContain('Semantic colors strongest color');
   expect(markup).toContain('Neutral chroma');
   expect(markup).not.toContain('>Muted chroma</label>');
   for (const family of ['Brand','Info','Positive','Negative','Warning']) expect(markup).not.toContain(`>${family} chroma</label>`);

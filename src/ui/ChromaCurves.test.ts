@@ -3,89 +3,89 @@ import { flushSync, mount, tick, unmount } from 'svelte';
 import { afterEach, expect, it, vi } from 'vitest';
 import { configFromReference } from '../engine/config';
 import { generateSystem } from '../engine/generate';
-import { effectiveCurve, withChromaCurves } from '../engine/chroma-curves';
+import { withChromaCurves } from '../engine/chroma-curves';
 import type { BuilderConfig } from '../engine/types';
 import reference from 'virtual:kds-reference';
 import ChromaCurves from './ChromaCurves.svelte';
+const mounted: ReturnType<typeof mount>[]=[];
+afterEach(async()=>{for(const c of mounted.splice(0))await unmount(c);document.body.replaceChildren();vi.restoreAllMocks();});
+function setup(config=withChromaCurves(configFromReference(reference)),checking=false){
+  const onChange=vi.fn(async(_next:BuilderConfig)=>true);
+  mounted.push(mount(ChromaCurves,{target:document.body,props:{config,system:generateSystem(config),onChange,checking}}));flushSync();
+  return {config,onChange};
+}
+const handle=(group:string,kind:string)=>document.querySelector<HTMLButtonElement>(`[data-group="${group}"] [data-handle="${kind}"]`)!;
+const pointer=(type:string,x:number,y:number)=>new PointerEvent(type,{bubbles:true,button:0,pointerId:1,clientX:x,clientY:y});
 
-const mounted: ReturnType<typeof mount>[] = [];
-afterEach(async () => {
-  for (const component of mounted.splice(0)) await unmount(component);
-  document.body.replaceChildren();
+it('offers direct curve points instead of the unexplained slider stack',()=>{
+  setup();expect(document.querySelectorAll('svg[role="img"]')).toHaveLength(2);
+  expect(document.querySelectorAll('[data-handle]')).toHaveLength(6);
+  expect(document.querySelector('input[type="range"]')).toBeNull();
+  expect(document.body.textContent).toContain('Drag the round point');
+  expect(document.body.textContent).toContain('gamut');
 });
-function setup(config = withChromaCurves(configFromReference(reference)), checking = false) {
-  const onChange = vi.fn(async (_next: BuilderConfig) => true);
-  mounted.push(mount(ChromaCurves, { target: document.body, props: {
-    config, system: generateSystem(config), onChange, checking,
-  } }));
-  flushSync();
-  return { config, onChange };
-}
-function range(label: string) {
-  const element = [...document.querySelectorAll('label')].find(node => node.textContent === label);
-  expect(element, label).toBeDefined();
-  return document.getElementById(element!.htmlFor) as HTMLInputElement;
-}
-async function change(label: string, value: number) {
-  const input = range(label);
-  input.value = String(value);
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  await tick();
-}
-
-it('shows two always-open curve groups, shared semantic families, and accessible plots', () => {
-  setup();
-  expect([...document.querySelectorAll('h4')].map(heading => heading.textContent)).toEqual(['Brand', 'Semantic colors']);
-  expect(document.querySelector('details, summary')).toBeNull();
-  expect(document.querySelectorAll('svg[role="img"]')).toHaveLength(2);
-  for (const svg of document.querySelectorAll('svg')) {
-    expect(document.getElementById(svg.getAttribute('aria-labelledby')!)?.textContent).toContain('chroma by lightness');
-    expect(svg.querySelector('desc')?.textContent).toContain('hue-specific sRGB');
-  }
-  expect(document.querySelectorAll('.gamut-curve')).toHaveLength(5);
-  const text = document.body.textContent!;
-  for (const name of ['Info', 'Positive', 'Negative', 'Warning']) expect(text).toContain(name);
-  expect(text).not.toContain('Neutral');
-  expect(document.querySelectorAll('input[type="range"]')).toHaveLength(8);
-});
-
-it('sends shared semantic edits through contrast checking without altering Brand', async () => {
-  const { config, onChange } = setup();
-  await change('Semantic peak chroma', 0.17);
+it('previews a two-dimensional drag immediately and checks the edit once on release',async()=>{
+  const {config,onChange}=setup(); const surface=handle('semantic','peak').closest('.curve-surface')!;
+  vi.spyOn(surface,'getBoundingClientRect').mockReturnValue({left:0,top:0,width:288,height:196,right:288,bottom:196,x:0,y:0,toJSON(){}});
+  const before=surface.querySelector('.requested-curve')!.getAttribute('d');
+  const target=handle('semantic','peak');
+  target.dispatchEvent(pointer('pointerdown',150,75));target.dispatchEvent(pointer('pointermove',202.8,101.25));flushSync();
+  expect(surface.querySelector('.requested-curve')!.getAttribute('d')).not.toBe(before);
+  expect(onChange).not.toHaveBeenCalled();
+  target.dispatchEvent(pointer('pointerup',202.8,101.25));await tick();flushSync();
   expect(onChange).toHaveBeenCalledTimes(1);
-  const next = onChange.mock.calls[0][0];
-  expect(next.chromaCurves!.semantic.peakChroma).toBe(0.17);
+  const next=onChange.mock.calls[0][0];
+  expect(next.chromaCurves!.semantic.peakLightness).toBeCloseTo(.7,5);
+  expect(next.chromaCurves!.semantic.peakChroma).toBeCloseTo(.15,5);
   expect(next.chromaCurves!.brand).toEqual(config.chromaCurves!.brand);
-  expect(next.families).toEqual(config.families);
-  expect(next.anchors).toEqual(config.anchors);
-  expect(config.chromaCurves!.semantic.peakChroma).not.toBe(0.17);
 });
-
-it('pins locked Brand peak values while preserving editable end shapes', async () => {
-  const config = withChromaCurves(configFromReference(reference));
-  config.anchors = [{ family: 'brand', mode: 'both', role: 'emphasis.base', color: 'oklch(0.6 0.18 25)', locked: true }];
-  const { onChange } = setup(config);
-  const chroma = document.querySelector<HTMLInputElement>('[aria-label="Brand peak chroma value"]')!;
-  const lightness = document.querySelector<HTMLInputElement>('[aria-label="Brand peak lightness value"]')!;
-  expect(chroma.readOnly).toBe(true);
-  expect(lightness.readOnly).toBe(true);
-  expect(Number(chroma.value)).toBeCloseTo(effectiveCurve(config, 'brand').peakChroma);
-  expect(Number(lightness.value)).toBeCloseTo(0.6);
-  expect(document.querySelectorAll('.pin')).toHaveLength(1);
-  expect(document.querySelectorAll('input[type="range"]')).toHaveLength(6);
-  await change('Brand dark-end shape', 75);
-  expect(onChange.mock.calls[0][0].chromaCurves!.brand.darkBend).toBe(0.75);
+it('allows keyboard handle movement but keeps locked Brand points fixed',async()=>{
+  const config=withChromaCurves(configFromReference(reference));
+  config.anchors=[{family:'brand',mode:'both',role:'emphasis.base',color:'oklch(.6 .18 25)',locked:true}];
+  const {onChange}=setup(config);
+  expect(handle('brand','peak').disabled).toBe(true);
+  handle('brand','dark').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));await tick();
+  expect(onChange.mock.calls[0][0].chromaCurves!.brand.darkPosition).toBeGreaterThan(1/3);
   expect(onChange.mock.calls[0][0].anchors).toEqual(config.anchors);
-  expect(onChange.mock.calls[0][0].chromaCurves!.semantic).toEqual(config.chromaCurves!.semantic);
+});
+it('cancels interrupted drags and disables edits during verification',()=>{
+  const {onChange}=setup();
+  handle('semantic','peak').dispatchEvent(pointer('pointerdown',100,100));
+  handle('semantic','peak').dispatchEvent(pointer('pointercancel',120,80));flushSync();
+  expect(onChange).not.toHaveBeenCalled();
+});
+it('shows the gamut warning when requested chroma cannot render',()=>{
+  const config=withChromaCurves(configFromReference(reference));config.chromaCurves!.semantic.peakChroma=.4;
+  setup(config,true);expect(handle('semantic','peak').getAttribute('aria-disabled')).toBe('true');
+  expect(handle('semantic','peak').disabled).toBe(false);
+  expect(document.querySelector('[data-group="semantic"] .gamut-warning')?.textContent).toContain('sRGB');
 });
 
-it('shows pending state and keeps exact pin chroma inside the graph scale', () => {
-  const config = withChromaCurves(configFromReference(reference));
-  config.anchors = [{ family: 'brand', mode: 'both', role: 'emphasis.base', color: 'oklch(0.6 0.45 25)', locked: true }];
-  setup(config, true);
-  expect(document.querySelector('section')?.getAttribute('aria-busy')).toBe('true');
-  const marker = document.querySelector('circle.pin')!;
-  expect(Number(marker.getAttribute('cy'))).toBeGreaterThanOrEqual(16);
-  expect(Number(marker.getAttribute('cy'))).toBeLessThanOrEqual(126);
-  expect(document.querySelector('svg desc')?.textContent).toContain('0.450');
+it('does not submit a new curve when a point is clicked without dragging',()=>{
+  const {onChange}=setup();const point=handle('semantic','peak');
+  point.dispatchEvent(pointer('pointerdown',100,100));point.dispatchEvent(pointer('pointerup',100,100));flushSync();
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+it('keeps keyboard focus during verification and exposes each handle position',async()=>{
+  const {onChange}=setup();let resolve!: (accepted:boolean)=>void;
+  onChange.mockImplementationOnce(()=>new Promise<boolean>(done=>{resolve=done;}));
+  const target=handle('semantic','dark');target.focus();
+  const description=target.getAttribute('aria-describedby')!.split(' ').map(id=>document.getElementById(id)?.textContent).join(' ');
+  expect(description).toContain('color intensity');
+  target.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));await tick();flushSync();
+  expect(document.activeElement).toBe(target);
+  expect(target.disabled).toBe(false);
+  expect(target.getAttribute('aria-disabled')).toBe('true');
+  resolve(true);await tick();await tick();flushSync();
+  expect(document.querySelector('.curve-status')?.textContent).toContain('intensity');
+});
+
+it('keeps the graph scale fixed while dragging a high-chroma imported profile',()=>{
+  const config=withChromaCurves(configFromReference(reference));config.chromaCurves!.semantic.peakChroma=.8;
+  setup(config);const point=handle('semantic','peak');const surface=point.closest('.curve-surface')!;
+  vi.spyOn(surface,'getBoundingClientRect').mockReturnValue({left:0,top:0,width:288,height:196,right:288,bottom:196,x:0,y:0,toJSON(){}});
+  point.dispatchEvent(pointer('pointerdown',166,20));point.dispatchEvent(pointer('pointermove',166,46));flushSync();
+  expect(parseFloat(point.style.top)).toBeCloseTo(46/196*100,4);
+  point.dispatchEvent(pointer('pointercancel',166,46));
 });

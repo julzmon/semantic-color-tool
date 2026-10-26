@@ -23,7 +23,7 @@ export interface ColorAnchor {
   color: string;
   locked: boolean;
 }
-export interface ChromaCurve { peakLightness: number; peakChroma: number; darkBend: number; lightBend: number }
+export interface ChromaCurve { peakLightness: number; peakChroma: number; darkBend: number; lightBend: number; darkPosition?: number; lightPosition?: number }
 export interface BuilderConfig {
   /** Absolute requested C(L) for Brand and shared semantic families, in both themes. */
   chromaCurves?: { brand: ChromaCurve; semantic: ChromaCurve };

@@ -41,5 +41,9 @@ export function adjustedControlKeys(requested: BuilderConfig, accepted: BuilderC
   if (requested.chromaCurves && accepted.chromaCurves) for (const group of ['brand','semantic'] as const)
     for (const field of ['peakLightness','peakChroma','darkBend','lightBend'] as const)
       compare(`chromaCurves.${group}.${field}`,requested.chromaCurves[group][field],accepted.chromaCurves[group][field]);
+  if (requested.chromaCurves && accepted.chromaCurves) for (const group of ['brand','semantic'] as const) {
+    compare(`chromaCurves.${group}.darkPosition`, requested.chromaCurves[group].darkPosition ?? 1/3, accepted.chromaCurves[group].darkPosition ?? 1/3);
+    compare(`chromaCurves.${group}.lightPosition`, requested.chromaCurves[group].lightPosition ?? 2/3, accepted.chromaCurves[group].lightPosition ?? 2/3);
+  }
   return keys;
 }
