@@ -4,6 +4,7 @@ import { separateOnEmphasis } from './feasibility';
 import { createContrastScorer, colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
 import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
+import { reuseSharedStops } from './reuse-shared-stops';
 import { reuseGrayPositions } from './reuse';
 import { mutedStateColors } from './muted';
 import { emphasisStateColors, emphasisStates } from './emphasis';
@@ -121,7 +122,7 @@ export function mutedGeneration(config: BuilderConfig, mode: Mode, family: Famil
   const count = config.emphasis.selected ? 4 : 3;
   if (config.muted.mixWeights) {
     const desired = config.surfaces[mode].l + direction(mode) * mutedDistance(config, mode);
-    const base = config.chromaCurves && family.id !== 'neutral' ? curveColor(config, family, clamp(desired)) : toColor({ l: clamp(desired), c: mutedFamilyChroma(config, mode, family), h: family.hue });
+    const base = config.chromaCurves ? curveColor(config, family, clamp(desired)) : toColor({ l: clamp(desired), c: mutedFamilyChroma(config, mode, family), h: family.hue });
     return { colors: mutedStateColors(config, base, mode, family), diagnostics: desired < 0 || desired > 1
       ? [`${mode} ${family.id}: muted distance exceeds available lightness; the default fill is clamped.`] : [] };
   }
@@ -132,7 +133,7 @@ export function mutedGeneration(config: BuilderConfig, mode: Mode, family: Famil
   const base = toColor({ l: clamp(bounded), c: chroma, h: family.hue });
   const result = generateStates(base, mode, config.muted.separation, count);
   // Gamut-map each position from the scaled family chroma, not the clipped base.
-  result.colors = result.colors.map((color) => config.chromaCurves && family.id !== 'neutral' ? curveColor(config, family, color.l) : toColor({ l: color.l, c: chroma, h: family.hue }));
+  result.colors = result.colors.map((color) => config.chromaCurves ? curveColor(config, family, color.l) : toColor({ l: color.l, c: chroma, h: family.hue }));
   if (Math.abs(desired - bounded) > 1e-9 || desired < 0 || desired > 1) {
     result.diagnostics.unshift(`${mode} ${family.id}: muted distance and full state separation are infeasible together; the group shifts toward the available range.`);
   }
@@ -145,7 +146,7 @@ export function adjustMutedBorders(config: BuilderConfig, mode: Mode, family: Fa
   if (strength === 0) return [base, hover];
   const available = mode === 'light' ? Math.min(base.l, hover.l) : 1 - Math.max(base.l, hover.l);
   const delta = direction(mode) * Math.min(strength, Math.max(0, available));
-  const color = (source: ColorValue) => config.chromaCurves && family.id !== 'neutral' ? curveColor(config, family, clamp(source.l + delta)) : toColor({ l: clamp(source.l + delta), c: config.muted.mixWeights ? source.c : mutedFamilyChroma(config, mode, family), h: family.hue });
+  const color = (source: ColorValue) => config.chromaCurves ? curveColor(config, family, clamp(source.l + delta)) : toColor({ l: clamp(source.l + delta), c: config.muted.mixWeights ? source.c : mutedFamilyChroma(config, mode, family), h: family.hue });
   return [color(base), color(hover)];
 }
 
@@ -223,7 +224,7 @@ function solveJointGroup(members: JointMember[], mode: Mode, separation: number,
     candidates.sort((a, b) => Math.abs(a - preference.l) - Math.abs(b - preference.l));
   }
   const factories = members.map((member): ColorFactory => member.fixed
-    ? (lightness) => member.config?.chromaCurves && member.family && member.family.id !== 'neutral'
+    ? (lightness) => member.config?.chromaCurves && member.family
       ? curveColor(member.config, member.family, clamp(lightness), member.fixed!.h) : toColor({ l: clamp(lightness), h: member.fixed!.h, c: member.fixed!.c })
     : member.factory);
   const scorers = members.map(member => createContrastScorer(member.constraints));
@@ -507,7 +508,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
       let states = locked ? config.emphasis.mixWeights ? emphasisStateColors(config, locked, 'light', family)
         : generateStates(locked, 'light', config.emphasis.separation, count).colors
         : allStates.slice(0, count).map((state) => lightFamily.roles[`emphasis.${state}` as FamilyRole]!.color);
-      if (config.chromaCurves && family.id !== 'neutral') states = states.map((color,index) => index === 0 ? color : curveColor(config,family,color.l,states[0].h));
+      if (config.chromaCurves) states = states.map((color,index) => index === 0 ? color : curveColor(config,family,color.l,states[0].h));
       // Share numerical recipes while retaining each mode's own exact base source.
       const darkBase = darkAnchor?.locked ? darkAnchor.color : states[0];
       const darkStates: ColorGroup = config.emphasis.mixWeights
@@ -515,7 +516,7 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
         : config.emphasis.reverseDarkStates || darkAnchor?.locked
           ? generateStates(darkBase, config.emphasis.reverseDarkStates ? 'dark' : 'light', config.emphasis.separation, count)
           : { colors: states, diagnostics: [] };
-      if (config.chromaCurves && family.id !== 'neutral') darkStates.colors = darkStates.colors.map((color,index) => index === 0 ? color : curveColor(config,family,color.l,darkBase.h));
+      if (config.chromaCurves) darkStates.colors = darkStates.colors.map((color,index) => index === 0 ? color : curveColor(config,family,color.l,darkBase.h));
       diagnostics.push(...darkStates.diagnostics.map(message => `${family.id}: ${message}`));
       allStates.slice(0, count).forEach((state, index) => {
         const path = `emphasis.${state}` as FamilyRole;
@@ -549,7 +550,10 @@ export function generateSystem(input: BuilderConfig): GeneratedSystem {
         diagnostics.push(`${mode} ${family.id}: unresolved ${group} interaction hierarchy: neighboring states have equal lightness under the configured spacing or recipe. No perceptual distinction is certified.`);
     }
   }
-  const deduplicated = deduplication(reused, config.prefix);
+  const compactChecks = config.chromaCurves ? contextualChecks(config,reused) : [];
+  const compact = reuseSharedStops(config, reused, candidate => contextualChecks(config,candidate)
+    .every((check,index)=>check.pass === compactChecks[index].pass));
+  const deduplicated = deduplication(compact, config.prefix);
   const checks = contextualChecks(config, deduplicated.modes);
   diagnostics.push(...chromaCurveIssues({config,modes:deduplicated.modes}));
   diagnostics.push(...sharedLightnessIssues({ config, modes: deduplicated.modes }).map(issue => `Shared lightness: ${issue}`));

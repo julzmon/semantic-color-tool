@@ -14,5 +14,5 @@ export function withMutedStateControls(input: BuilderConfig): BuilderConfig {
 export function mutedStateColors(config: BuilderConfig, base: ColorValue, mode: Mode, family?: FamilyConfig): ColorValue[] {
   return [base, ...emphasisStates.slice(0, config.emphasis.selected ? 3 : 2)
     .map(state => { const color = mixEmphasis(base, config.muted.mixWeights![state], mutedTarget(mode));
-      return config.chromaCurves && family && family.id !== 'neutral' ? curveColor(config, family, color.l, base.h) : color; })];
+      return config.chromaCurves && family ? curveColor(config, family, color.l, base.h) : color; })];
 }

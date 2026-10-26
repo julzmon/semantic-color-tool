@@ -29,7 +29,7 @@
   const neutralNote = (color: ColorValue) => {
     if (color.source) return 'Exact color lock: preserved independently of Neutral hue and chroma.';
     if (color.l === 0 || color.l === 1) return 'Pure white/black: untinted.';
-    if (system.config.muted.mixWeights && modes.some(mode =>
+    if (!system.config.chromaCurves && system.config.muted.mixWeights && modes.some(mode =>
       Object.entries(system.modes[mode].families.neutral.roles).some(([name, role]) =>
         ((name.startsWith('muted.') && name !== 'muted.base') || name.startsWith('border.muted.')) && role?.color.css === color.css))) {
       return 'Derived from the Neutral muted base using shared state strengths and any decorative border adjustment.';
@@ -37,10 +37,10 @@
     if (hasNeutralLocks) {
       const global = toColor({ l: color.l, c: neutral.chroma, h: neutral.hue });
       if (Math.abs(color.h - global.h) > 1e-8 || Math.abs(color.c - global.c) > 1e-8) {
-        return 'Uses an exact locked neutral state group; global neutral settings do not override it.';
+        return system.config.chromaCurves ? 'Hue follows an exact Neutral lock; state chroma uses the global Neutral setting.' : 'Uses an exact locked neutral state group; global neutral settings do not override it.';
       }
     }
-    if (system.config.emphasis.mixWeights && modes.some(mode =>
+    if (!system.config.chromaCurves && system.config.emphasis.mixWeights && modes.some(mode =>
       Object.entries(system.modes[mode].families.neutral.roles).some(([name, role]) =>
         name.startsWith('emphasis.') && name !== 'emphasis.base' && role?.color.css === color.css))) {
       return 'Mixes the Neutral emphasis base with black or white using a shared state strength.';

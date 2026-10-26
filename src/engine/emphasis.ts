@@ -37,7 +37,7 @@ export function emphasisStateColors(config: BuilderConfig, base: ColorValue, mod
   return [base, ...emphasisStates.slice(0, config.emphasis.selected ? 3 : 2)
     .map(state => {
       const color = mixEmphasis(base, weights[state], emphasisTarget(config, mode));
-      return config.chromaCurves && family && family.id !== 'neutral' ? curveColor(config, family, color.l, base.h) : color;
+      return config.chromaCurves && family ? curveColor(config, family, color.l, base.h) : color;
     })];
 }
 
@@ -46,7 +46,7 @@ export function emphasisRecipe(system: { config: BuilderConfig }, name: string):
   const prefix = `--${system.config.prefix}-bg-`;
   if (!name.startsWith(prefix)) return;
   const match = name.slice(prefix.length).match(/^([a-z]+)-emphasis-(hover|active|selected)$/);
-  if (system.config.chromaCurves && match?.[1] !== 'neutral') return;
+  if (system.config.chromaCurves) return;
   if (!match || !system.config.families.some(family => family.id === match[1])) return;
   return { base: `${prefix}${match[1]}-emphasis-base`, state: match[2] as Exclude<State, 'base'> };
 }

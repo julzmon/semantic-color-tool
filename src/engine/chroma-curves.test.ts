@@ -29,11 +29,11 @@ it.each([false, true])('samples one profile across semantic bases, borders and s
   expect(system.checks.every(c=>c.pass)).toBe(true);
 });
 
-it('serializes colored states explicitly while retaining Neutral mix recipes', () => {
+it('serializes all curve-mode states explicitly, including constant-chroma Neutral', () => {
   const system = generateSystem(curved());
   const tokens = cssTokenModel(system).semantics;
   expect(tokens.find(t=>t.name==='--kds-bg-info-emphasis-hover')!.value).not.toContain('color-mix');
-  expect(tokens.find(t=>t.name==='--kds-bg-neutral-emphasis-hover')!.value).toContain('color-mix');
+  expect(tokens.find(t=>t.name==='--kds-bg-neutral-emphasis-hover')!.value).not.toContain('color-mix');
 });
 
 it('round-trips the two curve profiles through configuration export', () => {
