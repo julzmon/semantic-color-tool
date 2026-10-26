@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { configFromReference, parseKdsTokens } from './reference';
 import { generateSystem } from './generate';
 import { toColor } from './color';
@@ -150,4 +150,24 @@ it('supports horizontal Bézier handle movement without moving the peak or pins'
   expect(requestedChroma(input,'info',.5)).toBeCloseTo(.1,9);
   Object.assign(input.chromaCurves.semantic,{darkPosition:.9});
   expect(()=>generateSystem(input)).toThrow(/chroma curve/i);
+});
+
+it('samples curves without serializing configuration on each lookup', async () => {
+  const {requestedChroma}=await import('./chroma-curves');
+  const input=curved();requestedChroma(input,'info',.2);
+  const spy=vi.spyOn(JSON,'stringify');
+  try{for(let i=0;i<100;i++)requestedChroma(input,'info',i/100);expect(spy).not.toHaveBeenCalled();}
+  finally{spy.mockRestore();}
+});
+it('invalidates sampled values after in-place curve and locked anchor edits', async () => {
+  const {requestedChroma}=await import('./chroma-curves');const input=curved();
+  const before=requestedChroma(input,'info',.2);
+  input.chromaCurves.semantic.darkBend=.9;
+  expect(requestedChroma(input,'info',.2)).not.toBe(before);
+  input.anchors=[{family:'brand',role:'emphasis.base',mode:'both',color:'oklch(.5 .1 29)',locked:true}];
+  expect(requestedChroma(input,'brand',.5)).toBe(.1);
+  input.anchors[0].color='oklch(.5 .2 29)';
+  expect(requestedChroma(input,'brand',.5)).toBe(.2);
+  input.anchors[0].locked=false;
+  expect(requestedChroma(input,'brand',.5)).toBe(.1);
 });

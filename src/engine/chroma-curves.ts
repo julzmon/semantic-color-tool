@@ -1,3 +1,4 @@
+import { BoundedCache } from './bounded-cache';
 import { conflictingLightnessLocks } from './shared-lightness';
 import { parseLockedColor, toColor } from './color';
 import type { BuilderConfig, ChromaCurve, ColorValue, FamilyConfig, FamilyId, GeneratedSystem } from './types';
@@ -55,11 +56,23 @@ export function validateChromaCurves(config: BuilderConfig): void {
     throw new Error('Conflicting Brand chroma curve pins require different chroma at the same lightness.');
 }
 
-const nodeCache = new WeakMap<BuilderConfig, { key: string; brand: CurvePoint[]; semantic: CurvePoint[] }>();
-function nodes(config: BuilderConfig, group: CurveGroup): CurvePoint[] {
-  const key = JSON.stringify([config.chromaCurves, config.anchors]);
+interface CurveCache {
+  curves: { brand: ChromaCurve; semantic: ChromaCurve };
+  anchors: { family: FamilyId; locked: boolean; color: string }[];
+  brand: CurvePoint[]; semantic: CurvePoint[];
+  values: { brand: BoundedCache<number, number>; semantic: BoundedCache<number, number> };
+}
+const curveFields = ['peakLightness','peakChroma','darkBend','lightBend','darkPosition','lightPosition'] as const;
+const nodeCache = new WeakMap<BuilderConfig, CurveCache>();
+function unchanged(config: BuilderConfig, cached: CurveCache): boolean {
+  for (const group of ['brand','semantic'] as const)
+    for (const field of curveFields) if (config.chromaCurves![group][field] !== cached.curves[group][field]) return false;
+  return config.anchors.length === cached.anchors.length && config.anchors.every((a,i) =>
+    a.family === cached.anchors[i].family && a.locked === cached.anchors[i].locked && a.color === cached.anchors[i].color);
+}
+function nodes(config: BuilderConfig): CurveCache {
   let cached = nodeCache.get(config);
-  if (!cached || cached.key !== key) {
+  if (!cached || !unchanged(config,cached)) {
     const make = (kind: CurveGroup) => {
       const curve = effectiveCurve(config, kind);
       const pins = kind === 'brand' ? curvePins(config).filter(p=>p.l>0 && p.l<1) : [];
@@ -67,10 +80,13 @@ function nodes(config: BuilderConfig, group: CurveGroup): CurvePoint[] {
       const interior = pins.length ? pins : [peak];
       return [{ l:0,c:0 }, ...interior, { l:1,c:0 }];
     };
-    cached = { key, brand: make('brand'), semantic: make('semantic') };
+    cached = { curves: { brand: { ...config.chromaCurves!.brand }, semantic: { ...config.chromaCurves!.semantic } },
+      anchors: config.anchors.map(a=>({family:a.family,locked:a.locked,color:a.color})),
+      brand: make('brand'), semantic: make('semantic'),
+      values: { brand: new BoundedCache(2048), semantic: new BoundedCache(2048) } };
     nodeCache.set(config,cached);
   }
-  return cached[group];
+  return cached;
 }
 
 /** Ordered cubic Bézier segments: one C for each L, no overshoot or loops.
@@ -80,8 +96,11 @@ export function requestedChroma(config: BuilderConfig, family: FamilyId, lightne
   if (!config.chromaCurves || family==='neutral') return familyConfig.chroma;
   const group = family==='brand' ? 'brand' : 'semantic';
   const curve = config.chromaCurves[group];
-  const points = nodes(config,group);
+  const cached = nodes(config);
+  const points = cached[group];
   const l = Math.max(0,Math.min(1,lightness));
+  const known = cached.values[group].get(l);
+  if (known !== undefined) return known;
   const index = Math.max(0,points.findIndex((_,i)=>i<points.length-1 && l<=points[i+1].l));
   const a=points[index], b=points[index+1];
   const fraction=(l-a.l)/(b.l-a.l);
@@ -100,7 +119,9 @@ export function requestedChroma(config: BuilderConfig, family: FamilyId, lightne
   const u=1-t;
   const p1=index===0 ? a.c+(b.c-a.c)*curve.darkBend : a.c;
   const p2=index===points.length-2 ? b.c+(a.c-b.c)*curve.lightBend : b.c;
-  return u*u*u*a.c+3*u*u*t*p1+3*u*t*t*p2+t*t*t*b.c;
+  const value = u*u*u*a.c+3*u*u*t*p1+3*u*t*t*p2+t*t*t*b.c;
+  cached.values[group].set(l,value);
+  return value;
 }
 
 export function curveColor(config: BuilderConfig, family: FamilyConfig, l: number, hue=family.hue): ColorValue {

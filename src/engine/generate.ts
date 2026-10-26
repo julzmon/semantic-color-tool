@@ -1,7 +1,7 @@
 import { curveColor, validateChromaCurves, chromaCurveIssues } from './chroma-curves';
 import { sharedLightnessIssues } from './shared-lightness';
 import { separateOnEmphasis } from './feasibility';
-import { colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
+import { createContrastScorer, colorIdentity, contrast, isSrgb, parseLockedColor, toColor } from './color';
 import { MAX_MUTED_BORDER_STRENGTH, mutedBorderStrength, mutedChromaScale, mutedFamilyChroma, mutedDistance, surfaceStep } from './config';
 import { FAMILY_DEFINITIONS, FAMILY_IDS, PALETTE_KEYS } from './families';
 import { reuseGrayPositions } from './reuse';
@@ -172,12 +172,13 @@ function contrastScore(color: ColorValue, constraints: Constraint[]): number {
 }
 
 function solveGroup(factory: ColorFactory, mode: Mode, separation: number, count: number, constraints: Constraint[], fixed?: ColorValue, preference?: ColorValue): SolvedGroup {
+  const scoreColor = createContrastScorer(constraints);
   const span = separation * (count - 1);
   const stateFactory: ColorFactory = fixed ? (lightness) => toColor({ l: clamp(lightness), h: fixed.h, c: fixed.c }) : factory;
   const evaluate = (base: ColorValue): SolvedGroup => {
     const colors = Array.from({ length: count }, (_, index) => index === 0 ? base : stateFactory(base.l + direction(mode) * separation * index));
     const fits = mode === 'light' ? base.l >= span - 1e-9 : base.l <= 1 - span + 1e-9;
-    const score = Math.min(...colors.map((color) => contrastScore(color, constraints)));
+    const score = Math.min(...colors.map(scoreColor));
     return { colors, feasible: fits && score >= 1, score, diagnostics: fits ? [] : [`${mode}: requested state separation is infeasible at this base; one or more states reach the lightness boundary.`] };
   };
   if (fixed) return evaluate(fixed);
@@ -225,6 +226,7 @@ function solveJointGroup(members: JointMember[], mode: Mode, separation: number,
     ? (lightness) => member.config?.chromaCurves && member.family && member.family.id !== 'neutral'
       ? curveColor(member.config, member.family, clamp(lightness), member.fixed!.h) : toColor({ l: clamp(lightness), h: member.fixed!.h, c: member.fixed!.c })
     : member.factory);
+  const scorers = members.map(member => createContrastScorer(member.constraints));
   let best: SolvedGroup[] | undefined;
   let bestScore = -Infinity;
   for (const lightness of candidates) {
@@ -237,7 +239,7 @@ function solveJointGroup(members: JointMember[], mode: Mode, separation: number,
       const fits = mode === 'light' ? base.l >= span - 1e-9 : base.l <= 1 - span + 1e-9;
       const extra = mixConfig && mode === 'light' && emphasisStrategy(mixConfig) === 'shared' && mixConfig.emphasis.reverseDarkStates
         ? emphasisStateColors(mixConfig, base, 'dark', member.family) : [];
-      const score = Math.min(...[...colors, ...extra].map((color) => contrastScore(color, member.constraints)));
+      const score = Math.min(...[...colors, ...extra].map(scorers[index]));
       return { colors, score, feasible: fits && score >= 1 && !conflicting, diagnostics: [
         ...(conflicting ? [`${mode}: locked colors require different lightness values at the same role. Exact locks are preserved; the shared-lightness constraint is unsatisfied.`] : []),
         ...(!fits ? [`${mode}: requested state separation is infeasible at this base; one or more states reach the lightness boundary.`] : []),

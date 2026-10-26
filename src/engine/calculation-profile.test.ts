@@ -1,10 +1,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { Session } from 'node:inspector';
-import { it } from 'vitest';
+import { expect, it } from 'vitest';
 import { configFromReference, parseKdsTokens } from './reference';
 import { generateSystem } from './generate';
 import { balanceConfiguration } from './balance';
+import { defaultConfiguration } from '../ui/defaultConfiguration';
 // Opt-in profiling keeps timing and filesystem output out of ordinary tests.
 it.skipIf(!process.env.COLOR_BENCHMARK)('profiles color calculations', async () => {
  const base=configFromReference(parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css',import.meta.url),'utf8')));
@@ -36,4 +37,32 @@ it.skipIf(!process.env.COLOR_BENCHMARK)('profiles color calculations', async () 
  writeFileSync('/tmp/color-calculation-profile.json',JSON.stringify(profile.profile));
  writeFileSync('/tmp/color-calculation-report.json',JSON.stringify(report,null,2));
  console.log(JSON.stringify(report,null,2));
-});
+}, 120_000);
+
+// Use real app defaults and fresh positions, rather than repeatedly timing a warm legacy request.
+it.skipIf(!process.env.COLOR_BENCHMARK)('profiles sustained curve editing with app defaults and Brand locks', () => {
+ const reference=parseKdsTokens(readFileSync(new URL('../reference/kds-tokens.css',import.meta.url),'utf8'));
+ const report=[];
+ for(const locked of [false,true]){
+  const base=defaultConfiguration(reference);
+  if(locked)base.anchors[0].locked=true;
+  let previous=balanceConfiguration(base,base).config;
+  const times:number[]=[];const hashes:string[]=[];
+  for(let i=0;i<24;i++){
+   const next=structuredClone(previous);
+   next.chromaCurves!.semantic.darkPosition=.15+i*.018;
+   next.chromaCurves!.semantic.darkBend=.25+i*.02;
+   next.chromaCurves!.semantic.peakChroma=.14+i*.004;
+   const start=performance.now();const result=balanceConfiguration(previous,next);
+   times.push(performance.now()-start);
+   expect(result.system.checks.every(c=>c.pass)).toBe(true);
+   expect(result.config.anchors).toEqual(base.anchors);
+   hashes.push(createHash('sha256').update(JSON.stringify(result.system)).digest('hex'));
+   previous=result.config;
+  }
+  const sorted=[...times].sort((a,b)=>a-b);
+  report.push({name:locked?'live-curves-locked-brand':'live-curves',first:times[0],median:sorted[12],p95:sorted[22],max:sorted[23],times,hashes});
+ }
+ writeFileSync('/tmp/color-live-curve-report.json',JSON.stringify(report,null,2));
+ console.log(JSON.stringify(report.map(({hashes,times,...summary})=>summary),null,2));
+}, 120_000);

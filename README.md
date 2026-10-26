@@ -42,6 +42,15 @@ pnpm run verify:pwa
 
 The test suite uses one worker to keep CPU-heavy feasibility calculations from competing for CPU time and exceeding their existing timeouts. GitHub Pages deployment runs the tests, production build, and PWA verification before uploading the site.
 
+To profile calculations, including sustained Bézier edits with app defaults and a locked Brand color:
+
+```sh
+COLOR_BENCHMARK=1 pnpm test -- src/engine/calculation-profile.test.ts
+```
+
+This opt-in run writes `/tmp/color-calculation-profile.json`, `/tmp/color-calculation-report.json`, and `/tmp/color-live-curve-report.json`. The live report includes first-edit, median, p95, and maximum solve times plus output fingerprints. Timings measure engine work, not browser frame rate.
+
+
 ## Builder scope
 
 - Six generated semantic families: Neutral, Brand, Info, Positive, Negative, and Warning.

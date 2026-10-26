@@ -102,3 +102,24 @@ export function colorIdentity(color: ColorValue): string {
   if (!facts?.inGamut) return `source:${color.css}`;
   return facts.identity ??= [facts.r, facts.g, facts.b].map(channel => channel.toFixed(8)).join(',');
 }
+
+/** Snapshot fixed search backgrounds once; candidates still use their current CSS.
+ * Keep the scorer local to a solve so mutable API inputs cannot outlive it. */
+export function createContrastScorer(constraints: readonly { background: ColorValue; target: number; distinct?: boolean }[]): (color: ColorValue) => number {
+  const backgrounds = constraints.map(({ background, target, distinct }) => ({
+    facts: colorFacts(background.css)!, target, identity: distinct ? colorIdentity(background) : undefined,
+  }));
+  const needsIdentity = backgrounds.some(item => item.identity !== undefined);
+  return color => {
+    const facts = colorFacts(color.css)!;
+    if (!facts.inGamut) return 0;
+    const identity = needsIdentity ? colorIdentity(color) : undefined;
+    let score = Infinity;
+    for (const background of backgrounds) {
+      const ratio = background.facts.inGamut && (background.identity === undefined || identity !== background.identity)
+        ? (Math.max(facts.luminance, background.facts.luminance) + 0.05) / (Math.min(facts.luminance, background.facts.luminance) + 0.05) / background.target : 0;
+      score = Math.min(score, ratio);
+    }
+    return score;
+  };
+}
