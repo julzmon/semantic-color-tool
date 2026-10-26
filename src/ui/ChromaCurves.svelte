@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { familyControlColor } from './controlTracks';
   import { curveColor, curvePins, effectiveCurve, requestedChroma, withChromaCurves } from '../engine/chroma-curves';
   import type { BuilderConfig, FamilyConfig, GeneratedSystem } from '../engine/types';
@@ -14,8 +14,12 @@
   let draft=$state.raw<BuilderConfig|null>(null);
   let submitting=$state(false);
   let feedback=$state('');
-  let drag=$state.raw<{group:Group;handle:Handle;pointer:number;surface:Element;start:BuilderConfig;accepted:BuilderConfig;scale:number;moved:boolean}|null>(null);
+  let drag=$state.raw<{group:Group;handle:Handle;pointer:number;surface:Element;start:BuilderConfig;scale:number;moved:boolean}|null>(null);
   let submission=0;
+  let queued:BuilderConfig|null=null;
+  let lastRequested='';
+  let disposed=false;
+  onDestroy(()=>{disposed=true;queued=null;});
   const view=$derived(draft??config);
   const busy=$derived(checking||submitting);
   const pins=$derived(curvePins(view));
@@ -57,18 +61,33 @@
     return next;
   }
   async function apply(next:BuilderConfig,announcement='Curve applied.'){
-    const revision=++submission;submitting=true;draft=next;feedback='Checking both themes…';
+    const signature=JSON.stringify(next);
+    if(disposed)return;
+    if(signature===lastRequested){if(!drag&&!submitting)draft=null;return;}
+    lastRequested=signature;
+    if(submitting){queued=next;return;}
+    const revision=++submission;submitting=true;
+    if(!drag)draft=next;
+    feedback='Checking both themes…';
     try{const accepted=await onChange(next);if(revision===submission)feedback=accepted===false?'Change could not pass. Previous curve restored.':accepted===undefined?'Curve edit superseded by another change.':`${announcement} Both themes checked.`;}
     catch{if(revision===submission)feedback='Unable to apply this curve. Previous curve restored.';}
-    finally{await tick();if(revision===submission){draft=null;submitting=false;}}
+    finally{
+      await tick();
+      if(!disposed&&revision===submission){
+        submitting=false;
+        const pending=queued;queued=null;
+        if(pending){lastRequested='';void apply(pending);}
+        else if(!drag)draft=null;
+      }
+    }
   }
   function start(event:PointerEvent,group:Group,handle:Handle){
     if(busy||event.button!==0||drag)return;
     if(handle==='peak'&&geometry(group).locked)return;
     const button=event.currentTarget as HTMLButtonElement;
     event.preventDefault();button.focus();
-    drag={group,handle,pointer:event.pointerId,surface:button.closest('.curve-surface')!,start:structuredClone(config),accepted:config,scale:ceiling(group),moved:false};
-    draft=structuredClone(config);feedback='Release to apply. Escape cancels.';
+    drag={group,handle,pointer:event.pointerId,surface:button.closest('.curve-surface')!,start:structuredClone(config),scale:ceiling(group),moved:false};
+    draft=structuredClone(config);lastRequested='';feedback='Colors update while dragging. Escape restores the starting curve.';
     button.setPointerCapture?.(event.pointerId);
   }
   function move(event:PointerEvent){
@@ -78,6 +97,7 @@
     const c=(150-(event.clientY-rect.top)/rect.height*196)/130*drag.scale;
     drag.moved=true;
     draft=edit(drag.start,drag.group,drag.handle,l,c);
+    void apply(draft);
   }
   function finish(event:PointerEvent){
     if(!drag||drag.pointer!==event.pointerId)return;
@@ -86,8 +106,12 @@
     if(next&&JSON.stringify(next)!==JSON.stringify(previous))void apply(next);
     else {draft=null;feedback='Curve unchanged.';}
   }
-  $effect(()=>{const accepted=config;const pending=checking;if(drag&&(drag.accepted!==accepted||pending))cancel();});
-  function cancel(){if(drag){drag=null;draft=null;feedback='Curve edit cancelled.';}}
+  function cancel(){
+    if(!drag)return;
+    const previous=drag.start;const moved=drag.moved;drag=null;
+    if(moved){draft=previous;void apply(previous,'Starting curve restored.');}
+    else {draft=null;feedback='Curve edit cancelled.';}
+  }
   function keydown(event:KeyboardEvent,group:Group,handle:Handle){
     if(event.key==='Escape'){event.preventDefault();cancel();return;}
     if(busy||drag||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;
@@ -144,7 +168,7 @@
       <p class="help curve-readout">Maximum requested intensity: {graph.curve.peakChroma.toFixed(3)}, located {Math.round(graph.curve.peakLightness*100)}% from dark to light.</p>
     </div>
   {/each}
-  <p id={`${id}-instructions`} class="help">Dotted = requested color; solid = what each hue can display within its gamut. Changes preview while dragging and apply on release. Arrow keys also move points; Shift moves faster. Shared lightness and contrast stay protected.</p>
+  <p id={`${id}-instructions`} class="help">Dotted = requested color; solid = what each hue can display within its gamut. Colors update while dragging as contrast checks complete. Escape restores the starting curve. Arrow keys also move points; Shift moves faster. Shared lightness and contrast stay protected.</p>
   <p class="help curve-status" role="status">{feedback|| (checking?'Checking both themes…':'')}</p>
 </section>
 

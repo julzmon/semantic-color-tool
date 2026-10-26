@@ -24,14 +24,14 @@ it('offers direct curve points instead of the unexplained slider stack',()=>{
   expect(document.body.textContent).toContain('Drag the round point');
   expect(document.body.textContent).toContain('gamut');
 });
-it('previews a two-dimensional drag immediately and checks the edit once on release',async()=>{
+it('updates the palette during dragging without waiting for release',async()=>{
   const {config,onChange}=setup(); const surface=handle('semantic','peak').closest('.curve-surface')!;
   vi.spyOn(surface,'getBoundingClientRect').mockReturnValue({left:0,top:0,width:288,height:196,right:288,bottom:196,x:0,y:0,toJSON(){}});
   const before=surface.querySelector('.requested-curve')!.getAttribute('d');
   const target=handle('semantic','peak');
   target.dispatchEvent(pointer('pointerdown',150,75));target.dispatchEvent(pointer('pointermove',202.8,101.25));flushSync();
   expect(surface.querySelector('.requested-curve')!.getAttribute('d')).not.toBe(before);
-  expect(onChange).not.toHaveBeenCalled();
+  expect(onChange).toHaveBeenCalledTimes(1);
   target.dispatchEvent(pointer('pointerup',202.8,101.25));await tick();flushSync();
   expect(onChange).toHaveBeenCalledTimes(1);
   const next=onChange.mock.calls[0][0];
@@ -88,4 +88,22 @@ it('keeps the graph scale fixed while dragging a high-chroma imported profile',(
   point.dispatchEvent(pointer('pointerdown',166,20));point.dispatchEvent(pointer('pointermove',166,46));flushSync();
   expect(parseFloat(point.style.top)).toBeCloseTo(46/196*100,4);
   point.dispatchEvent(pointer('pointercancel',166,46));
+});
+
+it('keeps the latest drag position queued while a live check is running',async()=>{
+  const {onChange}=setup();let resolve!:(accepted:boolean)=>void;
+  onChange.mockImplementationOnce(()=>new Promise<boolean>(done=>{resolve=done;}));
+  const target=handle('semantic','peak');const surface=target.closest('.curve-surface')!;
+  vi.spyOn(surface,'getBoundingClientRect').mockReturnValue({left:0,top:0,width:288,height:196,right:288,bottom:196,x:0,y:0,toJSON(){}});
+  target.dispatchEvent(pointer('pointerdown',150,75));
+  target.dispatchEvent(pointer('pointermove',154,90));flushSync();
+  expect(onChange).toHaveBeenCalledTimes(1);
+  target.dispatchEvent(pointer('pointermove',178.4,95));
+  target.dispatchEvent(pointer('pointermove',202.8,101.25));flushSync();
+  expect(onChange).toHaveBeenCalledTimes(1);
+  resolve(true);await tick();await tick();await tick();flushSync();
+  expect(onChange).toHaveBeenCalledTimes(2);
+  expect(onChange.mock.calls[1][0].chromaCurves!.semantic.peakLightness).toBeCloseTo(.7,5);
+  target.dispatchEvent(pointer('pointerup',202.8,101.25));await tick();flushSync();
+  expect(onChange).toHaveBeenCalledTimes(2);
 });
