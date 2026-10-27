@@ -6,6 +6,7 @@
     system: GeneratedSystem; mode: Mode; section: PreviewSection; selectedToken?: string;
     onInspect?: (semantic: string) => void;
   } = $props();
+  let showStates=$state(false);
   let theme = $derived(system.modes[mode]);
   let tokens = $derived(previewTokens(system, mode));
   let states = $derived(previewStates.filter(item => (item.id !== 'selected' || system.config.emphasis.selected)));
@@ -31,12 +32,15 @@
 {/snippet}
 
 <section class="token-demo" aria-label={`${mode} ${previewSections.find(item => item.id === section)?.label}`}>
-  <h3>{previewSections.find(item => item.id === section)?.label}</h3>
+  <div class="token-demo-heading"><h3>{previewSections.find(item => item.id === section)?.label}</h3>
+    {#if section==='surfaces'}<button class="preview-states-toggle" type="button" aria-pressed={showStates} onclick={()=>showStates=!showStates}>Show states</button>{/if}
+  </div>
   {#if section === 'surfaces'}
     <div class="token-text-list">
       {#each tokens.filter(token => token.kind === 'text') as token}{@render sample(token, token.label)}{/each}
     </div>
-    <NestedSurfaceCard surfaces={theme.surfaces} {mode} {selectedToken} {onInspect} />
+    <p class="token-demo-help">Compare cards, inputs, and selection on each surface. Card borders are decorative; controls use stronger boundaries. {#if showStates&&!system.config.emphasis.selected}Enable selected state to preview the row’s selected fill.{/if}</p>
+    <NestedSurfaceCard surfaces={theme.surfaces} {mode} {showStates} {selectedToken} {onInspect} />
   {:else}
     {#each system.config.families as item}
       <div class="token-family" data-family={item.id}>
@@ -70,3 +74,10 @@
     {/if}
   {/if}
 </section>
+
+<style>
+.token-demo-heading {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.preview-states-toggle {min-block-size:36px;padding:6px 10px;border:1px solid var(--kds-border-neutral-emphasis-base);border-radius:5px;background:transparent;color:var(--kds-fg-base);font-size:12px;}
+.preview-states-toggle[aria-pressed="true"] {background:var(--kds-bg-neutral-muted-base);}
+.preview-states-toggle:focus-visible {outline:2px solid var(--kds-border-brand-emphasis-base);outline-offset:2px;}
+</style>

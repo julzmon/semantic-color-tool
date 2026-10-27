@@ -69,12 +69,13 @@ it.each(['light', 'dark'] as const)('keeps contextual alerts and an editable inp
   const surfaces = defaultSystem.modes[mode].surfaces;
   surfaces.forEach((_, index) => {
     const id = index === 0 ? `project-${mode}` : `project-${mode}-${index}`;
-    expect(markup).toContain(`for="${id}">Project name</label>`);
+    expect(markup).toMatch(new RegExp(`for="${id}"[^>]*>Project name</label>`));
     expect(markup).toContain(`id="${id}"`);
   });
   expect(markup.match(/>Project name<\/label>/g)).toHaveLength(surfaces.length);
-  expect(markup.match(/class="preview-muted-button" data-state="base">Base<\/button>/g)).toHaveLength(surfaces.length);
-  expect(markup.match(/class="preview-muted-button" data-state="hover">Hover<\/button>/g)).toHaveLength(surfaces.length);
+  expect(markup.match(/data-example="same-surface-card"/g)).toHaveLength(surfaces.length);
+  expect(markup.match(/data-example="next-surface-card"/g)).toHaveLength(surfaces.length-1);
+  expect(markup).toContain('Show states');
 });
 it.each(['light', 'dark'] as const)('uses matching family foreground states inside border examples in %s mode', mode => {
   const markup = render(ThemePreview, { props: { system: defaultSystem, mode } }).body;
@@ -87,5 +88,20 @@ it.each(['light', 'dark'] as const)('uses matching family foreground states insi
         expect(button).toContain(`; color: var(${foreground.semantic})`);
       }
     }
+  }
+});
+
+it('supports six levels and custom prefixes without duplicate input IDs or a fake deepest surface',()=>{
+  const config=structuredClone(defaultSystem.config);config.surfaces.levels=6;config.prefix='acme';config.emphasis.selected=true;
+  const system=generateSystem(config);
+  for(const mode of ['light','dark'] as const){
+    const markup=render(ThemePreview,{props:{system,mode}}).body;
+    expect(markup.match(/data-example="same-surface-card"/g)).toHaveLength(6);
+    expect(markup.match(/data-example="next-surface-card"/g)).toHaveLength(5);
+    expect(markup).toContain('--kds-bg-surface-base:');
+    for(const surface of system.modes[mode].surfaces)expect(markup).toContain(`var(${surface.semantic})`);
+    const ids=[...markup.matchAll(/<input[^>]*\bid="(project-[^"]+)"/g)].map(m=>m[1]);
+    expect(ids).toHaveLength(6);expect(new Set(ids).size).toBe(6);
+    expect(markup).not.toContain('var(undefined)');
   }
 });

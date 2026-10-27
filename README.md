@@ -51,6 +51,8 @@ COLOR_BENCHMARK=1 pnpm test -- src/engine/calculation-profile.test.ts
 This opt-in run writes `/tmp/color-calculation-profile.json`, `/tmp/color-calculation-report.json`, and `/tmp/color-live-curve-report.json`. The live report includes first-edit, median, p95, and maximum solve times plus output fingerprints. Timings measure engine work, not browser frame rate.
 
 
+The Overview’s **Surfaces & text** section repeats the same small component examples at every surface level in both themes: a muted-border card on the same surface and next level (when available), an editable input, and a selectable checkbox row. **Show states** expands fixed hover, pressed, checked, and focus comparisons. Checked rows use the selected fill when selected-state generation is enabled. These examples reuse existing tokens and do not add palette colors.
+
 ## Builder scope
 
 - Six generated semantic families: Neutral, Brand, Info, Positive, Negative, and Warning.
